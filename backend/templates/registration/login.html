@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Нэвтрэх{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-4">
+    <div class="card mt-5">
+      <div class="card-body">
+        <h3 class="mb-3 text-center">Нэвтрэх</h3>
+        {% if form.errors %}
+        <div class="alert alert-danger">Хэрэглэгчийн нэр эсвэл нууц үг буруу байна.</div>
+        {% endif %}
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Хэрэглэгчийн нэр</label>
+            {{ form.username }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Нууц үг</label>
+            {{ form.password }}
+          </div>
+          <input type="hidden" name="next" value="{{ next }}">
+          <button type="submit" class="btn btn-primary w-100">Нэвтрэх</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

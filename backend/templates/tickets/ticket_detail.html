@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}#{{ ticket.id }} {{ ticket.title }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <h2>#{{ ticket.id }} — {{ ticket.title }}</h2>
+  <span class="badge bg-primary fs-6">{{ ticket.get_status_display }}</span>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card mb-3">
+      <div class="card-body">
+        <p>{{ ticket.description|linebreaks }}</p>
+        <hr>
+        <dl class="row mb-0">
+          <dt class="col-sm-3">Type</dt><dd class="col-sm-9">{{ ticket.get_ticket_type_display }}</dd>
+          <dt class="col-sm-3">Category</dt><dd class="col-sm-9">{{ ticket.category.name }}</dd>
+          <dt class="col-sm-3">Project / Module</dt>
+          <dd class="col-sm-9">{{ ticket.project.name }}{% if ticket.module %} / {{ ticket.module.name }}{% endif %}</dd>
+          <dt class="col-sm-3">Team</dt><dd class="col-sm-9">{{ ticket.team.name|default:"—" }}</dd>
+          <dt class="col-sm-3">Priority</dt><dd class="col-sm-9">{{ ticket.get_priority_display }}</dd>
+          <dt class="col-sm-3">Reported by</dt><dd class="col-sm-9">{{ ticket.reported_by.username }}</dd>
+          <dt class="col-sm-3">Assigned to</dt><dd class="col-sm-9">{{ ticket.assigned_to.username|default:"—" }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <h5>Comments</h5>
+    {% for c in comments %}
+    <div class="border rounded p-2 mb-2 bg-white">
+      <strong>{{ c.author.username|default:"—" }}</strong>
+      <small class="text-muted">{{ c.created_at }}</small>
+      <p class="mb-0">{{ c.body|default:"(comment-гүй status шилжилт)" }}</p>
+    </div>
+    {% empty %}
+    <p class="text-muted">Comment алга байна.</p>
+    {% endfor %}
+
+    <form method="post" class="mb-4">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="comment">
+      {{ comment_form.body }}
+      <button type="submit" class="btn btn-sm btn-outline-secondary mt-2">Comment нэмэх</button>
+    </form>
+
+    <h5>Attachments</h5>
+    <ul class="list-group mb-2">
+      {% for a in attachments %}
+      <li class="list-group-item">
+        <a href="{{ a.file.url }}" target="_blank">{{ a.file.name }}</a>
+        <small class="text-muted">— {{ a.uploaded_by.username|default:"—" }}</small>
+      </li>
+      {% empty %}
+      <li class="list-group-item text-muted">Хавсралт алга байна.</li>
+      {% endfor %}
+    </ul>
+    <form method="post" enctype="multipart/form-data" class="mb-4">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="attachment">
+      {{ attachment_form.file }}
+      <button type="submit" class="btn btn-sm btn-outline-secondary mt-2">Файл хавсаргах</button>
+    </form>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-header">Status шилжүүлэх</div>
+      <div class="card-body">
+        {% if next_statuses %}
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="transition">
+          <select name="new_status" class="form-select mb-2">
+            {% for value, label in next_statuses %}
+            <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+          <textarea name="comment" class="form-control mb-2" rows="2"
+                    placeholder="Тайлбар (сонголтоор)"></textarea>
+          <button type="submit" class="btn btn-primary w-100">Шилжүүлэх</button>
+        </form>
+        {% else %}
+        <p class="text-muted mb-0">Энэ ticket одоогийн төлөвөөс цаашид шилжих боломжгүй.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Status History</div>
+      <ul class="list-group list-group-flush">
+        {% for h in history %}
+        <li class="list-group-item small">
+          {{ h.from_status|default:"—" }} → <strong>{{ h.to_status }}</strong>
+          <br><span class="text-muted">{{ h.changed_by.username|default:"system" }} · {{ h.changed_at|date:"Y-m-d H:i" }}</span>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted">Түүх алга байна.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

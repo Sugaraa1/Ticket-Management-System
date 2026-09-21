@@ -116,7 +116,7 @@ Django-ийн стандарт `User` эсвэл `AbstractUser`-аас өргө�
 ### Category
 Ticket-ийн ангилал (жишээ: "Backend API", "UI/UX", "Database"). Category бүрт Team Lead болон QA Tester тохируулагдана.
 
-### CategoryTeamAssignment
+### CategoryTeamAssignment  
 Category ↔ Team-ийн холбоос хүснэгт. `team_lead`, `qa_tester` талбарууд нь тухайн category-д хариуцлагатай хүмүүсийг заана. **Ticket auto-routing** энэ хүснэгтээс уншиж, category-д тохирох team-ийг ticket дээр автоматаар онооно.
 
 ### Project / Module

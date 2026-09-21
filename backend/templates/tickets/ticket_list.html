@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Tickets{% endblock %}
+{% block content %}
+<h2 class="mb-3">Tickets</h2>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+  <div class="col-auto">
+    <label class="form-label mb-0 small">Хайх</label>
+    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Гарчгаар хайх">
+  </div>
+  <div class="col-auto">
+    <label class="form-label mb-0 small">Status</label>
+    <select name="status" class="form-select">
+      <option value="">-- Бүгд --</option>
+      {% for value, label in status_choices %}
+      <option value="{{ value }}" {% if value == current_status %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <label class="form-label mb-0 small">Priority</label>
+    <select name="priority" class="form-select">
+      <option value="">-- Бүгд --</option>
+      {% for value, label in priority_choices %}
+      <option value="{{ value }}" {% if value == current_priority %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <label class="form-label mb-0 small">Category</label>
+    <select name="category" class="form-select">
+      <option value="">-- Бүгд --</option>
+      {% for c in categories %}
+      <option value="{{ c.id }}" {% if current_category == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-secondary">Шүүх</button>
+    <a href="{% url 'tickets:ticket_list' %}" class="btn btn-link">Цэвэрлэх</a>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-hover bg-white align-middle">
+    <thead>
+      <tr>
+        <th>#</th><th>Гарчиг</th><th>Type</th><th>Category</th>
+        <th>Status</th><th>Priority</th><th>Хариуцагч</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tickets %}
+      <tr>
+        <td>{{ t.id }}</td>
+        <td>{{ t.title }}</td>
+        <td>{{ t.get_ticket_type_display }}</td>
+        <td>{{ t.category.name }}</td>
+        <td><span class="badge bg-secondary">{{ t.get_status_display }}</span></td>
+        <td>{{ t.get_priority_display }}</td>
+        <td>{{ t.assigned_to.username|default:"—" }}</td>
+        <td><a href="{% url 'tickets:ticket_detail' t.id %}" class="btn btn-sm btn-outline-primary">Харах</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="text-center text-muted py-4">Ticket олдсонгүй.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

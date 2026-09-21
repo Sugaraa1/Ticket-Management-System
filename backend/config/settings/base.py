@@ -96,7 +96,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- Auth ---
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "dashboard"
+LOGIN_REDIRECT_URL = "tickets:dashboard"
 LOGOUT_REDIRECT_URL = "login"
 
 # --- Email (жагсаалт: dev дээр console, prod дээр smtp) ---

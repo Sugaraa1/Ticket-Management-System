@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Шинэ Ticket{% endblock %}
+{% block content %}
+<h2 class="mb-3">Шинэ Ticket үүсгэх</h2>
+<div class="card">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="mb-3">
+        <label class="form-label">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        {{ field }}
+        {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Үүсгэх</button>
+      <a href="{% url 'tickets:ticket_list' %}" class="btn btn-link">Цуцлах</a>
+    </form>
+  </div>
+</div>
+{% endblock %}
