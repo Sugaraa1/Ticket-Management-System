@@ -10,6 +10,13 @@
   <span class="status-badge status-{{ ticket.status }} fs-6">{{ ticket.get_status_display }}</span>
 </div>
 
+{% if ticket.is_overdue %}
+<div class="alert alert-danger d-flex align-items-center gap-2">
+  <strong>⚠ SLA хугацаа хэтэрсэн!</strong>
+  <span>Энэ ticket-ийг {{ ticket.sla_due_at|date:"Y-m-d H:i" }} гэхэд шийдвэрлэх ёстой байсан.</span>
+</div>
+{% endif %}
+
 <div class="row">
   <div class="col-md-8">
     <div class="card mb-3">
@@ -24,6 +31,11 @@
           <dt class="col-sm-3 text-muted fw-normal">Баг</dt><dd class="col-sm-9">{{ ticket.team.name|default:"—" }}</dd>
           <dt class="col-sm-3 text-muted fw-normal">Чухлын зэрэг</dt>
           <dd class="col-sm-9"><span class="priority-dot priority-{{ ticket.priority }}"></span>{{ ticket.get_priority_display }}</dd>
+          <dt class="col-sm-3 text-muted fw-normal">SLA хугацаа</dt>
+          <dd class="col-sm-9 {% if ticket.is_overdue %}text-danger fw-semibold{% endif %}">
+            {{ ticket.sla_due_at|date:"Y-m-d H:i"|default:"—" }}
+            {% if ticket.is_overdue %}(хэтэрсэн){% endif %}
+          </dd>
           <dt class="col-sm-3 text-muted fw-normal">Мэдээлсэн</dt><dd class="col-sm-9">{{ ticket.reported_by.username }}</dd>
           <dt class="col-sm-3 text-muted fw-normal">Хариуцагч</dt><dd class="col-sm-9">{{ ticket.assigned_to.username|default:"Оноогдоогүй" }}</dd>
         </dl>
@@ -32,9 +44,14 @@
 
     <h5 class="mb-3">Сэтгэгдэл</h5>
     {% for c in comments %}
-    <div class="border rounded p-3 mb-2 bg-white">
-      <div class="d-flex justify-content-between">
-        <strong>{{ c.author.username|default:"—" }}</strong>
+    <div class="border rounded p-3 mb-2 {% if c.is_internal %}bg-warning-subtle border-warning{% else %}bg-white{% endif %}">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <strong>{{ c.author.username|default:"—" }}</strong>
+          {% if c.is_internal %}
+          <span class="badge bg-warning text-dark ms-1">🔒 Дотоод тэмдэглэл</span>
+          {% endif %}
+        </div>
         <small class="text-muted">{{ c.created_at|date:"Y-m-d H:i" }}</small>
       </div>
       <p class="mb-0 mt-1">{{ c.body|default:"(тайлбаргүйгээр status шилжсэн)" }}</p>
@@ -47,6 +64,12 @@
       {% csrf_token %}
       <input type="hidden" name="action" value="comment">
       {{ comment_form.body }}
+      <div class="form-check mt-2">
+        {{ comment_form.is_internal }}
+        <label class="form-check-label small" for="{{ comment_form.is_internal.id_for_label }}">
+          {{ comment_form.is_internal.label }}
+        </label>
+      </div>
       <button type="submit" class="btn btn-sm btn-outline-secondary mt-2">Сэтгэгдэл нэмэх</button>
     </form>
 
@@ -92,10 +115,13 @@
             <select name="assigned_to" class="form-select">
               <option value="">— Сонгох —</option>
               {% for dev in developers %}
-              <option value="{{ dev.id }}">{{ dev.username }}</option>
+              <option value="{{ dev.id }}">{{ dev.username }} — {{ dev.active_ticket_count }} идэвхтэй ажил</option>
               {% endfor %}
             </select>
+            <div class="form-text">Багийн гишүүд ачааллаараа (бага → их) эрэмбэлэгдсэн — хамгийн дээр нь хамгийн чөлөөтэй хүн.</div>
           </div>
+          {% elif assign_blocked_reason %}
+          <div class="alert alert-warning small py-2">{{ assign_blocked_reason }}</div>
           {% endif %}
 
           <label class="form-label small text-muted">Тайлбар (сонголтоор)</label>

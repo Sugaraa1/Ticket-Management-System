@@ -9,6 +9,14 @@ class Team(TimeStampedModel):
     """Ticket шийдвэрлэдэг хөгжүүлэлтийн баг."""
 
     name = models.CharField(max_length=100, unique=True)
+    members = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="teams",
+        blank=True,
+        limit_choices_to=Q(groups__name="Developer") | Q(is_superuser=True),
+        help_text="Энэ багт харьяалагдах ажилчид. Ticket assign хийхэд зөвхөн эдгээр "
+        "хэрэглэгчид сонголтод гарна.",
+    )
 
     class Meta:
         ordering = ["name"]

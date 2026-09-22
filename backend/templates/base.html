@@ -30,6 +30,16 @@
         <li class="nav-item"><a class="nav-link" href="{% url 'tickets:dashboard' %}">Нүүр</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'tickets:ticket_list' %}">Бүх ticket</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'tickets:ticket_create' %}">+ Шинэ ticket</a></li>
+        {% if can_manage_catalog %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Удирдлага</a>
+          <ul class="dropdown-menu dropdown-menu-dark">
+            <li><a class="dropdown-item" href="{% url 'categories:category_list' %}">Ангилал</a></li>
+            <li><a class="dropdown-item" href="{% url 'categories:team_list' %}">Баг</a></li>
+            <li><a class="dropdown-item" href="{% url 'projects:project_list' %}">Төсөл</a></li>
+          </ul>
+        </li>
+        {% endif %}
       </ul>
       <span class="navbar-text text-white-50 me-3">{{ user.username }}</span>
       <form method="post" action="{% url 'logout' %}" class="d-inline">

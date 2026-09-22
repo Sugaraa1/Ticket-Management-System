@@ -1,6 +1,9 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 from apps.categories.models import Category
 from apps.core.models import TimeStampedModel
@@ -81,12 +84,38 @@ class Ticket(TimeStampedModel):
         null=True,
         blank=True,
     )
+    sla_due_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Priority-с хамаарсан хариу үйлдэл хийх дээд хугацаа "
+            "(settings.SLA_HOURS_BY_PRIORITY-ээс ticket үүсэх мөчид автоматаар тооцоологдоно)."
+        ),
+    )
+
+    # Эдгээр статустай ticket цаашид SLA хугацаанд хамаарахгүй гэж үзнэ
+    # (ажил дууссан/хаагдсан тул хугацаа хэтэрсэн эсэхийг тооцох шаардлагагүй).
+    _SLA_EXEMPT_STATUSES = {"closed", "rejected"}
 
     class Meta:
         ordering = ["-created_at"]
 
     def __str__(self):
         return f"#{self.pk} {self.title}"
+
+    @property
+    def is_overdue(self):
+        """SLA хугацаа хэтэрсэн эсэх (хаагдсан/татгалзсан ticket-д хамаарахгүй)."""
+        if self.status in self._SLA_EXEMPT_STATUSES:
+            return False
+        if not self.sla_due_at:
+            return False
+        return timezone.now() > self.sla_due_at
+
+    def _calculate_sla_due_at(self):
+        """Priority-с хамаарсан SLA хугацааг тооцоолж буцаана (settings.SLA_HOURS_BY_PRIORITY)."""
+        hours = settings.SLA_HOURS_BY_PRIORITY.get(self.priority, 72)
+        return timezone.now() + timedelta(hours=hours)
 
     def _auto_route_team(self):
         """Category-д тохирсон Team-ийг олж, team талбарт байхгүй бол автоматаар тавина."""
@@ -111,6 +140,8 @@ class Ticket(TimeStampedModel):
                     )
 
         self._auto_route_team()
+        if is_new and self.sla_due_at is None:
+            self.sla_due_at = self._calculate_sla_due_at()
         super().save(*args, **kwargs)
 
         changed_by = getattr(self, "_changed_by", None)
@@ -150,12 +181,17 @@ class Comment(TimeStampedModel):
     )
     # QA reopen хийхэд comment заавал биш (сонголтоор) байх тул blank=True.
     body = models.TextField(blank=True)
+    is_internal = models.BooleanField(
+        default=False,
+        help_text="Тэмдэглэгдсэн бол зөвхөн дотоод багийн гишүүд харна (Zendesk/Freshdesk-ийн 'Internal note' шиг).",
+    )
 
     class Meta:
         ordering = ["created_at"]
 
     def __str__(self):
-        return f"Comment #{self.pk} on Ticket #{self.ticket_id}"
+        marker = " [internal]" if self.is_internal else ""
+        return f"Comment #{self.pk} on Ticket #{self.ticket_id}{marker}"
 
 
 class Attachment(TimeStampedModel):

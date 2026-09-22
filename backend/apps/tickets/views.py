@@ -8,7 +8,7 @@ from apps.categories.models import Category
 
 from .forms import AttachmentForm, CommentForm, TicketForm
 from .models import ALLOWED_TRANSITIONS, Ticket
-from .permissions import assignable_developers, can_user_assign, can_user_transition
+from .permissions import can_user_assign, can_user_transition, team_members_with_workload
 
 
 @login_required
@@ -104,6 +104,16 @@ def ticket_detail(request, pk):
                 if not assignee_id:
                     messages.error(request, "Хариуцах хэрэглэгчийг сонгоно уу.")
                     return redirect("tickets:ticket_detail", pk=pk)
+
+                valid_member_ids = {
+                    str(u.id) for u in team_members_with_workload(ticket.team)
+                }
+                if assignee_id not in valid_member_ids:
+                    messages.error(
+                        request,
+                        "Сонгосон хэрэглэгч энэ ticket-ийн багийн гишүүн биш тул assign хийх боломжгүй.",
+                    )
+                    return redirect("tickets:ticket_detail", pk=pk)
                 ticket.assigned_to_id = assignee_id
 
             try:
@@ -139,12 +149,29 @@ def ticket_detail(request, pk):
     ]
     next_statuses = [(value, Ticket.Status(value).label) for value in permitted_statuses]
 
+    developers = None
+    assign_blocked_reason = ""
+    if Ticket.Status.ASSIGNED in permitted_statuses:
+        if ticket.team is None:
+            assign_blocked_reason = (
+                "Энэ ticket-ийн Category-д Баг (Team) тохируулаагүй тул assign хийх "
+                "боломжгүй. Эхлээд 'Удирдлага → Ангилал' хэсэгт баг тохируулна уу."
+            )
+        else:
+            developers = team_members_with_workload(ticket.team)
+            if not developers:
+                assign_blocked_reason = (
+                    f"'{ticket.team.name}' багт одоогоор гишүүн алга байна. "
+                    f"Эхлээд 'Удирдлага → Баг' хэсэгт ажилчид нэмнэ үү."
+                )
+
     context = {
         "ticket": ticket,
         "comment_form": comment_form,
         "attachment_form": attachment_form,
         "next_statuses": next_statuses,
-        "developers": assignable_developers() if Ticket.Status.ASSIGNED in permitted_statuses else None,
+        "developers": developers,
+        "assign_blocked_reason": assign_blocked_reason,
         "history": ticket.history.select_related("changed_by"),
         "comments": ticket.comments.select_related("author"),
         "attachments": ticket.attachments.select_related("uploaded_by"),

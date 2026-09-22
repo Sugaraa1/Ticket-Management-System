@@ -47,24 +47,33 @@
       <thead class="table-light">
         <tr>
           <th>#</th><th>Гарчиг</th><th>Төрөл</th><th>Ангилал</th>
-          <th>Төлөв</th><th>Чухлын зэрэг</th><th>Хариуцагч</th><th></th>
+          <th>Төлөв</th><th>Чухлын зэрэг</th><th>SLA</th><th>Хариуцагч</th><th></th>
         </tr>
       </thead>
       <tbody>
         {% for t in tickets %}
-        <tr class="ticket-row">
+        <tr class="ticket-row {% if t.is_overdue %}table-danger{% endif %}">
           <td class="text-muted">#{{ t.id }}</td>
           <td><a href="{% url 'tickets:ticket_detail' t.id %}" class="text-decoration-none text-dark fw-medium">{{ t.title }}</a></td>
           <td>{{ t.get_ticket_type_display }}</td>
           <td>{{ t.category.name }}</td>
           <td><span class="status-badge status-{{ t.status }}">{{ t.get_status_display }}</span></td>
           <td><span class="priority-dot priority-{{ t.priority }}"></span>{{ t.get_priority_display }}</td>
+          <td>
+            {% if t.is_overdue %}
+            <span class="text-danger fw-semibold">⚠ Хугацаа хэтэрсэн</span>
+            {% elif t.sla_due_at %}
+            <span class="text-muted small">{{ t.sla_due_at|date:"Y-m-d H:i" }}</span>
+            {% else %}
+            <span class="text-muted">—</span>
+            {% endif %}
+          </td>
           <td>{{ t.assigned_to.username|default:"—" }}</td>
           <td><a href="{% url 'tickets:ticket_detail' t.id %}" class="btn btn-sm btn-outline-primary">Харах</a></td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="8">
+          <td colspan="9">
             <div class="empty-state">
               <div class="empty-icon">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

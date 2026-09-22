@@ -38,7 +38,7 @@ class TicketForm(forms.ModelForm):
 class CommentForm(forms.ModelForm):
     class Meta:
         model = Comment
-        fields = ["body"]
+        fields = ["body", "is_internal"]
         widgets = {
             "body": forms.Textarea(
                 attrs={
@@ -47,6 +47,11 @@ class CommentForm(forms.ModelForm):
                     "placeholder": "Сэтгэгдэл бичих (сонголтоор)...",
                 }
             ),
+            "is_internal": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+        labels = {
+            "body": "Сэтгэгдэл",
+            "is_internal": "Зөвхөн дотоод багт харагдах (Internal note)",
         }
 
 

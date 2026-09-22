@@ -56,6 +56,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.core.context_processors.user_roles_context",
             ],
         },
     },
@@ -101,3 +102,14 @@ LOGOUT_REDIRECT_URL = "login"
 
 # --- Email (жагсаалт: dev дээр console, prod дээр smtp) ---
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@ticket-system.local")
+
+# --- SLA (Service Level Agreement) ---
+# Priority тус бүрт хариу үйлдэл хийх дээд хугацаа (цагаар).
+# apps.tickets.models.Ticket.save() дотор ticket үүсэх мөчид sla_due_at-г
+# энэ хүснэгтээс тооцоолж автоматаар бичнэ.
+SLA_HOURS_BY_PRIORITY = {
+    "critical": 4,     # 4 цаг
+    "high": 24,        # 1 өдөр
+    "medium": 72,      # 3 өдөр
+    "low": 168,        # 7 өдөр
+}

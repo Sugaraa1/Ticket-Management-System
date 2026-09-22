@@ -68,6 +68,30 @@ def can_user_assign(user):
     return bool(user_roles(user) & {ROLE_PM, ROLE_ADMIN})
 
 
+# Эдгээр статустай ticket "идэвхтэй ажил" гэж тооцогдоно (ачаалал тооцоход ашиглана)
+_ACTIVE_TICKET_STATUSES = ["assigned", "in_progress", "resolved", "qa_test", "reopened"]
+
+
+def team_members_with_workload(team):
+    """
+    Багийн гишүүдийг идэвхтэй (хаагдаагүй/татгалзаагүй) ticket-ийн тоотой нь хамт
+    буцаана — багатай ачаалалтай гишүүнд шинэ ticket-ийг илүү амархан даатгах боломж
+    олгоно. Хамгийн бага ачаалалтай хүн эхэнд гарна.
+    """
+    if team is None:
+        return []
+
+    from django.db.models import Count, Q
+
+    return team.members.annotate(
+        active_ticket_count=Count(
+            "assigned_tickets",
+            filter=Q(assigned_tickets__status__in=_ACTIVE_TICKET_STATUSES),
+            distinct=True,
+        )
+    ).order_by("active_ticket_count", "username")
+
+
 def assignable_developers():
     """'Developer' group-т багтсан хэрэглэгчид (assign хийхэд сонголт болгоно)."""
     from django.contrib.auth.models import User
