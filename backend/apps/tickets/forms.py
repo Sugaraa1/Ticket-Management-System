@@ -14,7 +14,6 @@ class TicketForm(forms.ModelForm):
             "project",
             "module",
             "priority",
-            "assigned_to",
         ]
         widgets = {
             "title": forms.TextInput(attrs={"class": "form-control"}),
@@ -24,7 +23,15 @@ class TicketForm(forms.ModelForm):
             "project": forms.Select(attrs={"class": "form-select"}),
             "module": forms.Select(attrs={"class": "form-select"}),
             "priority": forms.Select(attrs={"class": "form-select"}),
-            "assigned_to": forms.Select(attrs={"class": "form-select"}),
+        }
+        labels = {
+            "title": "Гарчиг",
+            "description": "Тайлбар",
+            "ticket_type": "Төрөл",
+            "category": "Ангилал",
+            "project": "Төсөл",
+            "module": "Модуль",
+            "priority": "Чухлын зэрэг",
         }
 
 

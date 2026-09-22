@@ -1,32 +1,31 @@
 {% extends "base.html" %}
 {% load ticket_extras %}
-{% block title %}Dashboard{% endblock %}
+{% block title %}Нүүр хуудас{% endblock %}
 {% block content %}
-<h2 class="mb-4">Dashboard</h2>
+<h2 class="mb-1">Нүүр хуудас</h2>
+<p class="text-muted mb-4">Нийт <strong>{{ total_tickets }}</strong> ticket бүртгэгдсэн байна.</p>
 
 <div class="row g-3 mb-4">
   {% for value, label in status_choices %}
   <div class="col-6 col-md-3">
-    <div class="card text-center h-100">
+    <div class="card status-stat-card h-100" style="--stat-color: var(--status-{{ value }}-fg);">
       <div class="card-body">
-        <h6 class="card-subtitle text-muted mb-2">{{ label }}</h6>
-        <h2 class="mb-0">{{ status_map|get_item:value }}</h2>
+        <span class="status-badge status-{{ value }} mb-2">{{ label }}</span>
+        <h2 class="mb-0 mt-2">{{ status_map|get_item:value }}</h2>
       </div>
     </div>
   </div>
   {% endfor %}
 </div>
 
-<p class="text-muted">Нийт ticket: <strong>{{ total_tickets }}</strong></p>
-
 <div class="row">
   <div class="col-md-6">
-    <h5>Надад оноогдсон ticket-үүд</h5>
+    <h5 class="mb-3">Надад оноогдсон ticket</h5>
     <ul class="list-group mb-4">
       {% for t in my_tickets %}
       <li class="list-group-item d-flex justify-content-between align-items-center">
-        <a href="{% url 'tickets:ticket_detail' t.id %}">#{{ t.id }} {{ t.title }}</a>
-        <span class="badge bg-secondary">{{ t.get_status_display }}</span>
+        <a href="{% url 'tickets:ticket_detail' t.id %}" class="text-decoration-none">#{{ t.id }} {{ t.title }}</a>
+        <span class="status-badge status-{{ t.status }}">{{ t.get_status_display }}</span>
       </li>
       {% empty %}
       <li class="list-group-item text-muted">Танд оноогдсон ticket алга байна.</li>
@@ -35,12 +34,12 @@
   </div>
 
   <div class="col-md-6">
-    <h5>Сүүлд үүссэн ticket-үүд</h5>
+    <h5 class="mb-3">Сүүлд үүссэн ticket</h5>
     <ul class="list-group mb-4">
       {% for t in recent_tickets %}
       <li class="list-group-item d-flex justify-content-between align-items-center">
-        <a href="{% url 'tickets:ticket_detail' t.id %}">#{{ t.id }} {{ t.title }}</a>
-        <span class="badge bg-secondary">{{ t.get_status_display }}</span>
+        <a href="{% url 'tickets:ticket_detail' t.id %}" class="text-decoration-none">#{{ t.id }} {{ t.title }}</a>
+        <span class="status-badge status-{{ t.status }}">{{ t.get_status_display }}</span>
       </li>
       {% empty %}
       <li class="list-group-item text-muted">Ticket алга байна.</li>

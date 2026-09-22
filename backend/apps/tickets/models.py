@@ -30,25 +30,25 @@ def can_transition(current_status: str, new_status: str) -> bool:
 
 class Ticket(TimeStampedModel):
     class TicketType(models.TextChoices):
-        BUG = "bug", "Bug"
-        TASK = "task", "Task"
-        CHANGE_REQUEST = "cr", "Change Request"
+        BUG = "bug", "Алдаа (Bug)"
+        TASK = "task", "Даалгавар (Task)"
+        CHANGE_REQUEST = "cr", "Өөрчлөлтийн хүсэлт (CR)"
 
     class Status(models.TextChoices):
-        NEW = "new", "New"
-        ASSIGNED = "assigned", "Assigned"
-        IN_PROGRESS = "in_progress", "In Progress"
-        RESOLVED = "resolved", "Resolved"
-        REJECTED = "rejected", "Rejected"
-        QA_TEST = "qa_test", "QA Test"
-        REOPENED = "reopened", "Reopened"
-        CLOSED = "closed", "Closed"
+        NEW = "new", "Шинэ"
+        ASSIGNED = "assigned", "Оноогдсон"
+        IN_PROGRESS = "in_progress", "Хийгдэж байгаа"
+        RESOLVED = "resolved", "Шийдэгдсэн"
+        REJECTED = "rejected", "Татгалзсан"
+        QA_TEST = "qa_test", "Чанарын шалгалтад"
+        REOPENED = "reopened", "Дахин нээгдсэн"
+        CLOSED = "closed", "Хаагдсан"
 
     class Priority(models.TextChoices):
-        LOW = "low", "Low"
-        MEDIUM = "medium", "Medium"
-        HIGH = "high", "High"
-        CRITICAL = "critical", "Critical"
+        LOW = "low", "Бага"
+        MEDIUM = "medium", "Дунд"
+        HIGH = "high", "Өндөр"
+        CRITICAL = "critical", "Яаралтай"
 
     title = models.CharField(max_length=255)
     description = models.TextField()

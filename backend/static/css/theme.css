@@ -1,0 +1,165 @@
+/* ==========================================================================
+   Ticket Management System — тодорхой, ойлгомжтой дизайны токенууд
+   ========================================================================== */
+
+:root {
+  --bg: #F5F7FA;
+  --surface: #FFFFFF;
+  --border: #E4E8F0;
+  --text: #1D2433;
+  --text-muted: #6B7280;
+
+  --primary: #3452D9;
+  --primary-hover: #2A41B3;
+  --primary-tint: #EEF1FD;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --shadow-card: 0 1px 3px rgba(16, 24, 40, 0.06);
+
+  /* Status тус бүрийн өнгө: тод текст + зөөлөн дэвсгэр */
+  --status-new-bg: #F1F2F4;     --status-new-fg: #667085;
+  --status-assigned-bg: #E8EFFE; --status-assigned-fg: #2E5AAC;
+  --status-in_progress-bg: #FEF3E2; --status-in_progress-fg: #B45F06;
+  --status-resolved-bg: #E3F6F3; --status-resolved-fg: #0F766E;
+  --status-qa_test-bg: #F3ECFE; --status-qa_test-fg: #6D28D9;
+  --status-closed-bg: #E7F8ED;  --status-closed-fg: #15803D;
+  --status-rejected-bg: #FCE9E9; --status-rejected-fg: #C0221F;
+  --status-reopened-bg: #FEF0E6; --status-reopened-fg: #C2450C;
+
+  /* Priority тус бүрийн өнгө (жижиг цэг индикатор) */
+  --priority-low: #9CA3AF;
+  --priority-medium: #3B82F6;
+  --priority-high: #F59E0B;
+  --priority-critical: #DC2626;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: .95rem;
+}
+
+h1, h2, h3, h4, h5, .navbar-brand {
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+/* Django default AuthenticationForm шиг class=form-control авдаггүй input-уудад зориулав */
+input[type="text"], input[type="password"], input[type="email"] {
+  display: block;
+  width: 100%;
+  padding: .5rem .75rem;
+  border: 1px solid #ced4da;
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Navbar ---------- */
+.tms-navbar {
+  background: #171A21 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, .06);
+}
+.tms-brand {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  color: #fff !important;
+}
+.tms-brand svg { flex-shrink: 0; }
+
+/* ---------- Cards ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+.card-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+
+/* ---------- Buttons ---------- */
+.btn-primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+.btn-primary:hover, .btn-primary:focus {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+.btn-outline-primary {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.btn-outline-primary:hover {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* ---------- Status badge (dashboard, list, detail-д адилхан ашиглана) ---------- */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .3rem .7rem;
+  border-radius: 999px;
+  font-size: .8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.status-badge::before {
+  content: "";
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+.status-new         { background: var(--status-new-bg);         color: var(--status-new-fg); }
+.status-assigned    { background: var(--status-assigned-bg);    color: var(--status-assigned-fg); }
+.status-in_progress { background: var(--status-in_progress-bg); color: var(--status-in_progress-fg); }
+.status-resolved    { background: var(--status-resolved-bg);    color: var(--status-resolved-fg); }
+.status-qa_test      { background: var(--status-qa_test-bg);     color: var(--status-qa_test-fg); }
+.status-closed      { background: var(--status-closed-bg);      color: var(--status-closed-fg); }
+.status-rejected    { background: var(--status-rejected-bg);    color: var(--status-rejected-fg); }
+.status-reopened    { background: var(--status-reopened-bg);    color: var(--status-reopened-fg); }
+
+/* Dashboard-ийн статус карт: зүүн талд өнгөт зураас */
+.status-stat-card {
+  border-left: 4px solid var(--stat-color, var(--border));
+}
+
+/* ---------- Priority dot ---------- */
+.priority-dot {
+  display: inline-block;
+  width: .55rem;
+  height: .55rem;
+  border-radius: 50%;
+  margin-right: .4rem;
+  vertical-align: middle;
+}
+.priority-low      { background: var(--priority-low); }
+.priority-medium   { background: var(--priority-medium); }
+.priority-high     { background: var(--priority-high); }
+.priority-critical { background: var(--priority-critical); }
+
+/* ---------- Ticket list rows ---------- */
+.ticket-row:hover {
+  background-color: var(--primary-tint);
+}
+.ticket-row td {
+  vertical-align: middle;
+}
+
+/* ---------- Empty state ---------- */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted);
+}
+.empty-state .empty-icon {
+  margin-bottom: .75rem;
+  opacity: .5;
+}

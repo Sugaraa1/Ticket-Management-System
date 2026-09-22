@@ -1,70 +1,83 @@
 {% extends "base.html" %}
-{% block title %}Tickets{% endblock %}
+{% block title %}Бүх ticket{% endblock %}
 {% block content %}
-<h2 class="mb-3">Tickets</h2>
+<h2 class="mb-3">Бүх ticket</h2>
 
 <form method="get" class="row g-2 mb-3 align-items-end">
   <div class="col-auto">
-    <label class="form-label mb-0 small">Хайх</label>
+    <label class="form-label mb-0 small text-muted">Хайх</label>
     <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Гарчгаар хайх">
   </div>
   <div class="col-auto">
-    <label class="form-label mb-0 small">Status</label>
+    <label class="form-label mb-0 small text-muted">Төлөв</label>
     <select name="status" class="form-select">
-      <option value="">-- Бүгд --</option>
+      <option value="">Бүгд</option>
       {% for value, label in status_choices %}
       <option value="{{ value }}" {% if value == current_status %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
   </div>
   <div class="col-auto">
-    <label class="form-label mb-0 small">Priority</label>
+    <label class="form-label mb-0 small text-muted">Чухлын зэрэг</label>
     <select name="priority" class="form-select">
-      <option value="">-- Бүгд --</option>
+      <option value="">Бүгд</option>
       {% for value, label in priority_choices %}
       <option value="{{ value }}" {% if value == current_priority %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
   </div>
   <div class="col-auto">
-    <label class="form-label mb-0 small">Category</label>
+    <label class="form-label mb-0 small text-muted">Ангилал</label>
     <select name="category" class="form-select">
-      <option value="">-- Бүгд --</option>
+      <option value="">Бүгд</option>
       {% for c in categories %}
       <option value="{{ c.id }}" {% if current_category == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
       {% endfor %}
     </select>
   </div>
   <div class="col-auto">
-    <button type="submit" class="btn btn-secondary">Шүүх</button>
+    <button type="submit" class="btn btn-primary">Шүүх</button>
     <a href="{% url 'tickets:ticket_list' %}" class="btn btn-link">Цэвэрлэх</a>
   </div>
 </form>
 
-<div class="table-responsive">
-  <table class="table table-hover bg-white align-middle">
-    <thead>
-      <tr>
-        <th>#</th><th>Гарчиг</th><th>Type</th><th>Category</th>
-        <th>Status</th><th>Priority</th><th>Хариуцагч</th><th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for t in tickets %}
-      <tr>
-        <td>{{ t.id }}</td>
-        <td>{{ t.title }}</td>
-        <td>{{ t.get_ticket_type_display }}</td>
-        <td>{{ t.category.name }}</td>
-        <td><span class="badge bg-secondary">{{ t.get_status_display }}</span></td>
-        <td>{{ t.get_priority_display }}</td>
-        <td>{{ t.assigned_to.username|default:"—" }}</td>
-        <td><a href="{% url 'tickets:ticket_detail' t.id %}" class="btn btn-sm btn-outline-primary">Харах</a></td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="8" class="text-center text-muted py-4">Ticket олдсонгүй.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>#</th><th>Гарчиг</th><th>Төрөл</th><th>Ангилал</th>
+          <th>Төлөв</th><th>Чухлын зэрэг</th><th>Хариуцагч</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tickets %}
+        <tr class="ticket-row">
+          <td class="text-muted">#{{ t.id }}</td>
+          <td><a href="{% url 'tickets:ticket_detail' t.id %}" class="text-decoration-none text-dark fw-medium">{{ t.title }}</a></td>
+          <td>{{ t.get_ticket_type_display }}</td>
+          <td>{{ t.category.name }}</td>
+          <td><span class="status-badge status-{{ t.status }}">{{ t.get_status_display }}</span></td>
+          <td><span class="priority-dot priority-{{ t.priority }}"></span>{{ t.get_priority_display }}</td>
+          <td>{{ t.assigned_to.username|default:"—" }}</td>
+          <td><a href="{% url 'tickets:ticket_detail' t.id %}" class="btn btn-sm btn-outline-primary">Харах</a></td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8">
+            <div class="empty-state">
+              <div class="empty-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 12h6m-6 4h3m-7 4h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+              </div>
+              Таны хайлтад тохирох ticket олдсонгүй.
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% endblock %}

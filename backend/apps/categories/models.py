@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 from apps.core.models import TimeStampedModel
 
@@ -50,7 +51,8 @@ class CategoryTeamAssignment(TimeStampedModel):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        limit_choices_to={"is_staff": True},
+        limit_choices_to=Q(groups__name="Project Manager") | Q(is_superuser=True),
+        help_text="'Project Manager' group-т багтсан (эсвэл superuser) хэрэглэгчид л сонголтод гарна.",
     )
     qa_tester = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -58,6 +60,8 @@ class CategoryTeamAssignment(TimeStampedModel):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        limit_choices_to=Q(groups__name="QA Tester") | Q(is_superuser=True),
+        help_text="'QA Tester' group-т багтсан (эсвэл superuser) хэрэглэгчид л сонголтод гарна.",
     )
 
     class Meta:

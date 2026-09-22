@@ -8,6 +8,7 @@ from apps.categories.models import Category
 
 from .forms import AttachmentForm, CommentForm, TicketForm
 from .models import ALLOWED_TRANSITIONS, Ticket
+from .permissions import assignable_developers, can_user_assign, can_user_transition
 
 
 @login_required
@@ -89,6 +90,22 @@ def ticket_detail(request, pk):
         if action == "transition":
             new_status = request.POST.get("new_status")
             comment_body = request.POST.get("comment", "").strip()
+
+            allowed, error_msg = can_user_transition(ticket, new_status, request.user)
+            if not allowed:
+                messages.error(request, error_msg)
+                return redirect("tickets:ticket_detail", pk=pk)
+
+            if new_status == Ticket.Status.ASSIGNED:
+                if not can_user_assign(request.user):
+                    messages.error(request, "Танд ticket оноох эрх байхгүй (PM/Admin эрхтэй байх шаардлагатай).")
+                    return redirect("tickets:ticket_detail", pk=pk)
+                assignee_id = request.POST.get("assigned_to")
+                if not assignee_id:
+                    messages.error(request, "Хариуцах хэрэглэгчийг сонгоно уу.")
+                    return redirect("tickets:ticket_detail", pk=pk)
+                ticket.assigned_to_id = assignee_id
+
             try:
                 ticket.transition_to(new_status, user=request.user, comment=comment_body)
                 messages.success(request, "Status амжилттай шилжлээ.")
@@ -116,12 +133,18 @@ def ticket_detail(request, pk):
                 messages.success(request, "Файл амжилттай хавсаргалаа.")
                 return redirect("tickets:ticket_detail", pk=pk)
 
-    next_statuses = ALLOWED_TRANSITIONS.get(ticket.status, [])
+    candidate_statuses = ALLOWED_TRANSITIONS.get(ticket.status, [])
+    permitted_statuses = [
+        s for s in candidate_statuses if can_user_transition(ticket, s, request.user)[0]
+    ]
+    next_statuses = [(value, Ticket.Status(value).label) for value in permitted_statuses]
+
     context = {
         "ticket": ticket,
         "comment_form": comment_form,
         "attachment_form": attachment_form,
-        "next_statuses": [(value, Ticket.Status(value).label) for value in next_statuses],
+        "next_statuses": next_statuses,
+        "developers": assignable_developers() if Ticket.Status.ASSIGNED in permitted_statuses else None,
         "history": ticket.history.select_related("changed_by"),
         "comments": ticket.comments.select_related("author"),
         "attachments": ticket.attachments.select_related("uploaded_by"),
