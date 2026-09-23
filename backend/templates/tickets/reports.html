@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Тайлан" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <h2 class="mb-0">{% trans "Тайлан" %}</h2>
+  <div class="btn-group report-period-nav" role="group" aria-label="{% trans "Хугацааны хүрээ" %}">
+    {% for period in periods %}
+    <a href="?days={{ period }}"
+       class="btn btn-sm {% if period == days %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+      {% blocktrans %}{{ period }} хоног{% endblocktrans %}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="stat-tile-label">{% trans "Шинээр үүссэн" %}</div>
+        <div class="stat-tile-value">{{ created_count }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="stat-tile-label">{% trans "Хаагдсан" %}</div>
+        <div class="stat-tile-value">{{ closed_count }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="stat-tile-label">{% trans "Одоо нээлттэй" %}</div>
+        <div class="stat-tile-value">{{ open_count }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="stat-tile-label">{% trans "Дундаж шийдвэрлэх хугацаа" %}</div>
+        <div class="stat-tile-value">
+          {% if avg_resolution_hours != None %}
+            {% blocktrans %}{{ avg_resolution_hours }}ц{% endblocktrans %}
+          {% else %}—{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">{% trans "Эхний хариу — SLA биелэлт" %}</div>
+      <div class="card-body">
+        {% with s=first_response %}
+        <div class="d-flex justify-content-between align-items-baseline mb-2">
+          <span class="report-meter-percent level-{{ s.level }} fs-4 fw-bold">
+            {% if s.percent != None %}{{ s.percent }}%{% else %}{% trans "Мэдээлэл алга" %}{% endif %}
+          </span>
+          <span class="text-muted small">
+            {% blocktrans with met=s.met breached=s.breached %}{{ met }} биелсэн · {{ breached }} зөрчигдсөн{% endblocktrans %}
+          </span>
+        </div>
+        <div class="report-meter-track">
+          <div class="report-meter-fill level-{{ s.level }}" style="width: {{ s.percent|default:0 }}%;"></div>
+        </div>
+        {% if s.pending %}
+        <div class="text-muted small mt-2">{% blocktrans count counter=s.pending %}{{ counter }} ticket хараахан хугацаандаа{% plural %}{{ counter }} ticket хараахан хугацаандаа{% endblocktrans %}</div>
+        {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">{% trans "Шийдвэрлэлт — SLA биелэлт" %}</div>
+      <div class="card-body">
+        {% with s=resolution %}
+        <div class="d-flex justify-content-between align-items-baseline mb-2">
+          <span class="report-meter-percent level-{{ s.level }} fs-4 fw-bold">
+            {% if s.percent != None %}{{ s.percent }}%{% else %}{% trans "Мэдээлэл алга" %}{% endif %}
+          </span>
+          <span class="text-muted small">
+            {% blocktrans with met=s.met breached=s.breached %}{{ met }} биелсэн · {{ breached }} зөрчигдсөн{% endblocktrans %}
+          </span>
+        </div>
+        <div class="report-meter-track">
+          <div class="report-meter-fill level-{{ s.level }}" style="width: {{ s.percent|default:0 }}%;"></div>
+        </div>
+        {% if s.pending %}
+        <div class="text-muted small mt-2">{% blocktrans count counter=s.pending %}{{ counter }} ticket хараахан хугацаандаа{% plural %}{{ counter }} ticket хараахан хугацаандаа{% endblocktrans %}</div>
+        {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>{% trans "Ticket-ийн урсгал" %}</span>
+    <span class="d-flex gap-3 small">
+      {% for s in chart.series %}
+      <span><span class="report-legend-dot" style="background: var(--series-{{ s.key }});"></span>{{ s.label }} ({{ s.total }})</span>
+      {% endfor %}
+    </span>
+  </div>
+  <div class="card-body">
+    {% if chart.has_data %}
+    <svg class="report-chart w-100" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img"
+         aria-label="{% trans "Өдөр тутам үүссэн болон хаагдсан ticket-ийн тоо" %}">
+      {% for tick in chart.y_ticks %}
+      <line class="report-chart-gridline" x1="{{ chart.pad_left }}" x2="{{ chart.plot_right }}" y1="{{ tick.y }}" y2="{{ tick.y }}" />
+      <text x="{{ chart.pad_left }}" dx="-8" y="{{ tick.y }}" dy="4" text-anchor="end" font-size="11">{{ tick.value }}</text>
+      {% endfor %}
+      {% for tick in chart.x_ticks %}
+      <text x="{{ tick.x }}" y="{{ chart.plot_bottom }}" dy="16" text-anchor="middle" font-size="11">{{ tick.label }}</text>
+      {% endfor %}
+      {% for s in chart.series %}
+      <polyline points="{{ s.polyline }}" fill="none" stroke="var(--series-{{ s.key }})" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      {% for p in s.points %}
+      <g class="report-chart-point">
+        <circle cx="{{ p.x }}" cy="{{ p.y }}" r="8" fill="transparent" />
+        <circle cx="{{ p.x }}" cy="{{ p.y }}" r="4" fill="var(--series-{{ s.key }})" stroke="var(--surface)" stroke-width="2" />
+        <title>{{ s.label }} · {{ p.date_label }}: {{ p.value }}</title>
+      </g>
+      {% endfor %}
+      {% if s.last %}
+      <text x="{{ s.last.x }}" dx="8" y="{{ s.last.y }}" dy="4" font-size="12" font-weight="600" fill="var(--text)">{{ s.last.value }}</text>
+      {% endif %}
+      {% endfor %}
+    </svg>
+    <details class="mt-2">
+      <summary class="small text-muted">{% trans "Хүснэгтээр харах" %}</summary>
+      <div class="table-responsive mt-2">
+        <table class="table table-sm">
+          <thead><tr><th>{% trans "Огноо" %}</th><th>{% trans "Үүссэн" %}</th><th>{% trans "Хаагдсан" %}</th></tr></thead>
+          <tbody>
+            {% for row in trend %}
+            <tr><td>{{ row.date }}</td><td>{{ row.created }}</td><td>{{ row.closed }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+    {% else %}
+    <p class="text-muted mb-0">{% trans "Энэ хугацаанд ticket алга байна." %}</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">{% trans "Чухлын зэргээр" %}</div>
+      <div class="card-body">
+        {% for row in by_priority %}
+        <div class="report-bar-row mb-2">
+          <div class="d-flex justify-content-between small mb-1">
+            <span><span class="priority-dot priority-{{ row.key }}"></span>{{ row.label }}</span>
+            <span class="text-muted">{{ row.count }} ({{ row.percent }}%)</span>
+          </div>
+          <div class="report-bar-track">
+            <div class="report-bar-fill" style="width: {{ row.percent }}%; background: var(--priority-{{ row.key }});"></div>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-muted mb-0">{% trans "Энэ хугацаанд ticket алга байна." %}</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">{% trans "Ангиллаар" %}</div>
+      <div class="card-body">
+        {% for row in by_category %}
+        <div class="report-bar-row mb-2">
+          <div class="d-flex justify-content-between small mb-1">
+            <span>{{ row.label }}</span>
+            <span class="text-muted">{{ row.count }} ({{ row.percent }}%)</span>
+          </div>
+          <div class="report-bar-track">
+            <div class="report-bar-fill" style="width: {{ row.percent }}%;"></div>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-muted mb-0">{% trans "Энэ хугацаанд ticket алга байна." %}</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">{% trans "Ажилтны гүйцэтгэл" %}</div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>{% trans "Хэрэглэгч" %}</th>
+          <th>{% trans "Оноогдсон" %}</th>
+          <th>{% trans "Идэвхтэй" %}</th>
+          <th>{% trans "Хаасан" %}</th>
+          <th>{% trans "SLA зөрчсөн" %}</th>
+          <th>{% trans "Дундаж шийдвэрлэх хугацаа" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in agents %}
+        <tr>
+          <td class="fw-medium">{{ row.user.username }}</td>
+          <td>{{ row.assigned }}</td>
+          <td>{{ row.active }}</td>
+          <td>{{ row.closed }}</td>
+          <td>
+            {% if row.breached %}
+            <span class="report-meter-percent level-critical fw-semibold">{{ row.breached }}</span>
+            {% else %}0{% endif %}
+          </td>
+          <td>{% if row.avg_resolution_hours != None %}{% blocktrans with h=row.avg_resolution_hours %}{{ h }}ц{% endblocktrans %}{% else %}—{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-4">{% trans "Энэ хугацаанд ticket оноогдоогүй байна." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

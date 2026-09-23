@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from apps.categories.models import Category
 from apps.core.models import TimeStampedModel
@@ -33,25 +34,25 @@ def can_transition(current_status: str, new_status: str) -> bool:
 
 class Ticket(TimeStampedModel):
     class TicketType(models.TextChoices):
-        BUG = "bug", "Алдаа (Bug)"
-        TASK = "task", "Даалгавар (Task)"
-        CHANGE_REQUEST = "cr", "Өөрчлөлтийн хүсэлт (CR)"
+        BUG = "bug", _("Алдаа (Bug)")
+        TASK = "task", _("Даалгавар (Task)")
+        CHANGE_REQUEST = "cr", _("Өөрчлөлтийн хүсэлт (CR)")
 
     class Status(models.TextChoices):
-        NEW = "new", "Шинэ"
-        ASSIGNED = "assigned", "Оноогдсон"
-        IN_PROGRESS = "in_progress", "Хийгдэж байгаа"
-        RESOLVED = "resolved", "Шийдэгдсэн"
-        REJECTED = "rejected", "Татгалзсан"
-        QA_TEST = "qa_test", "Чанарын шалгалтад"
-        REOPENED = "reopened", "Дахин нээгдсэн"
-        CLOSED = "closed", "Хаагдсан"
+        NEW = "new", _("Шинэ")
+        ASSIGNED = "assigned", _("Оноогдсон")
+        IN_PROGRESS = "in_progress", _("Хийгдэж байгаа")
+        RESOLVED = "resolved", _("Шийдэгдсэн")
+        REJECTED = "rejected", _("Татгалзсан")
+        QA_TEST = "qa_test", _("Чанарын шалгалтад")
+        REOPENED = "reopened", _("Дахин нээгдсэн")
+        CLOSED = "closed", _("Хаагдсан")
 
     class Priority(models.TextChoices):
-        LOW = "low", "Бага"
-        MEDIUM = "medium", "Дунд"
-        HIGH = "high", "Өндөр"
-        CRITICAL = "critical", "Яаралтай"
+        LOW = "low", _("Бага")
+        MEDIUM = "medium", _("Дунд")
+        HIGH = "high", _("Өндөр")
+        CRITICAL = "critical", _("Яаралтай")
 
     title = models.CharField(max_length=255)
     description = models.TextField()
@@ -68,7 +69,7 @@ class Ticket(TimeStampedModel):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        help_text="Category-ийн CategoryTeamAssignment-аас автоматаар тохируулагдана.",
+        help_text=_("Category-ийн CategoryTeamAssignment-аас автоматаар тохируулагдана."),
     )
 
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
@@ -87,9 +88,60 @@ class Ticket(TimeStampedModel):
     sla_due_at = models.DateTimeField(
         null=True,
         blank=True,
-        help_text=(
+        help_text=_(
             "Priority-с хамаарсан хариу үйлдэл хийх дээд хугацаа "
             "(settings.SLA_HOURS_BY_PRIORITY-ээс ticket үүсэх мөчид автоматаар тооцоологдоно)."
+        ),
+    )
+    sla_warning_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_(
+            "SLA хугацаа дуусахад ойртсон тухай анхааруулга илгээсэн огноо "
+            "(check_sla_deadlines командаар бичигдэнэ, давхар мэдэгдэл илгээхээс сэргийлнэ)."
+        ),
+    )
+    sla_breach_notified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_(
+            "SLA хугацаа хэтэрсэн тухай escalation мэдэгдэл илгээсэн огноо "
+            "(check_sla_deadlines командаар бичигдэнэ, давхар мэдэгдэл илгээхээс сэргийлнэ)."
+        ),
+    )
+    first_response_due_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_(
+            "'Time to First Response' SLA — эхний хариу өгөх дээд хугацаа "
+            "(settings.SLA_FIRST_RESPONSE_HOURS_BY_PRIORITY-ээс автоматаар тооцоологдоно)."
+        ),
+    )
+    first_responded_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_(
+            "Ticket-д анх удаа хариу өгсөн (NEW-аас шилжсэн эсвэл мэдээлэгчээс бусад "
+            "хүн comment бичсэн) огноо."
+        ),
+    )
+    first_response_warning_sent_at = models.DateTimeField(null=True, blank=True)
+    first_response_breach_notified_at = models.DateTimeField(null=True, blank=True)
+    last_activity_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_(
+            "Ticket дээр сүүлд ямар нэгэн идэвх (status шилжилт, comment, "
+            "attachment) гарсан огноо — 'идэвхгүй ticket' automation-д ашиглагдана."
+        ),
+    )
+    stale_reminder_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_(
+            "Идэвхгүй байдлын тухай сүүлд сануулга илгээсэн огноо "
+            "(check_stale_tickets командаар бичигдэнэ). Шинэ идэвх гарахад "
+            "цэвэрлэгдэж, дараагийн удаа дахин сануулах боломжтой болно."
         ),
     )
 
@@ -112,10 +164,75 @@ class Ticket(TimeStampedModel):
             return False
         return timezone.now() > self.sla_due_at
 
+    @property
+    def sla_warning_at(self):
+        """
+        Resolution SLA "анхааруулга" мэдэгдэл илгээх ёстой цаг хугацаа
+        (settings.SLA_WARNING_THRESHOLD хувиар тооцоологдоно, жишээ нь эцсийн
+        хугацааны 80%-д хүрэхэд). sla_due_at байхгүй бол None буцаана.
+        """
+        return self._warning_at(self.sla_due_at)
+
+    @property
+    def is_first_response_overdue(self):
+        """Time to First Response SLA хэтэрсэн эсэх (аль хэдийн хариу өгсөн бол False)."""
+        if self.first_responded_at is not None:
+            return False
+        if self.status in self._SLA_EXEMPT_STATUSES:
+            return False
+        if not self.first_response_due_at:
+            return False
+        return timezone.now() > self.first_response_due_at
+
+    @property
+    def first_response_warning_at(self):
+        """Time to First Response SLA-ийн "анхааруулга" мэдэгдэл илгээх цаг хугацаа."""
+        return self._warning_at(self.first_response_due_at)
+
+    def _warning_at(self, due_at):
+        if not due_at:
+            return None
+        total_duration = due_at - self.created_at
+        return self.created_at + total_duration * settings.SLA_WARNING_THRESHOLD
+
     def _calculate_sla_due_at(self):
-        """Priority-с хамаарсан SLA хугацааг тооцоолж буцаана (settings.SLA_HOURS_BY_PRIORITY)."""
+        """Priority-с хамаарсан Resolution SLA хугацааг тооцоолж буцаана."""
         hours = settings.SLA_HOURS_BY_PRIORITY.get(self.priority, 72)
         return timezone.now() + timedelta(hours=hours)
+
+    def _calculate_first_response_due_at(self):
+        """Priority-с хамаарсан First Response SLA хугацааг тооцоолж буцаана."""
+        hours = settings.SLA_FIRST_RESPONSE_HOURS_BY_PRIORITY.get(self.priority, 24)
+        return timezone.now() + timedelta(hours=hours)
+
+    def mark_first_response(self, when=None):
+        """
+        Ticket-д анх удаа хариу өгснийг тэмдэглэнэ (Time to First Response SLA-г зогсооно).
+        Аль хэдийн тэмдэглэгдсэн бол дахин бичихгүй.
+        """
+        if self.first_responded_at is not None or self.pk is None:
+            return
+        when = when or timezone.now()
+        updated = Ticket.objects.filter(pk=self.pk, first_responded_at__isnull=True).update(
+            first_responded_at=when
+        )
+        if updated:
+            self.first_responded_at = when
+
+    def mark_activity(self, when=None):
+        """
+        Ticket дээр идэвх (comment, attachment гэх мэт) гарсныг тэмдэглэж,
+        'идэвхгүй ticket' automation-ий хугацааг шинэчилнэ (stale reminder
+        clock-ыг тэглэж, дараагийн удаа дахин сануулах боломжтой болгоно).
+        """
+        if self.pk is None:
+            return
+        when = when or timezone.now()
+        Ticket.objects.filter(pk=self.pk).update(
+            last_activity_at=when, stale_reminder_sent_at=None
+        )
+        self.last_activity_at = when
+        self.stale_reminder_sent_at = None
 
     def _auto_route_team(self):
         """Category-д тохирсон Team-ийг олж, team талбарт байхгүй бол автоматаар тавина."""
@@ -135,13 +252,28 @@ class Ticket(TimeStampedModel):
             if original_status and original_status != self.status:
                 if not can_transition(original_status, self.status):
                     raise ValidationError(
-                        f"'{original_status}' -> '{self.status}' төлөв шилжилт "
-                        f"зөвшөөрөгдөөгүй байна (docs/workflow.md-г үзнэ үү)."
+                        _(
+                            "'%(from_status)s' -> '%(to_status)s' төлөв шилжилт "
+                            "зөвшөөрөгдөөгүй байна (docs/workflow.md-г үзнэ үү)."
+                        )
+                        % {"from_status": original_status, "to_status": self.status}
                     )
+                if original_status == self.Status.NEW and self.first_responded_at is None:
+                    # NEW-аас гарсан мөч бол баг анхны хариугаа өгсөн гэж үзнэ
+                    # (Time to First Response SLA зогсоно).
+                    self.first_responded_at = timezone.now()
+                # Status шилжилт бол идэвх гэж тооцоод "идэвхгүй ticket" сануулгын
+                # цагийг шинэчилнэ (дараагийн сануулга дахин N цагийн дараа очно).
+                self.last_activity_at = timezone.now()
+                self.stale_reminder_sent_at = None
 
         self._auto_route_team()
         if is_new and self.sla_due_at is None:
             self.sla_due_at = self._calculate_sla_due_at()
+        if is_new and self.first_response_due_at is None:
+            self.first_response_due_at = self._calculate_first_response_due_at()
+        if is_new and self.last_activity_at is None:
+            self.last_activity_at = timezone.now()
         super().save(*args, **kwargs)
 
         changed_by = getattr(self, "_changed_by", None)
@@ -164,7 +296,8 @@ class Ticket(TimeStampedModel):
         """
         if not can_transition(self.status, new_status):
             raise ValidationError(
-                f"'{self.status}' -> '{new_status}' төлөв шилжилт зөвшөөрөгдөөгүй."
+                _("'%(from_status)s' -> '%(to_status)s' төлөв шилжилт зөвшөөрөгдөөгүй.")
+                % {"from_status": self.status, "to_status": new_status}
             )
         self.status = new_status
         self._changed_by = user
@@ -183,7 +316,10 @@ class Comment(TimeStampedModel):
     body = models.TextField(blank=True)
     is_internal = models.BooleanField(
         default=False,
-        help_text="Тэмдэглэгдсэн бол зөвхөн дотоод багийн гишүүд харна (Zendesk/Freshdesk-ийн 'Internal note' шиг).",
+        help_text=_(
+            "Тэмдэглэгдсэн бол зөвхөн дотоод багийн гишүүд харна "
+            "(Zendesk/Freshdesk-ийн 'Internal note' шиг)."
+        ),
     )
 
     class Meta:

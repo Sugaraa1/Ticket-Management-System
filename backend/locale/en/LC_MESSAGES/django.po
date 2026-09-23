@@ -1,0 +1,815 @@
+# English translations for the Ticket Management System.
+# This file is distributed under the same license as the project.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Ticket Management System\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-23 13:13+0800\n"
+"PO-Revision-Date: 2026-09-23 12:13+0800\n"
+"Last-Translator: \n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: apps/categories/forms.py:16 apps/projects/forms.py:16
+#: templates/categories/category_list.html:18
+#: templates/projects/project_list.html:14
+msgid "Нэр"
+msgstr "Name"
+
+#: apps/categories/forms.py:16 apps/projects/forms.py:16
+#: apps/tickets/forms.py:30
+msgid "Тайлбар"
+msgstr "Description"
+
+#: apps/categories/forms.py:29
+msgid "Багийн нэр"
+msgstr "Team name"
+
+#: apps/categories/forms.py:40
+msgid "Багийн гишүүд (Developer group-ийн хэрэглэгчид)"
+msgstr "Team members (users in the Developer group)"
+
+#: apps/categories/forms.py:52
+msgid "Баг (routing энд очно)"
+msgstr "Team (tickets route here)"
+
+#: apps/categories/models.py:19
+msgid ""
+"Энэ багт харьяалагдах ажилчид. Ticket assign хийхэд зөвхөн эдгээр "
+"хэрэглэгчид сонголтод гарна."
+msgstr ""
+"Members belonging to this team. Only these users appear as options when "
+"assigning a ticket."
+
+#: apps/categories/models.py:30
+msgid ""
+"'Project Manager' group-т багтсан (эсвэл superuser) хэрэглэгчид л сонголтод "
+"гарна."
+msgstr ""
+"Only users in the 'Project Manager' group (or superusers) appear as options."
+
+#: apps/categories/models.py:39
+msgid ""
+"'QA Tester' group-т багтсан (эсвэл superuser) хэрэглэгчид л сонголтод гарна."
+msgstr "Only users in the 'QA Tester' group (or superusers) appear as options."
+
+#: apps/categories/views.py:29
+#, python-format
+msgid "'%(name)s' ангилал үүслээ. Одоо баг/хариуцагчийг нь тохируулна уу."
+msgstr "Category '%(name)s' was created. Now set up its team and owners."
+
+#: apps/categories/views.py:36 templates/categories/category_list.html:9
+msgid "Шинэ ангилал"
+msgstr "New category"
+
+#: apps/categories/views.py:63
+#, python-format
+msgid "'%(name)s' ангилал шинэчлэгдлээ."
+msgstr "Category '%(name)s' was updated."
+
+#: apps/categories/views.py:76 apps/projects/views.py:56
+#, python-format
+msgid "'%(name)s' засах"
+msgstr "Edit '%(name)s'"
+
+#: apps/categories/views.py:88
+msgid "Баг амжилттай үүслээ."
+msgstr "Team created successfully."
+
+#: apps/categories/views.py:106
+#, python-format
+msgid "'%(name)s' багийн мэдээлэл шинэчлэгдлээ."
+msgstr "Team '%(name)s' info was updated."
+
+#: apps/categories/views.py:115
+#, python-format
+msgid "'%(name)s' багийн гишүүд шинэчлэгдлээ."
+msgstr "Team '%(name)s' members were updated."
+
+#: apps/core/decorators.py:23
+msgid "Танд энэ хуудсанд хандах эрх байхгүй."
+msgstr "You do not have permission to access this page."
+
+#: apps/projects/forms.py:16 templates/projects/project_list.html:14
+#: templates/projects/project_list.html:23
+msgid "Идэвхтэй"
+msgstr "Active"
+
+#: apps/projects/forms.py:24
+msgid "Модулийн нэр"
+msgstr "Module name"
+
+#: apps/projects/views.py:26
+#, python-format
+msgid "'%(name)s' төсөл үүслээ. Одоо module нэмж болно."
+msgstr "Project '%(name)s' was created. You can now add modules."
+
+#: apps/projects/views.py:32 templates/projects/project_list.html:7
+msgid "Шинэ төсөл"
+msgstr "New project"
+
+#: apps/projects/views.py:45
+#, python-format
+msgid "'%(name)s' төсөл шинэчлэгдлээ."
+msgstr "Project '%(name)s' was updated."
+
+#: apps/projects/views.py:74
+#, python-format
+msgid "'%(name)s' module нэмэгдлээ."
+msgstr "Module '%(name)s' was added."
+
+#: apps/tickets/admin.py:50
+msgid "SLA"
+msgstr "SLA"
+
+#: apps/tickets/admin.py:66 apps/tickets/forms.py:65
+#: templates/tickets/ticket_detail.html:60
+msgid "Сэтгэгдэл"
+msgstr "Comment"
+
+#: apps/tickets/forms.py:29 templates/tickets/ticket_list.html:50
+msgid "Гарчиг"
+msgstr "Title"
+
+#: apps/tickets/forms.py:31 templates/tickets/ticket_detail.html:33
+#: templates/tickets/ticket_list.html:50
+msgid "Төрөл"
+msgstr "Type"
+
+#: apps/tickets/forms.py:32 templates/base.html:37
+#: templates/categories/category_list.html:3
+#: templates/tickets/ticket_detail.html:34
+#: templates/tickets/ticket_list.html:31 templates/tickets/ticket_list.html:50
+msgid "Ангилал"
+msgstr "Category"
+
+#: apps/tickets/forms.py:33 templates/base.html:39
+msgid "Төсөл"
+msgstr "Project"
+
+#: apps/tickets/forms.py:34
+msgid "Модуль"
+msgstr "Module"
+
+#: apps/tickets/forms.py:35 templates/tickets/ticket_detail.html:38
+#: templates/tickets/ticket_list.html:22 templates/tickets/ticket_list.html:51
+msgid "Чухлын зэрэг"
+msgstr "Priority"
+
+#: apps/tickets/forms.py:45
+msgid "Сонгосон модуль сонгосон төсөлд харьяалагдахгүй байна."
+msgstr "The selected module does not belong to the selected project."
+
+#: apps/tickets/forms.py:59
+msgid "Сэтгэгдэл бичих (сонголтоор)..."
+msgstr "Write a comment (optional)..."
+
+#: apps/tickets/forms.py:66
+msgid "Зөвхөн дотоод багт харагдах (Internal note)"
+msgstr "Visible to internal team only (Internal note)"
+
+#: apps/tickets/models.py:37
+msgid "Алдаа (Bug)"
+msgstr "Bug"
+
+#: apps/tickets/models.py:38
+msgid "Даалгавар (Task)"
+msgstr "Task"
+
+#: apps/tickets/models.py:39
+msgid "Өөрчлөлтийн хүсэлт (CR)"
+msgstr "Change Request (CR)"
+
+#: apps/tickets/models.py:42
+msgid "Шинэ"
+msgstr "New"
+
+#: apps/tickets/models.py:43
+msgid "Оноогдсон"
+msgstr "Assigned"
+
+#: apps/tickets/models.py:44
+msgid "Хийгдэж байгаа"
+msgstr "In Progress"
+
+#: apps/tickets/models.py:45
+msgid "Шийдэгдсэн"
+msgstr "Resolved"
+
+#: apps/tickets/models.py:46
+msgid "Татгалзсан"
+msgstr "Rejected"
+
+#: apps/tickets/models.py:47
+msgid "Чанарын шалгалтад"
+msgstr "In QA Testing"
+
+#: apps/tickets/models.py:48
+msgid "Дахин нээгдсэн"
+msgstr "Reopened"
+
+#: apps/tickets/models.py:49
+msgid "Хаагдсан"
+msgstr "Closed"
+
+#: apps/tickets/models.py:52
+msgid "Бага"
+msgstr "Low"
+
+#: apps/tickets/models.py:53
+msgid "Дунд"
+msgstr "Medium"
+
+#: apps/tickets/models.py:54
+msgid "Өндөр"
+msgstr "High"
+
+#: apps/tickets/models.py:55
+msgid "Яаралтай"
+msgstr "Critical"
+
+#: apps/tickets/models.py:72
+msgid "Category-ийн CategoryTeamAssignment-аас автоматаар тохируулагдана."
+msgstr "Set automatically from the category's CategoryTeamAssignment."
+
+#: apps/tickets/models.py:92
+msgid ""
+"Priority-с хамаарсан хариу үйлдэл хийх дээд хугацаа (settings."
+"SLA_HOURS_BY_PRIORITY-ээс ticket үүсэх мөчид автоматаар тооцоологдоно)."
+msgstr ""
+"Maximum response time based on priority (calculated automatically from "
+"settings.SLA_HOURS_BY_PRIORITY when the ticket is created)."
+
+#: apps/tickets/models.py:100
+msgid ""
+"SLA хугацаа дуусахад ойртсон тухай анхааруулга илгээсэн огноо "
+"(check_sla_deadlines командаар бичигдэнэ, давхар мэдэгдэл илгээхээс "
+"сэргийлнэ)."
+msgstr ""
+"Date the SLA-approaching warning was sent (written by the "
+"check_sla_deadlines command; prevents duplicate notifications)."
+
+#: apps/tickets/models.py:108
+msgid ""
+"SLA хугацаа хэтэрсэн тухай escalation мэдэгдэл илгээсэн огноо "
+"(check_sla_deadlines командаар бичигдэнэ, давхар мэдэгдэл илгээхээс "
+"сэргийлнэ)."
+msgstr ""
+"Date the SLA breach escalation was sent (written by the check_sla_deadlines "
+"command; prevents duplicate notifications)."
+
+#: apps/tickets/models.py:116
+msgid ""
+"'Time to First Response' SLA — эхний хариу өгөх дээд хугацаа (settings."
+"SLA_FIRST_RESPONSE_HOURS_BY_PRIORITY-ээс автоматаар тооцоологдоно)."
+msgstr ""
+"'Time to First Response' SLA — maximum time to send a first reply "
+"(calculated automatically from settings."
+"SLA_FIRST_RESPONSE_HOURS_BY_PRIORITY)."
+
+#: apps/tickets/models.py:124
+msgid ""
+"Ticket-д анх удаа хариу өгсөн (NEW-аас шилжсэн эсвэл мэдээлэгчээс бусад хүн "
+"comment бичсэн) огноо."
+msgstr ""
+"Date the ticket first received a response (transitioned away from NEW, or "
+"someone other than the reporter added a comment)."
+
+#: apps/tickets/models.py:134
+msgid ""
+"Ticket дээр сүүлд ямар нэгэн идэвх (status шилжилт, comment, attachment) "
+"гарсан огноо — 'идэвхгүй ticket' automation-д ашиглагдана."
+msgstr ""
+"Date of the ticket's most recent activity (status transition, comment, "
+"attachment) — used by the 'stale ticket' automation."
+
+#: apps/tickets/models.py:142
+msgid ""
+"Идэвхгүй байдлын тухай сүүлд сануулга илгээсэн огноо (check_stale_tickets "
+"командаар бичигдэнэ). Шинэ идэвх гарахад цэвэрлэгдэж, дараагийн удаа дахин "
+"сануулах боломжтой болно."
+msgstr ""
+"Date the last stale-ticket reminder was sent (written by the "
+"check_stale_tickets command). Cleared when new activity occurs, allowing "
+"another reminder next time."
+
+#: apps/tickets/models.py:256
+#, python-format
+msgid ""
+"'%(from_status)s' -> '%(to_status)s' төлөв шилжилт зөвшөөрөгдөөгүй байна "
+"(docs/workflow.md-г үзнэ үү)."
+msgstr ""
+"Transition '%(from_status)s' -> '%(to_status)s' is not allowed (see docs/"
+"workflow.md)."
+
+#: apps/tickets/models.py:299
+#, python-format
+msgid "'%(from_status)s' -> '%(to_status)s' төлөв шилжилт зөвшөөрөгдөөгүй."
+msgstr "Transition '%(from_status)s' -> '%(to_status)s' is not allowed."
+
+#: apps/tickets/models.py:320
+msgid ""
+"Тэмдэглэгдсэн бол зөвхөн дотоод багийн гишүүд харна (Zendesk/Freshdesk-ийн "
+"'Internal note' шиг)."
+msgstr ""
+"When checked, only internal team members can see this (like Zendesk/"
+"Freshdesk's 'Internal note')."
+
+#: apps/tickets/permissions.py:54
+msgid "Энэ шилжилт зөвшөөрөгдөөгүй."
+msgstr "This transition is not allowed."
+
+#: apps/tickets/permissions.py:58
+msgid "Танд энэ шилжилтийг хийх эрх байхгүй."
+msgstr "You do not have permission to make this transition."
+
+#: apps/tickets/permissions.py:62
+msgid "Зөвхөн танд оноогдсон ticket дээр энэ үйлдлийг хийж болно."
+msgstr "You can only do this on a ticket assigned to you."
+
+#: apps/tickets/views.py:109
+#, python-format
+msgid "Ticket #%(pk)s амжилттай үүслээ."
+msgstr "Ticket #%(pk)s was created successfully."
+
+#: apps/tickets/views.py:147
+msgid "Танд ticket оноох эрх байхгүй (PM/Admin эрхтэй байх шаардлагатай)."
+msgstr "You do not have permission to assign tickets (requires PM/Admin role)."
+
+#: apps/tickets/views.py:152
+msgid "Хариуцах хэрэглэгчийг сонгоно уу."
+msgstr "Please select an assignee."
+
+#: apps/tickets/views.py:161
+msgid ""
+"Сонгосон хэрэглэгч энэ ticket-ийн багийн гишүүн биш тул assign хийх "
+"боломжгүй."
+msgstr ""
+"The selected user is not a member of this ticket's team, so they cannot be "
+"assigned."
+
+#: apps/tickets/views.py:169
+msgid "Status амжилттай шилжлээ."
+msgstr "Status changed successfully."
+
+#: apps/tickets/views.py:189
+msgid "Сэтгэгдэл нэмэгдлээ."
+msgstr "Comment added."
+
+#: apps/tickets/views.py:200
+msgid "Файл амжилттай хавсаргалаа."
+msgstr "File attached successfully."
+
+#: apps/tickets/views.py:214
+msgid ""
+"Энэ ticket-ийн Category-д Баг (Team) тохируулаагүй тул assign хийх "
+"боломжгүй. Эхлээд 'Удирдлага → Ангилал' хэсэгт баг тохируулна уу."
+msgstr ""
+"This ticket's category has no team configured, so it cannot be assigned. "
+"First set up a team under 'Management → Category'."
+
+#: apps/tickets/views.py:221
+#, python-format
+msgid ""
+"'%(team)s' багт одоогоор гишүүн алга байна. Эхлээд 'Удирдлага → Баг' хэсэгт "
+"ажилчид нэмнэ үү."
+msgstr ""
+"Team '%(team)s' currently has no members. First add members under "
+"'Management → Team'."
+
+#: templates/base.html:7
+msgid "Ticket Management System"
+msgstr "Ticket Management System"
+
+#: templates/base.html:30
+msgid "Нүүр"
+msgstr "Home"
+
+#: templates/base.html:31 templates/tickets/ticket_list.html:3
+#: templates/tickets/ticket_list.html:5
+msgid "Бүх ticket"
+msgstr "All tickets"
+
+#: templates/base.html:32
+msgid "Шинэ ticket"
+msgstr "New ticket"
+
+#: templates/base.html:35
+msgid "Удирдлага"
+msgstr "Management"
+
+#: templates/base.html:38 templates/categories/category_list.html:18
+#: templates/tickets/ticket_detail.html:37
+msgid "Баг"
+msgstr "Team"
+
+#: templates/base.html:44
+msgid "SLA шалгалт ажиллуулах"
+msgstr "Run SLA check"
+
+#: templates/base.html:50
+msgid "Идэвхгүй ticket шалгах"
+msgstr "Check stale tickets"
+
+#: templates/base.html:71
+msgid "Гарах"
+msgstr "Log out"
+
+#: templates/categories/category_form.html:10
+msgid "Ангиллын мэдээлэл"
+msgstr "Category info"
+
+#: templates/categories/category_form.html:24
+msgid "Баг routing"
+msgstr "Team routing"
+
+#: templates/categories/category_form.html:25
+msgid "Ticket энэ ангиллаар үүсэхэд доор сонгосон Баг руу автоматаар очно."
+msgstr ""
+"Tickets created under this category are automatically routed to the team "
+"selected below."
+
+#: templates/categories/category_form.html:35
+#: templates/categories/team_detail.html:22
+#: templates/categories/team_detail.html:41
+#: templates/projects/project_form.html:26
+msgid "Хадгалах"
+msgstr "Save"
+
+#: templates/categories/category_form.html:36
+#: templates/projects/project_form.html:27
+#: templates/tickets/ticket_form.html:18
+msgid "Цуцлах"
+msgstr "Cancel"
+
+#: templates/categories/category_list.html:6
+msgid "Ангилал (Category)"
+msgstr "Category"
+
+#: templates/categories/category_list.html:8
+#: templates/categories/team_list.html:3
+msgid "Багууд"
+msgstr "Teams"
+
+#: templates/categories/category_list.html:12
+msgid ""
+"Ticket үүсгэхэд энд заасан ангиллаас нь <strong>Баг автоматаар routing</"
+"strong> хийгдэнэ."
+msgstr ""
+"When a ticket is created, it is <strong>automatically routed to a team</"
+"strong> based on the category selected here."
+
+#: templates/categories/category_list.html:28
+msgid "Тохируулаагүй"
+msgstr "Not configured"
+
+#: templates/categories/category_list.html:33
+#: templates/projects/project_list.html:28
+msgid "Засах"
+msgstr "Edit"
+
+#: templates/categories/category_list.html:36
+msgid "Ангилал алга байна."
+msgstr "No categories yet."
+
+#: templates/categories/team_detail.html:3
+msgid "гишүүд"
+msgstr "members"
+
+#: templates/categories/team_detail.html:5
+#, python-format
+msgid "'%(name)s' — гишүүд удирдах"
+msgstr "'%(name)s' — manage members"
+
+#: templates/categories/team_detail.html:10
+msgid "Багийн мэдээлэл"
+msgstr "Team info"
+
+#: templates/categories/team_detail.html:27
+msgid "Гишүүн сонгох"
+msgstr "Select members"
+
+#: templates/categories/team_detail.html:38
+msgid ""
+"\"Developer\" group-т хэрэглэгч алга байна. Эхлээд Django admin → Users дээр "
+"хэрэглэгчийг \"Developer\" group-т нэмнэ үү."
+msgstr ""
+"There are no users in the \"Developer\" group. First add a user to the "
+"\"Developer\" group under Django admin → Users."
+
+#: templates/categories/team_detail.html:45
+msgid "Багууд руу буцах"
+msgstr "Back to teams"
+
+#: templates/categories/team_detail.html:50
+msgid "Одоогийн гишүүдийн ачаалал"
+msgstr "Current member workload"
+
+#: templates/categories/team_detail.html:54
+msgid "Хэрэглэгч"
+msgstr "User"
+
+#: templates/categories/team_detail.html:54
+msgid "Идэвхтэй ticket"
+msgstr "Active tickets"
+
+#: templates/categories/team_detail.html:67
+msgid "Гишүүн алга байна."
+msgstr "No members yet."
+
+#: templates/categories/team_list.html:5
+msgid "Багууд (Team)"
+msgstr "Teams"
+
+#: templates/categories/team_list.html:10
+msgid "Шинэ баг нэмэх"
+msgstr "Add new team"
+
+#: templates/categories/team_list.html:21
+#: templates/projects/project_form.html:48
+msgid "Нэмэх"
+msgstr "Add"
+
+#: templates/categories/team_list.html:32
+#, python-format
+msgid "%(n)s гишүүн"
+msgstr "%(n)s member(s)"
+
+#: templates/categories/team_list.html:35
+msgid "Дэлгэрэнгүй"
+msgstr "Details"
+
+#: templates/categories/team_list.html:38
+msgid "Баг алга байна."
+msgstr "No teams yet."
+
+#: templates/categories/team_list.html:44
+msgid "Ангилал руу буцах"
+msgstr "Back to categories"
+
+#: templates/projects/project_form.html:10
+msgid "Төслийн мэдээлэл"
+msgstr "Project info"
+
+#: templates/projects/project_form.html:41
+msgid "Module алга байна."
+msgstr "No modules yet."
+
+#: templates/projects/project_list.html:3
+msgid "Төслүүд"
+msgstr "Projects"
+
+#: templates/projects/project_list.html:6
+msgid "Төслүүд (Project)"
+msgstr "Projects"
+
+#: templates/projects/project_list.html:25
+msgid "Идэвхгүй"
+msgstr "Inactive"
+
+#: templates/projects/project_list.html:31
+msgid "Төсөл алга байна."
+msgstr "No projects yet."
+
+#: templates/registration/login.html:3 templates/registration/login.html:9
+#: templates/registration/login.html:24
+msgid "Нэвтрэх"
+msgstr "Log in"
+
+#: templates/registration/login.html:11
+msgid "Хэрэглэгчийн нэр эсвэл нууц үг буруу байна."
+msgstr "Incorrect username or password."
+
+#: templates/registration/login.html:16
+msgid "Хэрэглэгчийн нэр"
+msgstr "Username"
+
+#: templates/registration/login.html:20
+msgid "Нууц үг"
+msgstr "Password"
+
+#: templates/tickets/dashboard.html:3 templates/tickets/dashboard.html:5
+msgid "Нүүр хуудас"
+msgstr "Home"
+
+#: templates/tickets/dashboard.html:6
+#, python-format
+msgid "Нийт <strong>%(total_tickets)s</strong> ticket бүртгэгдсэн байна."
+msgstr "<strong>%(total_tickets)s</strong> tickets registered in total."
+
+#: templates/tickets/dashboard.html:23
+msgid "Надад оноогдсон ticket"
+msgstr "Tickets assigned to me"
+
+#: templates/tickets/dashboard.html:31
+msgid "Танд оноогдсон ticket алга байна."
+msgstr "You have no assigned tickets."
+
+#: templates/tickets/dashboard.html:37
+msgid "Сүүлд үүссэн ticket"
+msgstr "Recently created tickets"
+
+#: templates/tickets/dashboard.html:45
+msgid "Ticket алга байна."
+msgstr "No tickets yet."
+
+#: templates/tickets/ticket_detail.html:15
+msgid "Эхний хариу өгөх SLA хэтэрсэн!"
+msgstr "Time to First Response SLA exceeded!"
+
+#: templates/tickets/ticket_detail.html:16
+#, python-format
+msgid "Энэ ticket-д %(due)s гэхэд хариу өгөх ёстой байсан."
+msgstr "This ticket should have received a response by %(due)s."
+
+#: templates/tickets/ticket_detail.html:21
+msgid "Шийдвэрлэх SLA хугацаа хэтэрсэн!"
+msgstr "Time to Resolution SLA exceeded!"
+
+#: templates/tickets/ticket_detail.html:22
+#, python-format
+msgid "Энэ ticket-ийг %(due)s гэхэд шийдвэрлэх ёстой байсан."
+msgstr "This ticket should have been resolved by %(due)s."
+
+#: templates/tickets/ticket_detail.html:35
+msgid "Төсөл / Модуль"
+msgstr "Project / Module"
+
+#: templates/tickets/ticket_detail.html:40
+msgid "Эхний хариу (SLA)"
+msgstr "First Response (SLA)"
+
+#: templates/tickets/ticket_detail.html:46
+#: templates/tickets/ticket_detail.html:52
+msgid "хэтэрсэн"
+msgstr "overdue"
+
+#: templates/tickets/ticket_detail.html:49
+msgid "Шийдвэрлэх хугацаа (SLA)"
+msgstr "Resolution (SLA)"
+
+#: templates/tickets/ticket_detail.html:54
+msgid "Мэдээлсэн"
+msgstr "Reported by"
+
+#: templates/tickets/ticket_detail.html:55
+#: templates/tickets/ticket_list.html:51
+msgid "Хариуцагч"
+msgstr "Assignee"
+
+#: templates/tickets/ticket_detail.html:55
+msgid "Оноогдоогүй"
+msgstr "Unassigned"
+
+#: templates/tickets/ticket_detail.html:67
+msgid "Дотоод тэмдэглэл"
+msgstr "Internal note"
+
+#: templates/tickets/ticket_detail.html:72
+msgid "(тайлбаргүйгээр status шилжсэн)"
+msgstr "(status changed with no comment)"
+
+#: templates/tickets/ticket_detail.html:75
+msgid "Одоогоор сэтгэгдэл алга байна."
+msgstr "No comments yet."
+
+#: templates/tickets/ticket_detail.html:88
+msgid "Сэтгэгдэл нэмэх"
+msgstr "Add comment"
+
+#: templates/tickets/ticket_detail.html:91
+msgid "Хавсралт"
+msgstr "Attachments"
+
+#: templates/tickets/ticket_detail.html:99
+msgid "Хавсаргасан файл алга байна."
+msgstr "No attachments yet."
+
+#: templates/tickets/ticket_detail.html:106
+msgid "Файл хавсаргах"
+msgstr "Attach file"
+
+#: templates/tickets/ticket_detail.html:112
+msgid "Дараагийн алхам"
+msgstr "Next step"
+
+#: templates/tickets/ticket_detail.html:118
+msgid "Шинэ төлөв сонгох"
+msgstr "Select new status"
+
+#: templates/tickets/ticket_detail.html:128
+msgid "Хариуцах хэрэглэгч"
+msgstr "Assignee"
+
+#: templates/tickets/ticket_detail.html:128
+msgid "\"Оноогдсон\" сонгосон үед л хэрэглэгдэнэ"
+msgstr "used only when \"Assigned\" is selected"
+
+#: templates/tickets/ticket_detail.html:131
+msgid "Сонгох"
+msgstr "Select"
+
+#: templates/tickets/ticket_detail.html:133
+#, python-format
+msgid "%(n)s идэвхтэй ажил"
+msgstr "%(n)s active task(s)"
+
+#: templates/tickets/ticket_detail.html:136
+msgid ""
+"Багийн гишүүд ачааллаараа (бага → их) эрэмбэлэгдсэн — хамгийн дээр нь "
+"хамгийн чөлөөтэй хүн."
+msgstr ""
+"Team members are ordered by workload (low → high) — the least busy person is "
+"listed first."
+
+#: templates/tickets/ticket_detail.html:142
+msgid "Тайлбар (сонголтоор)"
+msgstr "Comment (optional)"
+
+#: templates/tickets/ticket_detail.html:144
+msgid "Шилжүүлэх"
+msgstr "Transition"
+
+#: templates/tickets/ticket_detail.html:147
+msgid "Танд одоогийн төлөвөөс шилжүүлэх эрх/боломж байхгүй байна."
+msgstr ""
+"You don't have permission or the option to transition from the current "
+"status."
+
+#: templates/tickets/ticket_detail.html:153
+msgid "Явцын түүх"
+msgstr "Status history"
+
+#: templates/tickets/ticket_detail.html:164
+msgid "систем"
+msgstr "system"
+
+#: templates/tickets/ticket_detail.html:167
+msgid "Түүх алга байна."
+msgstr "No history yet."
+
+#: templates/tickets/ticket_form.html:3
+msgid "Шинэ Ticket"
+msgstr "New Ticket"
+
+#: templates/tickets/ticket_form.html:5
+msgid "Шинэ Ticket үүсгэх"
+msgstr "Create New Ticket"
+
+#: templates/tickets/ticket_form.html:17
+msgid "Үүсгэх"
+msgstr "Create"
+
+#: templates/tickets/ticket_list.html:9
+msgid "Хайх"
+msgstr "Search"
+
+#: templates/tickets/ticket_list.html:10
+msgid "Гарчгаар хайх"
+msgstr "Search by title"
+
+#: templates/tickets/ticket_list.html:13 templates/tickets/ticket_list.html:51
+msgid "Төлөв"
+msgstr "Status"
+
+#: templates/tickets/ticket_list.html:15 templates/tickets/ticket_list.html:24
+#: templates/tickets/ticket_list.html:33
+msgid "Бүгд"
+msgstr "All"
+
+#: templates/tickets/ticket_list.html:40
+msgid "Шүүх"
+msgstr "Filter"
+
+#: templates/tickets/ticket_list.html:41
+msgid "Цэвэрлэх"
+msgstr "Clear"
+
+#: templates/tickets/ticket_list.html:65
+msgid "Хугацаа хэтэрсэн"
+msgstr "Overdue"
+
+#: templates/tickets/ticket_list.html:73
+msgid "Харах"
+msgstr "View"
+
+#: templates/tickets/ticket_list.html:84
+msgid "Таны хайлтад тохирох ticket олдсонгүй."
+msgstr "No tickets matched your search."
+
+#: templates/tickets/ticket_list.html:99 templates/tickets/ticket_list.html:101
+msgid "Өмнөх"
+msgstr "Previous"
+
+#: templates/tickets/ticket_list.html:109
+#: templates/tickets/ticket_list.html:111
+msgid "Дараах"
+msgstr "Next"
+
+#~ msgid "SLA хугацаа"
+#~ msgstr "SLA deadline"

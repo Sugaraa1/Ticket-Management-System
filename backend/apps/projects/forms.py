@@ -1,4 +1,5 @@
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 from .models import Module, Project
 
@@ -12,7 +13,7 @@ class ProjectForm(forms.ModelForm):
             "description": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
-        labels = {"name": "Нэр", "description": "Тайлбар", "is_active": "Идэвхтэй"}
+        labels = {"name": _("Нэр"), "description": _("Тайлбар"), "is_active": _("Идэвхтэй")}
 
 
 class ModuleForm(forms.ModelForm):
@@ -20,4 +21,4 @@ class ModuleForm(forms.ModelForm):
         model = Module
         fields = ["name"]
         widgets = {"name": forms.TextInput(attrs={"class": "form-control"})}
-        labels = {"name": "Модулийн нэр"}
+        labels = {"name": _("Модулийн нэр")}

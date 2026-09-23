@@ -1,10 +1,10 @@
-{% load static %}
+{% load static i18n %}
 <!DOCTYPE html>
-<html lang="mn">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}Ticket Management System{% endblock %}</title>
+<title>{% block title %}{% trans "Ticket Management System" %}{% endblock %}</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,24 +27,49 @@
     {% if user.is_authenticated %}
     <div class="collapse navbar-collapse">
       <ul class="navbar-nav me-auto">
-        <li class="nav-item"><a class="nav-link" href="{% url 'tickets:dashboard' %}">Нүүр</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'tickets:ticket_list' %}">Бүх ticket</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'tickets:ticket_create' %}">+ Шинэ ticket</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'tickets:dashboard' %}">{% trans "Нүүр" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'tickets:ticket_list' %}">{% trans "Бүх ticket" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'tickets:ticket_create' %}">+ {% trans "Шинэ ticket" %}</a></li>
         {% if can_manage_catalog %}
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Удирдлага</a>
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">{% trans "Удирдлага" %}</a>
           <ul class="dropdown-menu dropdown-menu-dark">
-            <li><a class="dropdown-item" href="{% url 'categories:category_list' %}">Ангилал</a></li>
-            <li><a class="dropdown-item" href="{% url 'categories:team_list' %}">Баг</a></li>
-            <li><a class="dropdown-item" href="{% url 'projects:project_list' %}">Төсөл</a></li>
+            <li><a class="dropdown-item" href="{% url 'tickets:reports' %}">{% trans "Тайлан" %}</a></li>
+            <li><a class="dropdown-item" href="{% url 'categories:category_list' %}">{% trans "Ангилал" %}</a></li>
+            <li><a class="dropdown-item" href="{% url 'categories:team_list' %}">{% trans "Баг" %}</a></li>
+            <li><a class="dropdown-item" href="{% url 'projects:project_list' %}">{% trans "Төсөл" %}</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <form action="{% url 'tickets:run_sla_check' %}" method="post" class="px-3 py-1">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-light w-100">{% trans "SLA шалгалт ажиллуулах" %}</button>
+              </form>
+            </li>
+            <li>
+              <form action="{% url 'tickets:run_stale_check' %}" method="post" class="px-3 py-1">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-light w-100">{% trans "Идэвхгүй ticket шалгах" %}</button>
+              </form>
+            </li>
           </ul>
         </li>
         {% endif %}
       </ul>
+      <form action="{% url 'set_language' %}" method="post" class="d-inline me-3">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <select name="language" class="form-select form-select-sm d-inline-block w-auto" onchange="this.form.submit()">
+          {% get_current_language as CURRENT_LANGUAGE %}
+          {% get_available_languages as AVAILABLE_LANGUAGES %}
+          {% for code, name in AVAILABLE_LANGUAGES %}
+          <option value="{{ code }}" {% if code == CURRENT_LANGUAGE %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </form>
       <span class="navbar-text text-white-50 me-3">{{ user.username }}</span>
       <form method="post" action="{% url 'logout' %}" class="d-inline">
         {% csrf_token %}
-        <button class="btn btn-outline-light btn-sm" type="submit">Гарах</button>
+        <button class="btn btn-outline-light btn-sm" type="submit">{% trans "Гарах" %}</button>
       </form>
     </div>
     {% endif %}

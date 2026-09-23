@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load ticket_extras %}
+{% load ticket_extras i18n %}
 {% block title %}#{{ ticket.id }} {{ ticket.title }}{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-start mb-3">
@@ -10,10 +10,16 @@
   <span class="status-badge status-{{ ticket.status }} fs-6">{{ ticket.get_status_display }}</span>
 </div>
 
+{% if ticket.is_first_response_overdue %}
+<div class="alert alert-danger d-flex align-items-center gap-2">
+  <strong>⚠ {% trans "Эхний хариу өгөх SLA хэтэрсэн!" %}</strong>
+  <span>{% blocktrans with due=ticket.first_response_due_at|date:"Y-m-d H:i" %}Энэ ticket-д {{ due }} гэхэд хариу өгөх ёстой байсан.{% endblocktrans %}</span>
+</div>
+{% endif %}
 {% if ticket.is_overdue %}
 <div class="alert alert-danger d-flex align-items-center gap-2">
-  <strong>⚠ SLA хугацаа хэтэрсэн!</strong>
-  <span>Энэ ticket-ийг {{ ticket.sla_due_at|date:"Y-m-d H:i" }} гэхэд шийдвэрлэх ёстой байсан.</span>
+  <strong>⚠ {% trans "Шийдвэрлэх SLA хугацаа хэтэрсэн!" %}</strong>
+  <span>{% blocktrans with due=ticket.sla_due_at|date:"Y-m-d H:i" %}Энэ ticket-ийг {{ due }} гэхэд шийдвэрлэх ёстой байсан.{% endblocktrans %}</span>
 </div>
 {% endif %}
 
@@ -24,40 +30,49 @@
         <p class="mb-3">{{ ticket.description|linebreaks }}</p>
         <hr>
         <dl class="row mb-0 small">
-          <dt class="col-sm-3 text-muted fw-normal">Төрөл</dt><dd class="col-sm-9">{{ ticket.get_ticket_type_display }}</dd>
-          <dt class="col-sm-3 text-muted fw-normal">Ангилал</dt><dd class="col-sm-9">{{ ticket.category.name }}</dd>
-          <dt class="col-sm-3 text-muted fw-normal">Төсөл / Модуль</dt>
+          <dt class="col-sm-3 text-muted fw-normal">{% trans "Төрөл" %}</dt><dd class="col-sm-9">{{ ticket.get_ticket_type_display }}</dd>
+          <dt class="col-sm-3 text-muted fw-normal">{% trans "Ангилал" %}</dt><dd class="col-sm-9">{{ ticket.category.name }}</dd>
+          <dt class="col-sm-3 text-muted fw-normal">{% trans "Төсөл / Модуль" %}</dt>
           <dd class="col-sm-9">{{ ticket.project.name }}{% if ticket.module %} / {{ ticket.module.name }}{% endif %}</dd>
-          <dt class="col-sm-3 text-muted fw-normal">Баг</dt><dd class="col-sm-9">{{ ticket.team.name|default:"—" }}</dd>
-          <dt class="col-sm-3 text-muted fw-normal">Чухлын зэрэг</dt>
+          <dt class="col-sm-3 text-muted fw-normal">{% trans "Баг" %}</dt><dd class="col-sm-9">{{ ticket.team.name|default:"—" }}</dd>
+          <dt class="col-sm-3 text-muted fw-normal">{% trans "Чухлын зэрэг" %}</dt>
           <dd class="col-sm-9"><span class="priority-dot priority-{{ ticket.priority }}"></span>{{ ticket.get_priority_display }}</dd>
-          <dt class="col-sm-3 text-muted fw-normal">SLA хугацаа</dt>
+          <dt class="col-sm-3 text-muted fw-normal">{% trans "Эхний хариу (SLA)" %}</dt>
+          <dd class="col-sm-9 {% if ticket.is_first_response_overdue %}text-danger fw-semibold{% endif %}">
+            {% if ticket.first_responded_at %}
+              <span class="text-success">✓ {{ ticket.first_responded_at|date:"Y-m-d H:i" }}</span>
+            {% else %}
+              {{ ticket.first_response_due_at|date:"Y-m-d H:i"|default:"—" }}
+              {% if ticket.is_first_response_overdue %}({% trans "хэтэрсэн" %}){% endif %}
+            {% endif %}
+          </dd>
+          <dt class="col-sm-3 text-muted fw-normal">{% trans "Шийдвэрлэх хугацаа (SLA)" %}</dt>
           <dd class="col-sm-9 {% if ticket.is_overdue %}text-danger fw-semibold{% endif %}">
             {{ ticket.sla_due_at|date:"Y-m-d H:i"|default:"—" }}
-            {% if ticket.is_overdue %}(хэтэрсэн){% endif %}
+            {% if ticket.is_overdue %}({% trans "хэтэрсэн" %}){% endif %}
           </dd>
-          <dt class="col-sm-3 text-muted fw-normal">Мэдээлсэн</dt><dd class="col-sm-9">{{ ticket.reported_by.username }}</dd>
-          <dt class="col-sm-3 text-muted fw-normal">Хариуцагч</dt><dd class="col-sm-9">{{ ticket.assigned_to.username|default:"Оноогдоогүй" }}</dd>
+          <dt class="col-sm-3 text-muted fw-normal">{% trans "Мэдээлсэн" %}</dt><dd class="col-sm-9">{{ ticket.reported_by.username }}</dd>
+          <dt class="col-sm-3 text-muted fw-normal">{% trans "Хариуцагч" %}</dt><dd class="col-sm-9">{% if ticket.assigned_to %}{{ ticket.assigned_to.username }}{% else %}{% trans "Оноогдоогүй" %}{% endif %}</dd>
         </dl>
       </div>
     </div>
 
-    <h5 class="mb-3">Сэтгэгдэл</h5>
+    <h5 class="mb-3">{% trans "Сэтгэгдэл" %}</h5>
     {% for c in comments %}
     <div class="border rounded p-3 mb-2 {% if c.is_internal %}bg-warning-subtle border-warning{% else %}bg-white{% endif %}">
       <div class="d-flex justify-content-between align-items-center">
         <div>
           <strong>{{ c.author.username|default:"—" }}</strong>
           {% if c.is_internal %}
-          <span class="badge bg-warning text-dark ms-1">🔒 Дотоод тэмдэглэл</span>
+          <span class="badge bg-warning text-dark ms-1">🔒 {% trans "Дотоод тэмдэглэл" %}</span>
           {% endif %}
         </div>
         <small class="text-muted">{{ c.created_at|date:"Y-m-d H:i" }}</small>
       </div>
-      <p class="mb-0 mt-1">{{ c.body|default:"(тайлбаргүйгээр status шилжсэн)" }}</p>
+      <p class="mb-0 mt-1">{% if c.body %}{{ c.body }}{% else %}{% trans "(тайлбаргүйгээр status шилжсэн)" %}{% endif %}</p>
     </div>
     {% empty %}
-    <p class="text-muted">Одоогоор сэтгэгдэл алга байна.</p>
+    <p class="text-muted">{% trans "Одоогоор сэтгэгдэл алга байна." %}</p>
     {% endfor %}
 
     <form method="post" class="mb-4">
@@ -70,10 +85,10 @@
           {{ comment_form.is_internal.label }}
         </label>
       </div>
-      <button type="submit" class="btn btn-sm btn-outline-secondary mt-2">Сэтгэгдэл нэмэх</button>
+      <button type="submit" class="btn btn-sm btn-outline-secondary mt-2">{% trans "Сэтгэгдэл нэмэх" %}</button>
     </form>
 
-    <h5 class="mb-3">Хавсралт</h5>
+    <h5 class="mb-3">{% trans "Хавсралт" %}</h5>
     <ul class="list-group mb-2">
       {% for a in attachments %}
       <li class="list-group-item">
@@ -81,26 +96,26 @@
         <small class="text-muted">— {{ a.uploaded_by.username|default:"—" }}</small>
       </li>
       {% empty %}
-      <li class="list-group-item text-muted">Хавсаргасан файл алга байна.</li>
+      <li class="list-group-item text-muted">{% trans "Хавсаргасан файл алга байна." %}</li>
       {% endfor %}
     </ul>
     <form method="post" enctype="multipart/form-data" class="mb-4">
       {% csrf_token %}
       <input type="hidden" name="action" value="attachment">
       {{ attachment_form.file }}
-      <button type="submit" class="btn btn-sm btn-outline-secondary mt-2">Файл хавсаргах</button>
+      <button type="submit" class="btn btn-sm btn-outline-secondary mt-2">{% trans "Файл хавсаргах" %}</button>
     </form>
   </div>
 
   <div class="col-md-4">
     <div class="card mb-3">
-      <div class="card-header">Дараагийн алхам</div>
+      <div class="card-header">{% trans "Дараагийн алхам" %}</div>
       <div class="card-body">
         {% if next_statuses %}
         <form method="post">
           {% csrf_token %}
           <input type="hidden" name="action" value="transition">
-          <label class="form-label small text-muted">Шинэ төлөв сонгох</label>
+          <label class="form-label small text-muted">{% trans "Шинэ төлөв сонгох" %}</label>
           <select name="new_status" class="form-select mb-2">
             {% for value, label in next_statuses %}
             <option value="{{ value }}">{{ label }}</option>
@@ -110,32 +125,32 @@
           {% if developers %}
           <div class="mb-2">
             <label class="form-label small text-muted">
-              Хариуцах хэрэглэгч <span class="text-muted">("Оноогдсон" сонгосон үед л хэрэглэгдэнэ)</span>
+              {% trans "Хариуцах хэрэглэгч" %} <span class="text-muted">({% trans '"Оноогдсон" сонгосон үед л хэрэглэгдэнэ' %})</span>
             </label>
             <select name="assigned_to" class="form-select">
-              <option value="">— Сонгох —</option>
+              <option value="">— {% trans "Сонгох" %} —</option>
               {% for dev in developers %}
-              <option value="{{ dev.id }}">{{ dev.username }} — {{ dev.active_ticket_count }} идэвхтэй ажил</option>
+              <option value="{{ dev.id }}">{{ dev.username }} — {% blocktrans with n=dev.active_ticket_count %}{{ n }} идэвхтэй ажил{% endblocktrans %}</option>
               {% endfor %}
             </select>
-            <div class="form-text">Багийн гишүүд ачааллаараа (бага → их) эрэмбэлэгдсэн — хамгийн дээр нь хамгийн чөлөөтэй хүн.</div>
+            <div class="form-text">{% trans "Багийн гишүүд ачааллаараа (бага → их) эрэмбэлэгдсэн — хамгийн дээр нь хамгийн чөлөөтэй хүн." %}</div>
           </div>
           {% elif assign_blocked_reason %}
           <div class="alert alert-warning small py-2">{{ assign_blocked_reason }}</div>
           {% endif %}
 
-          <label class="form-label small text-muted">Тайлбар (сонголтоор)</label>
+          <label class="form-label small text-muted">{% trans "Тайлбар (сонголтоор)" %}</label>
           <textarea name="comment" class="form-control mb-2" rows="2"></textarea>
-          <button type="submit" class="btn btn-primary w-100">Шилжүүлэх</button>
+          <button type="submit" class="btn btn-primary w-100">{% trans "Шилжүүлэх" %}</button>
         </form>
         {% else %}
-        <p class="text-muted mb-0">Танд одоогийн төлөвөөс шилжүүлэх эрх/боломж байхгүй байна.</p>
+        <p class="text-muted mb-0">{% trans "Танд одоогийн төлөвөөс шилжүүлэх эрх/боломж байхгүй байна." %}</p>
         {% endif %}
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header">Явцын түүх</div>
+      <div class="card-header">{% trans "Явцын түүх" %}</div>
       <ul class="list-group list-group-flush">
         {% for h in history %}
         <li class="list-group-item small">
@@ -146,10 +161,10 @@
             {% endif %}
             <span class="status-badge status-{{ h.to_status }}">{{ h.to_status|status_label }}</span>
           </div>
-          <div class="text-muted">{{ h.changed_by.username|default:"систем" }} · {{ h.changed_at|date:"Y-m-d H:i" }}</div>
+          <div class="text-muted">{% if h.changed_by %}{{ h.changed_by.username }}{% else %}{% trans "систем" %}{% endif %} · {{ h.changed_at|date:"Y-m-d H:i" }}</div>
         </li>
         {% empty %}
-        <li class="list-group-item text-muted">Түүх алга байна.</li>
+        <li class="list-group-item text-muted">{% trans "Түүх алга байна." %}</li>
         {% endfor %}
       </ul>
     </div>

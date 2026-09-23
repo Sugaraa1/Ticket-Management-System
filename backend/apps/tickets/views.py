@@ -1,14 +1,46 @@
+import io
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.core.management import call_command
+from django.core.paginator import Paginator
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.translation import gettext as _
 
 from apps.categories.models import Category
+from apps.core.decorators import roles_required
+from apps.projects.models import Module
 
 from .forms import AttachmentForm, CommentForm, TicketForm
 from .models import ALLOWED_TRANSITIONS, Ticket
-from .permissions import can_user_assign, can_user_transition, team_members_with_workload
+from .notifications import (
+    notify_status_changed,
+    notify_ticket_assigned,
+    notify_ticket_routed,
+)
+from .permissions import (
+    ROLE_ADMIN,
+    ROLE_PM,
+    can_user_assign,
+    can_user_transition,
+    team_members_with_workload,
+)
+from .reports import build_report, clean_period
+
+TICKET_LIST_PAGE_SIZE = 25
+
+
+def _modules_by_project():
+    """Project.id -> [{id, name}] — ticket_form.html-д Module dropdown-ыг сонгосон
+    Project-оор нь клиент талд шүүхэд ашиглагдана."""
+    grouped = {}
+    for module in Module.objects.select_related("project").order_by("name"):
+        grouped.setdefault(str(module.project_id), []).append(
+            {"id": module.id, "name": module.name}
+        )
+    return grouped
 
 
 @login_required
@@ -44,8 +76,16 @@ def ticket_list(request):
     if q:
         tickets = tickets.filter(title__icontains=q)
 
+    paginator = Paginator(tickets, TICKET_LIST_PAGE_SIZE)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    querystring = request.GET.copy()
+    querystring.pop("page", None)
+
     context = {
-        "tickets": tickets,
+        "tickets": page_obj,
+        "page_obj": page_obj,
+        "querystring": querystring.urlencode(),
         "status_choices": Ticket.Status.choices,
         "priority_choices": Ticket.Priority.choices,
         "categories": Category.objects.all(),
@@ -66,11 +106,16 @@ def ticket_create(request):
             ticket.reported_by = request.user
             ticket._changed_by = request.user
             ticket.save()
-            messages.success(request, f"Ticket #{ticket.pk} амжилттай үүслээ.")
+            notify_ticket_routed(ticket)
+            messages.success(request, _("Ticket #%(pk)s амжилттай үүслээ.") % {"pk": ticket.pk})
             return redirect("tickets:ticket_detail", pk=ticket.pk)
     else:
         form = TicketForm()
-    return render(request, "tickets/ticket_form.html", {"form": form})
+    return render(
+        request,
+        "tickets/ticket_form.html",
+        {"form": form, "modules_by_project": _modules_by_project()},
+    )
 
 
 @login_required
@@ -98,11 +143,14 @@ def ticket_detail(request, pk):
 
             if new_status == Ticket.Status.ASSIGNED:
                 if not can_user_assign(request.user):
-                    messages.error(request, "Танд ticket оноох эрх байхгүй (PM/Admin эрхтэй байх шаардлагатай).")
+                    messages.error(
+                        request,
+                        _("Танд ticket оноох эрх байхгүй (PM/Admin эрхтэй байх шаардлагатай)."),
+                    )
                     return redirect("tickets:ticket_detail", pk=pk)
                 assignee_id = request.POST.get("assigned_to")
                 if not assignee_id:
-                    messages.error(request, "Хариуцах хэрэглэгчийг сонгоно уу.")
+                    messages.error(request, _("Хариуцах хэрэглэгчийг сонгоно уу."))
                     return redirect("tickets:ticket_detail", pk=pk)
 
                 valid_member_ids = {
@@ -111,14 +159,18 @@ def ticket_detail(request, pk):
                 if assignee_id not in valid_member_ids:
                     messages.error(
                         request,
-                        "Сонгосон хэрэглэгч энэ ticket-ийн багийн гишүүн биш тул assign хийх боломжгүй.",
+                        _("Сонгосон хэрэглэгч энэ ticket-ийн багийн гишүүн биш тул assign хийх боломжгүй."),
                     )
                     return redirect("tickets:ticket_detail", pk=pk)
                 ticket.assigned_to_id = assignee_id
 
+            previous_status = ticket.status
             try:
                 ticket.transition_to(new_status, user=request.user, comment=comment_body)
-                messages.success(request, "Status амжилттай шилжлээ.")
+                messages.success(request, _("Status амжилттай шилжлээ."))
+                if new_status == Ticket.Status.ASSIGNED and ticket.assigned_to_id:
+                    notify_ticket_assigned(ticket, changed_by=request.user)
+                notify_status_changed(ticket, previous_status, new_status, changed_by=request.user)
             except ValidationError as exc:
                 messages.error(request, "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc))
             return redirect("tickets:ticket_detail", pk=pk)
@@ -130,7 +182,12 @@ def ticket_detail(request, pk):
                 comment.ticket = ticket
                 comment.author = request.user
                 comment.save()
-                messages.success(request, "Сэтгэгдэл нэмэгдлээ.")
+                if request.user.id != ticket.reported_by_id:
+                    # Мэдээлэгчээс өөр хүн анх удаа хариу бичсэн бол
+                    # Time to First Response SLA-г зогсооно.
+                    ticket.mark_first_response()
+                ticket.mark_activity()
+                messages.success(request, _("Сэтгэгдэл нэмэгдлээ."))
                 return redirect("tickets:ticket_detail", pk=pk)
 
         elif action == "attachment":
@@ -140,7 +197,8 @@ def ticket_detail(request, pk):
                 attachment.ticket = ticket
                 attachment.uploaded_by = request.user
                 attachment.save()
-                messages.success(request, "Файл амжилттай хавсаргалаа.")
+                ticket.mark_activity()
+                messages.success(request, _("Файл амжилттай хавсаргалаа."))
                 return redirect("tickets:ticket_detail", pk=pk)
 
     candidate_statuses = ALLOWED_TRANSITIONS.get(ticket.status, [])
@@ -153,17 +211,17 @@ def ticket_detail(request, pk):
     assign_blocked_reason = ""
     if Ticket.Status.ASSIGNED in permitted_statuses:
         if ticket.team is None:
-            assign_blocked_reason = (
+            assign_blocked_reason = _(
                 "Энэ ticket-ийн Category-д Баг (Team) тохируулаагүй тул assign хийх "
                 "боломжгүй. Эхлээд 'Удирдлага → Ангилал' хэсэгт баг тохируулна уу."
             )
         else:
             developers = team_members_with_workload(ticket.team)
             if not developers:
-                assign_blocked_reason = (
-                    f"'{ticket.team.name}' багт одоогоор гишүүн алга байна. "
-                    f"Эхлээд 'Удирдлага → Баг' хэсэгт ажилчид нэмнэ үү."
-                )
+                assign_blocked_reason = _(
+                    "'%(team)s' багт одоогоор гишүүн алга байна. "
+                    "Эхлээд 'Удирдлага → Баг' хэсэгт ажилчид нэмнэ үү."
+                ) % {"team": ticket.team.name}
 
     context = {
         "ticket": ticket,
@@ -177,3 +235,41 @@ def ticket_detail(request, pk):
         "attachments": ticket.attachments.select_related("uploaded_by"),
     }
     return render(request, "tickets/ticket_detail.html", context)
+
+
+@roles_required(ROLE_PM, ROLE_ADMIN)
+def run_sla_check(request):
+    """
+    'check_sla_deadlines' management command-ыг вебээс гараар нэг удаа
+    ажиллуулж, SLA анхааруулга/escalation мэдэгдлийг шууд шалгах боломж олгоно
+    (Cron/scheduler хүлээхгүйгээр тестлэхэд зориулагдсан).
+    """
+    if request.method == "POST":
+        output = io.StringIO()
+        call_command("check_sla_deadlines", stdout=output)
+        messages.success(request, output.getvalue().strip())
+    return redirect("tickets:dashboard")
+
+
+@roles_required(ROLE_PM, ROLE_ADMIN)
+def run_stale_check(request):
+    """
+    'check_stale_tickets' management command-ыг вебээс гараар нэг удаа
+    ажиллуулж, идэвхгүй ticket-үүдийн сануулгыг шууд шалгах боломж олгоно.
+    """
+    if request.method == "POST":
+        output = io.StringIO()
+        call_command("check_stale_tickets", stdout=output)
+        messages.success(request, output.getvalue().strip())
+    return redirect("tickets:dashboard")
+
+
+@roles_required(ROLE_PM, ROLE_ADMIN)
+def reports(request):
+    """
+    Agent гүйцэтгэл, SLA compliance %, ticket volume trend зэргийг харуулах
+    тайлангийн dashboard (Zendesk/Jira Service Management-ийн "Reports" таб-тай адил).
+    """
+    days = clean_period(request.GET.get("days"))
+    context = build_report(days)
+    return render(request, "tickets/reports.html", context)

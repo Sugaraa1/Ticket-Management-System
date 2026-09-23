@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% load ticket_extras %}
-{% block title %}Нүүр хуудас{% endblock %}
+{% load ticket_extras i18n %}
+{% block title %}{% trans "Нүүр хуудас" %}{% endblock %}
 {% block content %}
-<h2 class="mb-1">Нүүр хуудас</h2>
-<p class="text-muted mb-4">Нийт <strong>{{ total_tickets }}</strong> ticket бүртгэгдсэн байна.</p>
+<h2 class="mb-1">{% trans "Нүүр хуудас" %}</h2>
+<p class="text-muted mb-4">{% blocktrans %}Нийт <strong>{{ total_tickets }}</strong> ticket бүртгэгдсэн байна.{% endblocktrans %}</p>
 
 <div class="row g-3 mb-4">
   {% for value, label in status_choices %}
@@ -20,7 +20,7 @@
 
 <div class="row">
   <div class="col-md-6">
-    <h5 class="mb-3">Надад оноогдсон ticket</h5>
+    <h5 class="mb-3">{% trans "Надад оноогдсон ticket" %}</h5>
     <ul class="list-group mb-4">
       {% for t in my_tickets %}
       <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -28,13 +28,13 @@
         <span class="status-badge status-{{ t.status }}">{{ t.get_status_display }}</span>
       </li>
       {% empty %}
-      <li class="list-group-item text-muted">Танд оноогдсон ticket алга байна.</li>
+      <li class="list-group-item text-muted">{% trans "Танд оноогдсон ticket алга байна." %}</li>
       {% endfor %}
     </ul>
   </div>
 
   <div class="col-md-6">
-    <h5 class="mb-3">Сүүлд үүссэн ticket</h5>
+    <h5 class="mb-3">{% trans "Сүүлд үүссэн ticket" %}</h5>
     <ul class="list-group mb-4">
       {% for t in recent_tickets %}
       <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -42,7 +42,7 @@
         <span class="status-badge status-{{ t.status }}">{{ t.get_status_display }}</span>
       </li>
       {% empty %}
-      <li class="list-group-item text-muted">Ticket алга байна.</li>
+      <li class="list-group-item text-muted">{% trans "Ticket алга байна." %}</li>
       {% endfor %}
     </ul>
   </div>

@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
+from django.utils.translation import gettext_lazy as _
 
 from apps.core.models import TimeStampedModel
 
@@ -14,8 +15,28 @@ class Team(TimeStampedModel):
         related_name="teams",
         blank=True,
         limit_choices_to=Q(groups__name="Developer") | Q(is_superuser=True),
-        help_text="Энэ багт харьяалагдах ажилчид. Ticket assign хийхэд зөвхөн эдгээр "
-        "хэрэглэгчид сонголтод гарна.",
+        help_text=_(
+            "Энэ багт харьяалагдах ажилчид. Ticket assign хийхэд зөвхөн эдгээр "
+            "хэрэглэгчид сонголтод гарна."
+        ),
+    )
+    team_lead = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="led_teams",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        limit_choices_to=Q(groups__name="Project Manager") | Q(is_superuser=True),
+        help_text=_("'Project Manager' group-т багтсан (эсвэл superuser) хэрэглэгчид л сонголтод гарна."),
+    )
+    qa_tester = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="qa_teams",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        limit_choices_to=Q(groups__name="QA Tester") | Q(is_superuser=True),
+        help_text=_("'QA Tester' group-т багтсан (эсвэл superuser) хэрэглэгчид л сонголтод гарна."),
     )
 
     class Meta:
@@ -41,8 +62,8 @@ class Category(TimeStampedModel):
 
 class CategoryTeamAssignment(TimeStampedModel):
     """
-    Category бүрийг аль Team рүү автоматаар chиглүүлэхийг, мөн тухайн
-    category-ийн Team Lead / QA Tester-ийг тодорхойлно.
+    Category бүрийг аль Team рүү автоматаар chиглүүлэхийг тодорхойлно.
+    Team Lead / QA Tester нь Team дээр тохируулагдана.
 
     Нэг Category зөвхөн нэг Team-тэй холбогдоно (routing-ийг энгийн байлгах үүднээс).
     """
@@ -52,24 +73,6 @@ class CategoryTeamAssignment(TimeStampedModel):
     )
     team = models.ForeignKey(
         Team, related_name="category_assignments", on_delete=models.PROTECT
-    )
-    team_lead = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        related_name="led_categories",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        limit_choices_to=Q(groups__name="Project Manager") | Q(is_superuser=True),
-        help_text="'Project Manager' group-т багтсан (эсвэл superuser) хэрэглэгчид л сонголтод гарна.",
-    )
-    qa_tester = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        related_name="qa_categories",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        limit_choices_to=Q(groups__name="QA Tester") | Q(is_superuser=True),
-        help_text="'QA Tester' group-т багтсан (эсвэл superuser) хэрэглэгчид л сонголтод гарна.",
     )
 
     class Meta:

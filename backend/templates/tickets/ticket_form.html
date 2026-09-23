@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Шинэ Ticket{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Шинэ Ticket" %}{% endblock %}
 {% block content %}
-<h2 class="mb-3">Шинэ Ticket үүсгэх</h2>
+<h2 class="mb-3">{% trans "Шинэ Ticket үүсгэх" %}</h2>
 <div class="card">
   <div class="card-body">
     <form method="post">
@@ -13,9 +14,48 @@
         {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
       </div>
       {% endfor %}
-      <button type="submit" class="btn btn-primary">Үүсгэх</button>
-      <a href="{% url 'tickets:ticket_list' %}" class="btn btn-link">Цуцлах</a>
+      <button type="submit" class="btn btn-primary">{% trans "Үүсгэх" %}</button>
+      <a href="{% url 'tickets:ticket_list' %}" class="btn btn-link">{% trans "Цуцлах" %}</a>
     </form>
   </div>
 </div>
+
+{{ modules_by_project|json_script:"modules-by-project" }}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var dataEl = document.getElementById("modules-by-project");
+  var projectSelect = document.getElementById("id_project");
+  var moduleSelect = document.getElementById("id_module");
+  if (!dataEl || !projectSelect || !moduleSelect) return;
+
+  var modulesByProject = JSON.parse(dataEl.textContent);
+  var initialModuleId = moduleSelect.value;
+
+  function refreshModules(preselectId) {
+    var modules = modulesByProject[projectSelect.value] || [];
+    moduleSelect.innerHTML = "";
+
+    var emptyOption = document.createElement("option");
+    emptyOption.value = "";
+    emptyOption.textContent = "---------";
+    moduleSelect.appendChild(emptyOption);
+
+    modules.forEach(function (m) {
+      var option = document.createElement("option");
+      option.value = m.id;
+      option.textContent = m.name;
+      if (preselectId && String(m.id) === String(preselectId)) {
+        option.selected = true;
+      }
+      moduleSelect.appendChild(option);
+    });
+  }
+
+  projectSelect.addEventListener("change", function () {
+    refreshModules(null);
+  });
+
+  refreshModules(initialModuleId);
+});
+</script>
 {% endblock %}

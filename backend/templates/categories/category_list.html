@@ -1,20 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Ангилал{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Ангилал" %}{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h2 class="mb-0">Ангилал (Category)</h2>
+  <h2 class="mb-0">{% trans "Ангилал (Category)" %}</h2>
   <div>
-    <a href="{% url 'categories:team_list' %}" class="btn btn-outline-secondary">Багууд</a>
-    <a href="{% url 'categories:category_create' %}" class="btn btn-primary">+ Шинэ ангилал</a>
+    <a href="{% url 'categories:team_list' %}" class="btn btn-outline-secondary">{% trans "Багууд" %}</a>
+    <a href="{% url 'categories:category_create' %}" class="btn btn-primary">+ {% trans "Шинэ ангилал" %}</a>
   </div>
 </div>
-<p class="text-muted">Ticket үүсгэхэд энд заасан ангиллаас нь <strong>Баг автоматаар routing</strong> хийгдэнэ.</p>
+<p class="text-muted">{% blocktrans %}Ticket үүсгэхэд энд заасан ангиллаас нь <strong>Баг автоматаар routing</strong> хийгдэнэ.{% endblocktrans %}</p>
 
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover mb-0 align-middle">
       <thead class="table-light">
-        <tr><th>Нэр</th><th>Баг</th><th>Team Lead</th><th>QA Tester</th><th></th></tr>
+        <tr><th>{% trans "Нэр" %}</th><th>{% trans "Баг" %}</th><th>Team Lead</th><th>QA Tester</th><th></th></tr>
       </thead>
       <tbody>
         {% for c in categories %}
@@ -24,15 +25,15 @@
             {% if c.team_assignment %}
               {{ c.team_assignment.team.name }}
             {% else %}
-              <span class="text-danger small">Тохируулаагүй</span>
+              <span class="text-danger small">{% trans "Тохируулаагүй" %}</span>
             {% endif %}
           </td>
-          <td>{{ c.team_assignment.team_lead.username|default:"—" }}</td>
-          <td>{{ c.team_assignment.qa_tester.username|default:"—" }}</td>
-          <td><a href="{% url 'categories:category_edit' c.id %}" class="btn btn-sm btn-outline-primary">Засах</a></td>
+          <td>{{ c.team_assignment.team.team_lead.username|default:"—" }}</td>
+          <td>{{ c.team_assignment.team.qa_tester.username|default:"—" }}</td>
+          <td><a href="{% url 'categories:category_edit' c.id %}" class="btn btn-sm btn-outline-primary">{% trans "Засах" %}</a></td>
         </tr>
         {% empty %}
-        <tr><td colspan="5" class="text-center text-muted py-4">Ангилал алга байна.</td></tr>
+        <tr><td colspan="5" class="text-center text-muted py-4">{% trans "Ангилал алга байна." %}</td></tr>
         {% endfor %}
       </tbody>
     </table>

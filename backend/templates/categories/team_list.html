@@ -1,22 +1,24 @@
 {% extends "base.html" %}
-{% block title %}Багууд{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Багууд" %}{% endblock %}
 {% block content %}
-<h2 class="mb-3">Багууд (Team)</h2>
+<h2 class="mb-3">{% trans "Багууд (Team)" %}</h2>
 
 <div class="row">
   <div class="col-md-5">
     <div class="card mb-3">
-      <div class="card-header">Шинэ баг нэмэх</div>
+      <div class="card-header">{% trans "Шинэ баг нэмэх" %}</div>
       <div class="card-body">
         <form method="post">
           {% csrf_token %}
           {% for field in form %}
           <div class="mb-2">
+            <label class="form-label">{{ field.label }}</label>
             {{ field }}
             {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
           </div>
           {% endfor %}
-          <button type="submit" class="btn btn-primary w-100">Нэмэх</button>
+          <button type="submit" class="btn btn-primary w-100">{% trans "Нэмэх" %}</button>
         </form>
       </div>
     </div>
@@ -26,15 +28,18 @@
       <ul class="list-group list-group-flush">
         {% for t in teams %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span>{{ t.name }} <span class="text-muted small">({{ t.members.count }} гишүүн)</span></span>
-          <a href="{% url 'categories:team_detail' t.id %}" class="btn btn-sm btn-outline-primary">Гишүүд удирдах</a>
+          <span>
+            {{ t.name }} <span class="text-muted small">({% blocktrans with n=t.members.count %}{{ n }} гишүүн{% endblocktrans %})</span><br>
+            <span class="text-muted small">Team Lead: {{ t.team_lead.username|default:"—" }} · QA Tester: {{ t.qa_tester.username|default:"—" }}</span>
+          </span>
+          <a href="{% url 'categories:team_detail' t.id %}" class="btn btn-sm btn-outline-primary">{% trans "Дэлгэрэнгүй" %}</a>
         </li>
         {% empty %}
-        <li class="list-group-item text-muted">Баг алга байна.</li>
+        <li class="list-group-item text-muted">{% trans "Баг алга байна." %}</li>
         {% endfor %}
       </ul>
     </div>
   </div>
 </div>
-<a href="{% url 'categories:category_list' %}" class="btn btn-link mt-3">← Ангилал руу буцах</a>
+<a href="{% url 'categories:category_list' %}" class="btn btn-link mt-3">← {% trans "Ангилал руу буцах" %}</a>
 {% endblock %}

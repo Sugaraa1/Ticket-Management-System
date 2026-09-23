@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.translation import gettext as _
 
 from apps.core.decorators import roles_required
 from apps.tickets.permissions import ROLE_ADMIN, ROLE_PM
@@ -12,7 +13,7 @@ from .models import Category, Team
 def category_list(request):
     categories = Category.objects.select_related(
         "team_assignment", "team_assignment__team",
-        "team_assignment__team_lead", "team_assignment__qa_tester",
+        "team_assignment__team__team_lead", "team_assignment__team__qa_tester",
     )
     return render(request, "categories/category_list.html", {"categories": categories})
 
@@ -24,13 +25,15 @@ def category_create(request):
         if form.is_valid():
             category = form.save()
             messages.success(
-                request, f"'{category.name}' ангилал үүслээ. Одоо баг/хариуцагчийг нь тохируулна уу."
+                request,
+                _("'%(name)s' ангилал үүслээ. Одоо баг/хариуцагчийг нь тохируулна уу.")
+                % {"name": category.name},
             )
             return redirect("categories:category_edit", pk=category.pk)
     else:
         form = CategoryForm()
     return render(
-        request, "categories/category_form.html", {"form": form, "page_title": "Шинэ ангилал"}
+        request, "categories/category_form.html", {"form": form, "page_title": _("Шинэ ангилал")}
     )
 
 
@@ -56,7 +59,9 @@ def category_edit(request, pk):
                 obj = assignment_form.save(commit=False)
                 obj.category = category
                 obj.save()
-            messages.success(request, f"'{category.name}' ангилал шинэчлэгдлээ.")
+            messages.success(
+                request, _("'%(name)s' ангилал шинэчлэгдлээ.") % {"name": category.name}
+            )
             return redirect("categories:category_list")
     else:
         form = CategoryForm(instance=category)
@@ -68,7 +73,7 @@ def category_edit(request, pk):
         {
             "form": form,
             "assignment_form": assignment_form,
-            "page_title": f"'{category.name}' засах",
+            "page_title": _("'%(name)s' засах") % {"name": category.name},
             "category": category,
         },
     )
@@ -80,7 +85,7 @@ def team_list(request):
         form = TeamForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, "Баг амжилттай үүслээ.")
+            messages.success(request, _("Баг амжилттай үүслээ."))
             return redirect("categories:team_list")
     else:
         form = TeamForm()
@@ -93,19 +98,37 @@ def team_list(request):
 def team_detail(request, pk):
     team = get_object_or_404(Team, pk=pk)
 
-    if request.method == "POST":
-        form = TeamMembersForm(request.POST)
-        if form.is_valid():
-            team.members.set(form.cleaned_data["members"])
-            messages.success(request, f"'{team.name}' багийн гишүүд шинэчлэгдлээ.")
+    if request.method == "POST" and request.POST.get("form_type") == "team_info":
+        team_form = TeamForm(request.POST, instance=team)
+        if team_form.is_valid():
+            team_form.save()
+            messages.success(
+                request, _("'%(name)s' багийн мэдээлэл шинэчлэгдлээ.") % {"name": team.name}
+            )
             return redirect("categories:team_detail", pk=team.pk)
+        members_form = TeamMembersForm(initial={"members": team.members.all()})
+    elif request.method == "POST":
+        members_form = TeamMembersForm(request.POST)
+        if members_form.is_valid():
+            team.members.set(members_form.cleaned_data["members"])
+            messages.success(
+                request, _("'%(name)s' багийн гишүүд шинэчлэгдлээ.") % {"name": team.name}
+            )
+            return redirect("categories:team_detail", pk=team.pk)
+        team_form = TeamForm(instance=team)
     else:
-        form = TeamMembersForm(initial={"members": team.members.all()})
+        team_form = TeamForm(instance=team)
+        members_form = TeamMembersForm(initial={"members": team.members.all()})
 
     from apps.tickets.permissions import team_members_with_workload
 
     return render(
         request,
         "categories/team_detail.html",
-        {"team": team, "form": form, "members_workload": team_members_with_workload(team)},
+        {
+            "team": team,
+            "team_form": team_form,
+            "form": members_form,
+            "members_workload": team_members_with_workload(team),
+        },
     )

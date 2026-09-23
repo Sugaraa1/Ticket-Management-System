@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% block title %}{{ page_title }}{% endblock %}
 {% block content %}
 <h2 class="mb-3">{{ page_title }}</h2>
@@ -6,7 +7,7 @@
 <div class="row">
   <div class="col-md-6">
     <div class="card mb-3">
-      <div class="card-header">Төслийн мэдээлэл</div>
+      <div class="card-header">{% trans "Төслийн мэдээлэл" %}</div>
       <div class="card-body">
         <form method="post">
           {% csrf_token %}
@@ -22,8 +23,8 @@
             {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
           </div>
           {% endfor %}
-          <button type="submit" class="btn btn-primary">Хадгалах</button>
-          <a href="{% url 'projects:project_list' %}" class="btn btn-link">Цуцлах</a>
+          <button type="submit" class="btn btn-primary">{% trans "Хадгалах" %}</button>
+          <a href="{% url 'projects:project_list' %}" class="btn btn-link">{% trans "Цуцлах" %}</a>
         </form>
       </div>
     </div>
@@ -37,14 +38,14 @@
         {% for m in modules %}
         <li class="list-group-item">{{ m.name }}</li>
         {% empty %}
-        <li class="list-group-item text-muted">Module алга байна.</li>
+        <li class="list-group-item text-muted">{% trans "Module алга байна." %}</li>
         {% endfor %}
       </ul>
       <div class="card-body">
         <form method="post" action="{% url 'projects:module_create' project.id %}" class="d-flex gap-2">
           {% csrf_token %}
           {{ module_form.name }}
-          <button type="submit" class="btn btn-outline-primary">Нэмэх</button>
+          <button type="submit" class="btn btn-outline-primary">{% trans "Нэмэх" %}</button>
         </form>
       </div>
     </div>

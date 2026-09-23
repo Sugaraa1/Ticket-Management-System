@@ -32,6 +32,18 @@
   --priority-medium: #3B82F6;
   --priority-high: #F59E0B;
   --priority-critical: #DC2626;
+
+  /* Тайлан (Reports) — trend chart-ийн 2 цуврааны өнгө (validate_palette.js-ээр
+     баталгаажуулсан хос: CVD ΔE 29.8, normal-vision ΔE 38.9 @ #FFFFFF surface) */
+  --series-created: var(--primary);
+  --series-closed: #EB6834;
+
+  /* SLA compliance meter-ийн төлвийн өнгө (status-badge-ийн өнгөтэй ижил гэр бүл,
+     categorical цувраанаас ялгаатай тул хольцгүй) */
+  --report-good: #15803D;
+  --report-warning: #F59E0B;
+  --report-critical: #DC2626;
+  --report-track: #EEF0F4;
 }
 
 body {
@@ -152,6 +164,70 @@ input[type="text"], input[type="password"], input[type="email"] {
 .ticket-row td {
   vertical-align: middle;
 }
+
+/* ---------- Reports dashboard ---------- */
+.report-period-nav .btn { min-width: 4.5rem; }
+
+.stat-tile-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.stat-tile-label {
+  color: var(--text-muted);
+  font-size: .8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+.report-meter-track {
+  height: .5rem;
+  border-radius: 999px;
+  background: var(--report-track);
+  overflow: hidden;
+}
+.report-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+.report-meter-fill.level-good     { background: var(--report-good); }
+.report-meter-fill.level-warning  { background: var(--report-warning); }
+.report-meter-fill.level-critical { background: var(--report-critical); }
+.report-meter-fill.level-none     { background: var(--border); }
+
+.report-meter-percent.level-good     { color: var(--report-good); }
+.report-meter-percent.level-warning  { color: #B45F06; }
+.report-meter-percent.level-critical { color: var(--report-critical); }
+.report-meter-percent.level-none     { color: var(--text-muted); }
+
+.report-legend-dot {
+  display: inline-block;
+  width: .6rem;
+  height: .6rem;
+  border-radius: 50%;
+  margin-right: .35rem;
+}
+
+.report-bar-row .report-bar-track {
+  height: 1.25rem;
+  border-radius: var(--radius-sm);
+  background: var(--report-track);
+  overflow: hidden;
+}
+.report-bar-row .report-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+}
+
+.report-chart text {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  fill: var(--text-muted);
+}
+.report-chart .report-chart-gridline { stroke: var(--border); stroke-width: 1; }
+.report-chart .report-chart-point { cursor: pointer; }
+.report-chart .report-chart-point:hover circle { r: 6; }
 
 /* ---------- Empty state ---------- */
 .empty-state {

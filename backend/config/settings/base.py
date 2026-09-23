@@ -36,6 +36,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -54,6 +55,7 @@ TEMPLATES = [
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
+                "django.template.context_processors.i18n",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.user_roles_context",
@@ -82,6 +84,11 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "mn"
+LANGUAGES = [
+    ("mn", "Монгол"),
+    ("en", "English"),
+]
+LOCALE_PATHS = [BASE_DIR / "locale"]
 TIME_ZONE = "Asia/Ulaanbaatar"
 USE_I18N = True
 USE_TZ = True
@@ -104,12 +111,34 @@ LOGOUT_REDIRECT_URL = "login"
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@ticket-system.local")
 
 # --- SLA (Service Level Agreement) ---
-# Priority тус бүрт хариу үйлдэл хийх дээд хугацаа (цагаар).
-# apps.tickets.models.Ticket.save() дотор ticket үүсэх мөчид sla_due_at-г
-# энэ хүснэгтээс тооцоолж автоматаар бичнэ.
-SLA_HOURS_BY_PRIORITY = {
+# Jira Service Management-ийн загварчлалтай адил 2 тусдаа SLA metric ашиглана:
+#   1. Time to First Response  — эхний хариу өгөх дээд хугацаа
+#   2. Time to Resolution      — бүрэн шийдвэрлэх дээд хугацаа
+# Хоёулаа Priority-с хамаарч ticket үүсэх мөчид автоматаар тооцоологдоно
+# (apps.tickets.models.Ticket.save()).
+SLA_HOURS_BY_PRIORITY = {  # Time to Resolution
     "critical": 4,     # 4 цаг
     "high": 24,        # 1 өдөр
     "medium": 72,      # 3 өдөр
     "low": 168,        # 7 өдөр
 }
+SLA_FIRST_RESPONSE_HOURS_BY_PRIORITY = {  # Time to First Response
+    "critical": 1,     # 1 цаг
+    "high": 4,         # 4 цаг
+    "medium": 8,       # 8 цаг
+    "low": 24,         # 1 өдөр
+}
+
+# SLA хугацааны хэдэн хувь нь өнгөрөхөд "анхааруулга" мэдэгдэл илгээхийг заана
+# (жишээ нь 0.8 = хугацааны 80% өнгөрөхөд, эцсийн хугацаанаас өмнө сануулна).
+# Хоёр metric-т аль алинд нь адилхан хамаарна.
+# apps.tickets.management.commands.check_sla_deadlines-ээр ашиглагдана.
+SLA_WARNING_THRESHOLD = 0.8
+
+# --- Automation rule: идэвхгүй (stale) ticket-д давтан сануулга ---
+# Ticket дээр сүүлийн идэвх (comment/attachment/status шилжилт)-ээс хойш энэ
+# хэдэн цагийн турш юу ч болоогүй бол хариуцагчид (эсвэл байхгүй бол Team
+# Lead-д) сануулга илгээнэ; идэвх гарахгүй л бол ижил хугацаа тутамд ДАХИН
+# давтан илгээгдэнэ (Zendesk/Jira-ийн "time-based automation"-той адил).
+# apps.tickets.management.commands.check_stale_tickets-ээр ашиглагдана.
+STALE_TICKET_REMINDER_HOURS = 48

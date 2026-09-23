@@ -2,6 +2,7 @@ from functools import wraps
 
 from django.contrib import messages
 from django.shortcuts import redirect
+from django.utils.translation import gettext as _
 
 
 def roles_required(*roles):
@@ -19,7 +20,7 @@ def roles_required(*roles):
             from apps.tickets.permissions import user_roles
 
             if not user_roles(request.user) & set(roles):
-                messages.error(request, "Танд энэ хуудсанд хандах эрх байхгүй.")
+                messages.error(request, _("Танд энэ хуудсанд хандах эрх байхгүй."))
                 return redirect("tickets:dashboard")
             return view_func(request, *args, **kwargs)
 

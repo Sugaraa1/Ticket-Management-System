@@ -1,4 +1,5 @@
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 from .models import Attachment, Comment, Ticket
 
@@ -25,14 +26,25 @@ class TicketForm(forms.ModelForm):
             "priority": forms.Select(attrs={"class": "form-select"}),
         }
         labels = {
-            "title": "Гарчиг",
-            "description": "Тайлбар",
-            "ticket_type": "Төрөл",
-            "category": "Ангилал",
-            "project": "Төсөл",
-            "module": "Модуль",
-            "priority": "Чухлын зэрэг",
+            "title": _("Гарчиг"),
+            "description": _("Тайлбар"),
+            "ticket_type": _("Төрөл"),
+            "category": _("Ангилал"),
+            "project": _("Төсөл"),
+            "module": _("Модуль"),
+            "priority": _("Чухлын зэрэг"),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        project = cleaned_data.get("project")
+        module = cleaned_data.get("module")
+        if module and project and module.project_id != project.id:
+            self.add_error(
+                "module",
+                _("Сонгосон модуль сонгосон төсөлд харьяалагдахгүй байна."),
+            )
+        return cleaned_data
 
 
 class CommentForm(forms.ModelForm):
@@ -44,14 +56,14 @@ class CommentForm(forms.ModelForm):
                 attrs={
                     "class": "form-control",
                     "rows": 2,
-                    "placeholder": "Сэтгэгдэл бичих (сонголтоор)...",
+                    "placeholder": _("Сэтгэгдэл бичих (сонголтоор)..."),
                 }
             ),
             "is_internal": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
         labels = {
-            "body": "Сэтгэгдэл",
-            "is_internal": "Зөвхөн дотоод багт харагдах (Internal note)",
+            "body": _("Сэтгэгдэл"),
+            "is_internal": _("Зөвхөн дотоод багт харагдах (Internal note)"),
         }
 
 

@@ -17,11 +17,11 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Team)
 class TeamAdmin(admin.ModelAdmin):
-    list_display = ("name",)
+    list_display = ("name", "team_lead", "qa_tester")
     search_fields = ("name",)
 
 
 @admin.register(CategoryTeamAssignment)
 class CategoryTeamAssignmentAdmin(admin.ModelAdmin):
-    list_display = ("category", "team", "team_lead", "qa_tester")
+    list_display = ("category", "team")
     list_filter = ("team",)

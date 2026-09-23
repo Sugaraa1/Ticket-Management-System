@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% block title %}{{ page_title }}{% endblock %}
 {% block content %}
 <h2 class="mb-3">{{ page_title }}</h2>
@@ -6,7 +7,7 @@
 <div class="row">
   <div class="col-md-6">
     <div class="card mb-3">
-      <div class="card-header">Ангиллын мэдээлэл</div>
+      <div class="card-header">{% trans "Ангиллын мэдээлэл" %}</div>
       <div class="card-body">
         <form method="post">
           {% csrf_token %}
@@ -20,22 +21,19 @@
 
           {% if assignment_form %}
           <hr>
-          <h6 class="mb-3">Баг routing ба хариуцагчид</h6>
-          <p class="text-muted small">Ticket энэ ангиллаар үүсэхэд доор сонгосон Баг руу автоматаар очно.</p>
+          <h6 class="mb-3">{% trans "Баг routing" %}</h6>
+          <p class="text-muted small">{% trans "Ticket энэ ангиллаар үүсэхэд доор сонгосон Баг руу автоматаар очно." %}</p>
           {% for field in assignment_form %}
           <div class="mb-3">
             <label class="form-label">{{ field.label }}</label>
             {{ field }}
             {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
-            {% if field.name == "team_lead" or field.name == "qa_tester" %}
-            <div class="form-text">Зөвхөн тохирох group-т ({{ field.name|yesno:"Project Manager,QA Tester" }}) байгаа хэрэглэгчид сонголтод гарна.</div>
-            {% endif %}
           </div>
           {% endfor %}
           {% endif %}
 
-          <button type="submit" class="btn btn-primary">Хадгалах</button>
-          <a href="{% url 'categories:category_list' %}" class="btn btn-link">Цуцлах</a>
+          <button type="submit" class="btn btn-primary">{% trans "Хадгалах" %}</button>
+          <a href="{% url 'categories:category_list' %}" class="btn btn-link">{% trans "Цуцлах" %}</a>
         </form>
       </div>
     </div>

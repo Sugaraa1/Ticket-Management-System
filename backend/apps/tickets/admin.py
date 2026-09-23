@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 
 from .models import Attachment, Comment, StatusHistory, Ticket
 
@@ -46,7 +47,7 @@ class TicketAdmin(admin.ModelAdmin):
     autocomplete_fields = ("category", "project", "module", "assigned_to", "reported_by")
     inlines = [CommentInline, AttachmentInline, StatusHistoryInline]
 
-    @admin.display(description="SLA", boolean=True)
+    @admin.display(description=_("SLA"), boolean=True)
     def overdue_marker(self, obj):
         """Жагсаалтад хугацаа хэтэрсэн ticket-ийг улаан ✗ тэмдгээр тодруулна."""
         return not obj.is_overdue
@@ -62,6 +63,6 @@ class CommentAdmin(admin.ModelAdmin):
     list_filter = ("is_internal",)
     search_fields = ("body",)
 
-    @admin.display(description="Сэтгэгдэл")
+    @admin.display(description=_("Сэтгэгдэл"))
     def short_body(self, obj):
         return (obj.body[:60] + "…") if len(obj.body) > 60 else (obj.body or "—")

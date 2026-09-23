@@ -1,12 +1,30 @@
 {% extends "base.html" %}
-{% block title %}{{ team.name }} — гишүүд{% endblock %}
+{% load i18n %}
+{% block title %}{{ team.name }} — {% trans "гишүүд" %}{% endblock %}
 {% block content %}
-<h2 class="mb-3">'{{ team.name }}' — гишүүд удирдах</h2>
+<h2 class="mb-3">{% blocktrans with name=team.name %}'{{ name }}' — гишүүд удирдах{% endblocktrans %}</h2>
 
 <div class="row">
   <div class="col-md-5">
     <div class="card mb-3">
-      <div class="card-header">Гишүүн сонгох</div>
+      <div class="card-header">{% trans "Багийн мэдээлэл" %}</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="team_info">
+          {% for field in team_form %}
+          <div class="mb-3">
+            <label class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+          </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-primary w-100">{% trans "Хадгалах" %}</button>
+        </form>
+      </div>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header">{% trans "Гишүүн сонгох" %}</div>
       <div class="card-body">
         <form method="post">
           {% csrf_token %}
@@ -17,23 +35,23 @@
               <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
             </div>
             {% empty %}
-            <p class="text-muted small mb-0">"Developer" group-т хэрэглэгч алга байна. Эхлээд Django admin → Users дээр хэрэглэгчийг "Developer" group-т нэмнэ үү.</p>
+            <p class="text-muted small mb-0">{% blocktrans %}"Developer" group-т хэрэглэгч алга байна. Эхлээд Django admin → Users дээр хэрэглэгчийг "Developer" group-т нэмнэ үү.{% endblocktrans %}</p>
             {% endfor %}
           </div>
-          <button type="submit" class="btn btn-primary w-100">Хадгалах</button>
+          <button type="submit" class="btn btn-primary w-100">{% trans "Хадгалах" %}</button>
         </form>
       </div>
     </div>
-    <a href="{% url 'categories:team_list' %}" class="btn btn-link">← Багууд руу буцах</a>
+    <a href="{% url 'categories:team_list' %}" class="btn btn-link">← {% trans "Багууд руу буцах" %}</a>
   </div>
 
   <div class="col-md-7">
     <div class="card">
-      <div class="card-header">Одоогийн гишүүдийн ачаалал</div>
+      <div class="card-header">{% trans "Одоогийн гишүүдийн ачаалал" %}</div>
       <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle">
           <thead class="table-light">
-            <tr><th>Хэрэглэгч</th><th>Идэвхтэй ticket</th></tr>
+            <tr><th>{% trans "Хэрэглэгч" %}</th><th>{% trans "Идэвхтэй ticket" %}</th></tr>
           </thead>
           <tbody>
             {% for m in members_workload %}
@@ -46,7 +64,7 @@
               </td>
             </tr>
             {% empty %}
-            <tr><td colspan="2" class="text-center text-muted py-3">Гишүүн алга байна.</td></tr>
+            <tr><td colspan="2" class="text-center text-muted py-3">{% trans "Гишүүн алга байна." %}</td></tr>
             {% endfor %}
           </tbody>
         </table>

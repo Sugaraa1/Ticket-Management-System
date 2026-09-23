@@ -5,6 +5,7 @@ Group нэрс нь apps/accounts/migrations/0001_create_groups.py-д
 data migration-аар үүссэн 4 бүлэгтэй яг таарна.
 """
 from django.db.models import Q
+from django.utils.translation import gettext as _
 
 ROLE_ADMIN = "Admin"
 ROLE_PM = "Project Manager"
@@ -50,15 +51,15 @@ def can_user_transition(ticket, new_status, user):
     key = (ticket.status, new_status)
     required_roles = TRANSITION_PERMISSIONS.get(key)
     if required_roles is None:
-        return False, "Энэ шилжилт зөвшөөрөгдөөгүй."
+        return False, _("Энэ шилжилт зөвшөөрөгдөөгүй.")
 
     roles = user_roles(user)
     if not roles & required_roles:
-        return False, "Танд энэ шилжилтийг хийх эрх байхгүй."
+        return False, _("Танд энэ шилжилтийг хийх эрх байхгүй.")
 
     if key in ASSIGNEE_ONLY_TRANSITIONS and ROLE_ADMIN not in roles:
         if ticket.assigned_to_id != user.id:
-            return False, "Зөвхөн танд оноогдсон ticket дээр энэ үйлдлийг хийж болно."
+            return False, _("Зөвхөн танд оноогдсон ticket дээр энэ үйлдлийг хийж болно.")
 
     return True, ""
 

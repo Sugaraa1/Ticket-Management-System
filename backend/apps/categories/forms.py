@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
+from django.utils.translation import gettext_lazy as _
 
 from .models import Category, CategoryTeamAssignment, Team
 
@@ -12,15 +13,23 @@ class CategoryForm(forms.ModelForm):
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "description": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
         }
-        labels = {"name": "Нэр", "description": "Тайлбар"}
+        labels = {"name": _("Нэр"), "description": _("Тайлбар")}
 
 
 class TeamForm(forms.ModelForm):
     class Meta:
         model = Team
-        fields = ["name"]
-        widgets = {"name": forms.TextInput(attrs={"class": "form-control"})}
-        labels = {"name": "Багийн нэр"}
+        fields = ["name", "team_lead", "qa_tester"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control"}),
+            "team_lead": forms.Select(attrs={"class": "form-select"}),
+            "qa_tester": forms.Select(attrs={"class": "form-select"}),
+        }
+        labels = {
+            "name": _("Багийн нэр"),
+            "team_lead": "Team Lead",
+            "qa_tester": "QA Tester",
+        }
 
 
 class TeamMembersForm(forms.Form):
@@ -28,21 +37,17 @@ class TeamMembersForm(forms.Form):
         queryset=User.objects.filter(groups__name="Developer").distinct().order_by("username"),
         widget=forms.CheckboxSelectMultiple,
         required=False,
-        label="Багийн гишүүд (Developer group-ийн хэрэглэгчид)",
+        label=_("Багийн гишүүд (Developer group-ийн хэрэглэгчид)"),
     )
 
 
 class CategoryTeamAssignmentForm(forms.ModelForm):
     class Meta:
         model = CategoryTeamAssignment
-        fields = ["team", "team_lead", "qa_tester"]
+        fields = ["team"]
         widgets = {
             "team": forms.Select(attrs={"class": "form-select"}),
-            "team_lead": forms.Select(attrs={"class": "form-select"}),
-            "qa_tester": forms.Select(attrs={"class": "form-select"}),
         }
         labels = {
-            "team": "Баг (routing энд очно)",
-            "team_lead": "Team Lead",
-            "qa_tester": "QA Tester",
+            "team": _("Баг (routing энд очно)"),
         }
