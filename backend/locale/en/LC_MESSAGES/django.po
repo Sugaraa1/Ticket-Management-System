@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Ticket Management System\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-23 13:13+0800\n"
+"POT-Creation-Date: 2026-09-23 17:12+0800\n"
 "PO-Revision-Date: 2026-09-23 12:13+0800\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -96,7 +96,7 @@ msgid "Танд энэ хуудсанд хандах эрх байхгүй."
 msgstr "You do not have permission to access this page."
 
 #: apps/projects/forms.py:16 templates/projects/project_list.html:14
-#: templates/projects/project_list.html:23
+#: templates/projects/project_list.html:23 templates/tickets/reports.html:209
 msgid "Идэвхтэй"
 msgstr "Active"
 
@@ -141,14 +141,14 @@ msgstr "Title"
 msgid "Төрөл"
 msgstr "Type"
 
-#: apps/tickets/forms.py:32 templates/base.html:37
+#: apps/tickets/forms.py:32 templates/base.html:38
 #: templates/categories/category_list.html:3
 #: templates/tickets/ticket_detail.html:34
 #: templates/tickets/ticket_list.html:31 templates/tickets/ticket_list.html:50
 msgid "Ангилал"
 msgstr "Category"
 
-#: apps/tickets/forms.py:33 templates/base.html:39
+#: apps/tickets/forms.py:33 templates/base.html:40
 msgid "Төсөл"
 msgstr "Project"
 
@@ -189,7 +189,7 @@ msgstr "Change Request (CR)"
 msgid "Шинэ"
 msgstr "New"
 
-#: apps/tickets/models.py:43
+#: apps/tickets/models.py:43 templates/tickets/reports.html:208
 msgid "Оноогдсон"
 msgstr "Assigned"
 
@@ -213,7 +213,8 @@ msgstr "In QA Testing"
 msgid "Дахин нээгдсэн"
 msgstr "Reopened"
 
-#: apps/tickets/models.py:49
+#: apps/tickets/models.py:49 templates/tickets/reports.html:29
+#: templates/tickets/reports.html:143
 msgid "Хаагдсан"
 msgstr "Closed"
 
@@ -332,20 +333,20 @@ msgstr "You do not have permission to make this transition."
 msgid "Зөвхөн танд оноогдсон ticket дээр энэ үйлдлийг хийж болно."
 msgstr "You can only do this on a ticket assigned to you."
 
-#: apps/tickets/views.py:109
+#: apps/tickets/views.py:110
 #, python-format
 msgid "Ticket #%(pk)s амжилттай үүслээ."
 msgstr "Ticket #%(pk)s was created successfully."
 
-#: apps/tickets/views.py:147
+#: apps/tickets/views.py:148
 msgid "Танд ticket оноох эрх байхгүй (PM/Admin эрхтэй байх шаардлагатай)."
 msgstr "You do not have permission to assign tickets (requires PM/Admin role)."
 
-#: apps/tickets/views.py:152
+#: apps/tickets/views.py:153
 msgid "Хариуцах хэрэглэгчийг сонгоно уу."
 msgstr "Please select an assignee."
 
-#: apps/tickets/views.py:161
+#: apps/tickets/views.py:162
 msgid ""
 "Сонгосон хэрэглэгч энэ ticket-ийн багийн гишүүн биш тул assign хийх "
 "боломжгүй."
@@ -353,19 +354,19 @@ msgstr ""
 "The selected user is not a member of this ticket's team, so they cannot be "
 "assigned."
 
-#: apps/tickets/views.py:169
+#: apps/tickets/views.py:170
 msgid "Status амжилттай шилжлээ."
 msgstr "Status changed successfully."
 
-#: apps/tickets/views.py:189
+#: apps/tickets/views.py:190
 msgid "Сэтгэгдэл нэмэгдлээ."
 msgstr "Comment added."
 
-#: apps/tickets/views.py:200
+#: apps/tickets/views.py:201
 msgid "Файл амжилттай хавсаргалаа."
 msgstr "File attached successfully."
 
-#: apps/tickets/views.py:214
+#: apps/tickets/views.py:215
 msgid ""
 "Энэ ticket-ийн Category-д Баг (Team) тохируулаагүй тул assign хийх "
 "боломжгүй. Эхлээд 'Удирдлага → Ангилал' хэсэгт баг тохируулна уу."
@@ -373,7 +374,7 @@ msgstr ""
 "This ticket's category has no team configured, so it cannot be assigned. "
 "First set up a team under 'Management → Category'."
 
-#: apps/tickets/views.py:221
+#: apps/tickets/views.py:222
 #, python-format
 msgid ""
 "'%(team)s' багт одоогоор гишүүн алга байна. Эхлээд 'Удирдлага → Баг' хэсэгт "
@@ -403,20 +404,25 @@ msgstr "New ticket"
 msgid "Удирдлага"
 msgstr "Management"
 
-#: templates/base.html:38 templates/categories/category_list.html:18
+#: templates/base.html:37 templates/tickets/reports.html:3
+#: templates/tickets/reports.html:6
+msgid "Тайлан"
+msgstr "Reports"
+
+#: templates/base.html:39 templates/categories/category_list.html:18
 #: templates/tickets/ticket_detail.html:37
 msgid "Баг"
 msgstr "Team"
 
-#: templates/base.html:44
+#: templates/base.html:45
 msgid "SLA шалгалт ажиллуулах"
 msgstr "Run SLA check"
 
-#: templates/base.html:50
+#: templates/base.html:51
 msgid "Идэвхгүй ticket шалгах"
 msgstr "Check stale tickets"
 
-#: templates/base.html:71
+#: templates/base.html:72
 msgid "Гарах"
 msgstr "Log out"
 
@@ -510,7 +516,7 @@ msgstr "Back to teams"
 msgid "Одоогийн гишүүдийн ачаалал"
 msgstr "Current member workload"
 
-#: templates/categories/team_detail.html:54
+#: templates/categories/team_detail.html:54 templates/tickets/reports.html:207
 msgid "Хэрэглэгч"
 msgstr "User"
 
@@ -617,6 +623,110 @@ msgstr "Recently created tickets"
 #: templates/tickets/dashboard.html:45
 msgid "Ticket алга байна."
 msgstr "No tickets yet."
+
+#: templates/tickets/reports.html:7
+msgid "Хугацааны хүрээ"
+msgstr "Time range"
+
+#: templates/tickets/reports.html:11
+#, python-format
+msgid "%(period)s хоног"
+msgstr "%(period)s days"
+
+#: templates/tickets/reports.html:21
+msgid "Шинээр үүссэн"
+msgstr "Newly created"
+
+#: templates/tickets/reports.html:37
+msgid "Одоо нээлттэй"
+msgstr "Currently open"
+
+#: templates/tickets/reports.html:45 templates/tickets/reports.html:212
+msgid "Дундаж шийдвэрлэх хугацаа"
+msgstr "Average resolution time"
+
+#: templates/tickets/reports.html:48
+#, python-format
+msgid "%(avg_resolution_hours)sц"
+msgstr "%(avg_resolution_hours)sh"
+
+#: templates/tickets/reports.html:59
+msgid "Эхний хариу — SLA биелэлт"
+msgstr "First Response — SLA compliance"
+
+#: templates/tickets/reports.html:64 templates/tickets/reports.html:87
+msgid "Мэдээлэл алга"
+msgstr "No data"
+
+#: templates/tickets/reports.html:67 templates/tickets/reports.html:90
+#, python-format
+msgid "%(met)s биелсэн · %(breached)s зөрчигдсөн"
+msgstr "%(met)s met · %(breached)s breached"
+
+#: templates/tickets/reports.html:74 templates/tickets/reports.html:97
+#, python-format
+msgid "%(counter)s ticket хараахан хугацаандаа"
+msgid_plural "%(counter)s ticket хараахан хугацаандаа"
+msgstr[0] "%(counter)s ticket not yet due"
+msgstr[1] "%(counter)s tickets not yet due"
+
+#: templates/tickets/reports.html:82
+msgid "Шийдвэрлэлт — SLA биелэлт"
+msgstr "Resolution — SLA compliance"
+
+#: templates/tickets/reports.html:107
+msgid "Ticket-ийн урсгал"
+msgstr "Ticket flow"
+
+#: templates/tickets/reports.html:117
+msgid "Өдөр тутам үүссэн болон хаагдсан ticket-ийн тоо"
+msgstr "Number of tickets created and closed per day"
+
+#: templates/tickets/reports.html:140
+msgid "Хүснэгтээр харах"
+msgstr "View as table"
+
+#: templates/tickets/reports.html:143
+msgid "Огноо"
+msgstr "Date"
+
+#: templates/tickets/reports.html:143
+msgid "Үүссэн"
+msgstr "Created"
+
+#: templates/tickets/reports.html:153 templates/tickets/reports.html:174
+#: templates/tickets/reports.html:194
+msgid "Энэ хугацаанд ticket алга байна."
+msgstr "No tickets in this period."
+
+#: templates/tickets/reports.html:161
+msgid "Чухлын зэргээр"
+msgstr "By priority"
+
+#: templates/tickets/reports.html:181
+msgid "Ангиллаар"
+msgstr "By category"
+
+#: templates/tickets/reports.html:202
+msgid "Ажилтны гүйцэтгэл"
+msgstr "Agent performance"
+
+#: templates/tickets/reports.html:210
+msgid "Хаасан"
+msgstr "Closed"
+
+#: templates/tickets/reports.html:211
+msgid "SLA зөрчсөн"
+msgstr "SLA breached"
+
+#: templates/tickets/reports.html:227
+#, python-format
+msgid "%(h)sц"
+msgstr "%(h)sh"
+
+#: templates/tickets/reports.html:230
+msgid "Энэ хугацаанд ticket оноогдоогүй байна."
+msgstr "No tickets were assigned in this period."
 
 #: templates/tickets/ticket_detail.html:15
 msgid "Эхний хариу өгөх SLA хэтэрсэн!"
