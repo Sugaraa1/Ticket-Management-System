@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Ticket Management System\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 11:19+0800\n"
+"POT-Creation-Date: 2026-09-23 17:12+0800\n"
 "PO-Revision-Date: 2026-09-23 12:13+0800\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -132,19 +132,19 @@ msgstr "SLA"
 msgid "Сэтгэгдэл"
 msgstr "Comment"
 
-#: apps/tickets/forms.py:29 templates/tickets/ticket_list.html:79
+#: apps/tickets/forms.py:29 templates/tickets/ticket_list.html:50
 msgid "Гарчиг"
 msgstr "Title"
 
 #: apps/tickets/forms.py:31 templates/tickets/ticket_detail.html:33
-#: templates/tickets/ticket_list.html:79
+#: templates/tickets/ticket_list.html:50
 msgid "Төрөл"
 msgstr "Type"
 
 #: apps/tickets/forms.py:32 templates/base.html:38
 #: templates/categories/category_list.html:3
 #: templates/tickets/ticket_detail.html:34
-#: templates/tickets/ticket_list.html:45 templates/tickets/ticket_list.html:79
+#: templates/tickets/ticket_list.html:31 templates/tickets/ticket_list.html:50
 msgid "Ангилал"
 msgstr "Category"
 
@@ -157,7 +157,7 @@ msgid "Модуль"
 msgstr "Module"
 
 #: apps/tickets/forms.py:35 templates/tickets/ticket_detail.html:38
-#: templates/tickets/ticket_list.html:36 templates/tickets/ticket_list.html:80
+#: templates/tickets/ticket_list.html:22 templates/tickets/ticket_list.html:51
 msgid "Чухлын зэрэг"
 msgstr "Priority"
 
@@ -392,11 +392,11 @@ msgid "Нүүр"
 msgstr "Home"
 
 #: templates/base.html:31 templates/tickets/ticket_list.html:3
-#: templates/tickets/ticket_list.html:8
+#: templates/tickets/ticket_list.html:5
 msgid "Бүх ticket"
 msgstr "All tickets"
 
-#: templates/base.html:32 templates/tickets/ticket_list.html:64
+#: templates/base.html:32
 msgid "Шинэ ticket"
 msgstr "New ticket"
 
@@ -768,7 +768,7 @@ msgid "Мэдээлсэн"
 msgstr "Reported by"
 
 #: templates/tickets/ticket_detail.html:55
-#: templates/tickets/ticket_list.html:80
+#: templates/tickets/ticket_list.html:51
 msgid "Хариуцагч"
 msgstr "Assignee"
 
@@ -875,60 +875,51 @@ msgstr "Create New Ticket"
 msgid "Үүсгэх"
 msgstr "Create"
 
-#: templates/tickets/ticket_list.html:14
+#: templates/tickets/ticket_list.html:9
+msgid "Хайх"
+msgstr "Search"
+
+#: templates/tickets/ticket_list.html:10
 msgid "Гарчгаар хайх"
 msgstr "Search by title"
 
-#: templates/tickets/ticket_list.html:17 templates/tickets/ticket_list.html:21
-msgid "Шүүлтүүр"
-msgstr "Filters"
-
-#: templates/tickets/ticket_list.html:27 templates/tickets/ticket_list.html:80
+#: templates/tickets/ticket_list.html:13 templates/tickets/ticket_list.html:51
 msgid "Төлөв"
 msgstr "Status"
 
-#: templates/tickets/ticket_list.html:29 templates/tickets/ticket_list.html:38
-#: templates/tickets/ticket_list.html:47
+#: templates/tickets/ticket_list.html:15 templates/tickets/ticket_list.html:24
+#: templates/tickets/ticket_list.html:33
 msgid "Бүгд"
 msgstr "All"
 
-#: templates/tickets/ticket_list.html:54
+#: templates/tickets/ticket_list.html:40
 msgid "Шүүх"
 msgstr "Filter"
 
-#: templates/tickets/ticket_list.html:55
+#: templates/tickets/ticket_list.html:41
 msgid "Цэвэрлэх"
 msgstr "Clear"
 
-#: templates/tickets/ticket_list.html:71
-#, python-format
-msgid "Нийт %(total)s ticket-ээс %(start)s–%(end)s-г харуулж байна"
-msgstr "Showing %(start)s–%(end)s of %(total)s tickets"
-
-#: templates/tickets/ticket_list.html:94
+#: templates/tickets/ticket_list.html:65
 msgid "Хугацаа хэтэрсэн"
 msgstr "Overdue"
 
-#: templates/tickets/ticket_list.html:102
+#: templates/tickets/ticket_list.html:73
 msgid "Харах"
 msgstr "View"
 
-#: templates/tickets/ticket_list.html:113
+#: templates/tickets/ticket_list.html:84
 msgid "Таны хайлтад тохирох ticket олдсонгүй."
 msgstr "No tickets matched your search."
 
-#: templates/tickets/ticket_list.html:128
-#: templates/tickets/ticket_list.html:130
+#: templates/tickets/ticket_list.html:99 templates/tickets/ticket_list.html:101
 msgid "Өмнөх"
 msgstr "Previous"
 
-#: templates/tickets/ticket_list.html:138
-#: templates/tickets/ticket_list.html:140
+#: templates/tickets/ticket_list.html:109
+#: templates/tickets/ticket_list.html:111
 msgid "Дараах"
 msgstr "Next"
-
-#~ msgid "Хайх"
-#~ msgstr "Search"
 
 #~ msgid "SLA хугацаа"
 #~ msgstr "SLA deadline"

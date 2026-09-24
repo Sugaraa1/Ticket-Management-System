@@ -1,12 +1,11 @@
 # Infra — Docker орчин
 
-`docker-compose.yml` нь дараах service-үүдийг ажиллуулна:
+`docker-compose.yml` нь дараах 2 service-ийг ажиллуулна:
 
 | Service | Тайлбар | Port |
 |---|---|---|
 | `db` | PostgreSQL 16 | 5432 |
 | `web` | Django backend (migrate автоматаар ажилладаг + runserver) | 8000 |
-| `scheduler` | `check_sla_deadlines`-ийг 15 минут тутамд ажиллуулж, SLA анхааруулга/escalation илгээдэг (Celery/Redis нэвтрүүлэх хүртэлх түр зуурын шийдэл) | — |
 
 ## Ашиглах алхмууд
 

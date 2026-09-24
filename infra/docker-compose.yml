@@ -40,29 +40,5 @@ services:
       db:
         condition: service_healthy
 
-  scheduler:
-    build:
-      context: ../backend
-      dockerfile: ../infra/Dockerfile
-    container_name: ticket_scheduler
-    restart: unless-stopped
-    # Celery/Redis нэвтрүүлэх хүртэл SLA (Time to First Response / Time to
-    # Resolution) анхааруулга-escalation болон идэвхгүй ticket-ийн automation
-    # (check_stale_tickets) шалгалтуудыг 15 минут тутамд ажиллуулах энгийн loop.
-    command: >
-      sh -c "while true; do python manage.py check_sla_deadlines && python manage.py check_stale_tickets; sleep 900; done"
-    volumes:
-      - ../backend:/app
-    environment:
-      DJANGO_SETTINGS_MODULE: config.settings.dev
-      SECRET_KEY: ${SECRET_KEY:-django-insecure-change-me-in-production}
-      DEBUG: ${DEBUG:-True}
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
-      DATABASE_URL: postgres://${POSTGRES_USER:-ticket_user}:${POSTGRES_PASSWORD:-ticket_pass}@db:5432/${POSTGRES_DB:-ticket_db}
-      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@ticket-system.local}
-    depends_on:
-      db:
-        condition: service_healthy
-
 volumes:
   postgres_data:
