@@ -1,0 +1,43 @@
+{% load i18n %}
+{# Хайлт + шүүлтүүр + эрэмбэ. apps/core/listing.py-ийн build_listing() context-ийг ашиглана. #}
+<form method="get" class="tms-list-toolbar js-list-toolbar mb-3">
+  <div class="tms-toolbar-search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/>
+      <path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    <input type="search" name="q" value="{{ list_q }}" class="form-control" placeholder="{{ list_search_placeholder }}" autocomplete="off" aria-label="{% trans "Хайх" %}">
+  </div>
+  {% for f in list_filters %}
+  <select name="{{ f.name }}" class="form-select w-auto {% if f.value %}is-set{% endif %}" aria-label="{{ f.label }}">
+    <option value="">{{ f.label }}: {% trans "Бүгд" %}</option>
+    {% for value, label in f.choices %}
+    <option value="{{ value }}" {% if value == f.value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  {% endfor %}
+  <div class="d-flex align-items-center gap-1">
+    <i class="bi bi-sort-down text-muted" aria-hidden="true"></i>
+    <select name="sort" class="form-select w-auto" aria-label="{% trans "Эрэмбэлэх" %}">
+      {% for key, label in list_sorts %}
+      <option value="{{ key }}" {% if key == list_sort %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% if list_is_filtered %}
+  <a href="{{ request.path }}" class="btn btn-sm btn-link text-decoration-none">{% trans "Цэвэрлэх" %}</a>
+  {% endif %}
+</form>
+<p class="text-muted small mb-2">
+  {% if list_is_filtered %}{% blocktrans with n=page_obj.paginator.count %}{{ n }} үр дүн олдлоо{% endblocktrans %}{% else %}{% blocktrans with n=page_obj.paginator.count %}Нийт {{ n }}{% endblocktrans %}{% endif %}
+</p>
+<script>
+(function () {
+  var form = document.currentScript.previousElementSibling.previousElementSibling, timer;
+  form.querySelectorAll("select").forEach(function (s) { s.addEventListener("change", function () { form.submit(); }); });
+  var q = form.querySelector('input[name="q"]');
+  q.addEventListener("input", function () { clearTimeout(timer); timer = setTimeout(function () { form.submit(); }, 400); });
+  // Хуудас дахин ачаалагдсаны дараа хайлтын талбарт курсор үлдээнэ.
+  if (q.value) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+})();
+</script>

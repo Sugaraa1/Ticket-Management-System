@@ -1,0 +1,12 @@
+{% load i18n %}
+{# Төсөл устгах товч — ticket-тэй бол устгахын оронд идэвхгүй болгоно гэж анхааруулна. #}
+<form method="post" action="{% url 'projects:project_delete' p.id %}" class="d-inline"
+      data-confirm-danger
+      data-confirm="{% if p.ticket_count %}{% blocktrans with name=p.name n=p.ticket_count %}'{{ name }}' төсөлд {{ n }} ticket холбоотой тул устгах боломжгүй. Оронд нь идэвхгүй болгохдоо итгэлтэй байна уу?{% endblocktrans %}{% else %}{% blocktrans with name=p.name %}'{{ name }}' төслийг устгахдаа итгэлтэй байна уу? Модулиуд нь хамт устана. Энэ үйлдлийг буцаах боломжгүй.{% endblocktrans %}{% endif %}">
+  {% csrf_token %}
+  {% if full %}
+  <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> {% trans "Төсөл устгах" %}</button>
+  {% else %}
+  <button type="submit" class="btn btn-sm tms-icon-btn text-danger" title="{% trans "Устгах" %}" aria-label="{% trans "Устгах" %}"><i class="bi bi-trash"></i></button>
+  {% endif %}
+</form>

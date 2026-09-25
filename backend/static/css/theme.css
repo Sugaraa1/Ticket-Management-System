@@ -3,18 +3,28 @@
    ========================================================================== */
 
 :root {
-  --bg: #F5F7FA;
+  --bg: #F4F6FA;
   --surface: #FFFFFF;
   --border: #E4E8F0;
   --text: #1D2433;
   --text-muted: #6B7280;
 
-  --primary: #3452D9;
-  --primary-hover: #2A41B3;
-  --primary-tint: #EEF1FD;
+  /* Foxt брэнд: улбар шар + хар хөх */
+  --primary: #E2711D;
+  --primary-hover: #C45E12;
+  --primary-tint: #FFF1E6;
+  --navy: #1E2A78;
+  --navy-deep: #161F5C;
+
+  --bs-primary: #E2711D;
+  --bs-primary-rgb: 226, 113, 29;
+  --bs-link-color: #C45E12;
+  --bs-link-color-rgb: 196, 94, 18;
+  --bs-link-hover-color: #9E4A0C;
+  --bs-link-hover-color-rgb: 158, 74, 12;
 
   --radius-sm: 6px;
-  --radius-md: 10px;
+  --radius-md: 12px;
   --shadow-card: 0 1px 3px rgba(16, 24, 40, 0.06);
 
   /* Status тус бүрийн өнгө: тод текст + зөөлөн дэвсгэр */
@@ -36,7 +46,7 @@
   /* Тайлан (Reports) — trend chart-ийн 2 цуврааны өнгө (validate_palette.js-ээр
      баталгаажуулсан хос: CVD ΔE 29.8, normal-vision ΔE 38.9 @ #FFFFFF surface) */
   --series-created: var(--primary);
-  --series-closed: #EB6834;
+  --series-closed: #1E2A78;
 
   /* SLA compliance meter-ийн төлвийн өнгө (status-badge-ийн өнгөтэй ижил гэр бүл,
      categorical цувраанаас ялгаатай тул хольцгүй) */
@@ -46,11 +56,13 @@
   --report-track: #EEF0F4;
 }
 
+html { font-size: 18px; }
+
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: .95rem;
+  font-family: "Nunito", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 1rem;
 }
 
 h1, h2, h3, h4, h5, .navbar-brand {
@@ -158,7 +170,8 @@ input[type="text"], input[type="password"], input[type="email"] {
 .priority-critical { background: var(--priority-critical); }
 
 /* ---------- Ticket list rows ---------- */
-.ticket-row:hover {
+.clickable-row { cursor: pointer; }
+.ticket-row:hover, .clickable-row:hover {
   background-color: var(--primary-tint);
 }
 .ticket-row td {
@@ -222,7 +235,7 @@ input[type="text"], input[type="password"], input[type="email"] {
 }
 
 .report-chart text {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Nunito", "Inter", sans-serif;
   fill: var(--text-muted);
 }
 .report-chart .report-chart-gridline { stroke: var(--border); stroke-width: 1; }
@@ -239,3 +252,408 @@ input[type="text"], input[type="password"], input[type="email"] {
   margin-bottom: .75rem;
   opacity: .5;
 }
+
+/* ---------- Ticket list toolbar ---------- */
+.tms-toolbar { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.tms-toolbar-title { margin-right: .5rem; white-space: nowrap; }
+.tms-toolbar-search { position: relative; flex: 1 1 16rem; min-width: 12rem; max-width: 40rem; }
+.tms-toolbar-search svg {
+  position: absolute; left: .7rem; top: 50%; transform: translateY(-50%);
+  color: var(--text-muted); pointer-events: none;
+}
+.tms-toolbar-search input { padding-left: 2.1rem; }
+.tms-filter-toggle { position: relative; }
+.tms-filter-toggle summary {
+  display: inline-flex; align-items: center; gap: .4rem;
+  list-style: none; cursor: pointer; user-select: none;
+}
+.tms-filter-toggle summary::-webkit-details-marker { display: none; }
+.tms-filter-dot { width: .45rem; height: .45rem; border-radius: 50%; background: var(--primary); display: inline-block; }
+.tms-filter-panel {
+  position: absolute; z-index: 20; margin-top: .5rem; padding: 1rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); box-shadow: 0 8px 24px rgba(16, 24, 40, .12);
+}
+.tms-toolbar-add { white-space: nowrap; display: inline-flex; align-items: center; gap: .35rem; margin-left: auto; }
+
+/* ---------- Lab Manager-style table ---------- */
+.tms-table th { font-size: .8125rem; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.tms-table td { font-size: .875rem; }
+.tms-table .ticket-row { cursor: pointer; }
+.tms-table .ticket-row.is-overdue { background: #FFF5F5; }
+.tms-cell-title { min-width: 16rem; max-width: 28rem; }
+.tms-cell-title a { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.status-dot-label { display: inline-flex; align-items: center; gap: .45rem; font-weight: 500; white-space: nowrap; }
+.status-dot-label::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: currentColor; }
+.status-fg-new { color: var(--status-new-fg); }
+.status-fg-assigned { color: var(--status-assigned-fg); }
+.status-fg-in_progress { color: var(--status-in_progress-fg); }
+.status-fg-resolved { color: var(--status-resolved-fg); }
+.status-fg-qa_test { color: var(--status-qa_test-fg); }
+.status-fg-closed { color: var(--status-closed-fg); }
+.status-fg-rejected { color: var(--status-rejected-fg); }
+.status-fg-reopened { color: var(--status-reopened-fg); }
+
+.priority-pill {
+  display: inline-block; padding: .15rem .55rem; border-radius: var(--radius-sm);
+  font-size: .75rem; font-weight: 600; white-space: nowrap;
+}
+.priority-pill-low { background: #F1F2F4; color: #4B5563; }
+.priority-pill-medium { background: #FDF3E1; color: #B45F06; }
+.priority-pill-high { background: #FEE9D7; color: #C2410C; }
+.priority-pill-critical { background: #FCE4E4; color: #B91C1C; }
+
+/* ---------- New ticket drawer ---------- */
+.tms-drawer { --bs-offcanvas-width: min(560px, 100vw); }
+.tms-drawer .offcanvas-body { overflow-y: auto; }
+
+
+/* ==========================================================================
+   App shell: зүүн sidebar + өргөн контент (орчин үеийн SaaS layout)
+   ========================================================================== */
+:root { --sidebar-w: 284px; --sidebar-bg: var(--navy-deep); --sidebar-fg: #D6DBF5; }
+
+.tms-app { min-height: 100vh; }
+.tms-sidebar {
+  position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w); z-index: 1030;
+  display: flex; flex-direction: column; padding: 1rem .875rem;
+  background: var(--sidebar-bg); color: var(--sidebar-fg);
+  transition: transform .2s ease;
+}
+.tms-sidebar-brand {
+  display: flex; align-items: center; gap: .6rem; padding: .25rem .5rem 1rem;
+  color: #fff; text-decoration: none; font-weight: 700; font-size: 1.15rem; letter-spacing: -.01em;
+}
+.tms-logo {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2rem; height: 2rem; border-radius: 8px; background: var(--primary); color: #fff;
+}
+.tms-sidebar-new { display: flex; align-items: center; justify-content: center; gap: .4rem; border-radius: 10px; font-weight: 600; }
+.tms-nav { flex: 1; overflow-y: auto; }
+.tms-nav-label {
+  font-size: .6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+  color: #64748B; padding: 1rem .6rem .4rem;
+}
+.tms-nav-link {
+  display: flex; align-items: center; gap: .7rem; padding: .55rem .65rem; margin-bottom: 2px;
+  border-radius: 8px; color: var(--sidebar-fg); text-decoration: none; font-weight: 500; font-size: .9rem;
+}
+.tms-nav-link i { font-size: 1.05rem; width: 1.2rem; text-align: center; }
+.tms-nav-link:hover { background: rgba(255,255,255,.06); color: #fff; }
+.tms-nav-link.active { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(226,113,29,.35); }
+.tms-nav-badge {
+  margin-left: auto; min-width: 1.4rem; padding: .05rem .45rem; border-radius: 999px;
+  background: #EF4444; color: #fff; font-size: .72rem; font-weight: 700; text-align: center;
+}
+.tms-sidebar-footer { border-top: 1px solid rgba(255,255,255,.08); padding-top: .875rem; }
+.tms-sidebar-footer .input-group-text,
+.tms-sidebar-footer .form-select { background-color: #232D78; border-color: #34408F; color: #E5E7EB; }
+.tms-user { display: flex; align-items: center; gap: .6rem; }
+.tms-user-name { flex: 1; min-width: 0; line-height: 1.2; color: #E5E7EB; }
+.tms-user-name .small { color: #94A3B8; }
+.tms-icon-btn { color: inherit; border: 0; background: transparent; }
+.tms-icon-btn:hover { background: rgba(127,127,127,.15); color: inherit; }
+
+.tms-avatar, .profile-avatar {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  border-radius: 50%; background: linear-gradient(135deg, #F29A4A, #D9601A);
+  color: #fff !important; font-weight: 700; text-decoration: none;
+}
+.tms-avatar { width: 2.1rem; height: 2.1rem; font-size: .75rem; }
+.profile-avatar { width: 4.5rem; height: 4.5rem; font-size: 1.5rem; }
+
+.tms-app .tms-main { margin-left: var(--sidebar-w); min-height: 100vh; }
+.tms-content { padding: 1.75rem clamp(1rem, 2.5vw, 2.5rem) 3rem; }
+.tms-public .tms-content { padding: 0; }
+.tms-topbar {
+  position: sticky; top: 0; z-index: 1020; display: flex; align-items: center; justify-content: space-between;
+  padding: .5rem 1rem; background: var(--surface); border-bottom: 1px solid var(--border);
+}
+
+@media (max-width: 991.98px) {
+  .tms-sidebar { transform: translateX(-100%); box-shadow: 0 0 40px rgba(0,0,0,.3); }
+  .tms-sidebar.open { transform: none; }
+  .tms-app .tms-main { margin-left: 0; }
+}
+
+/* ---------- Refined surfaces ---------- */
+.card { border-color: #E6E9F0; box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.03); }
+.card-header { padding: .85rem 1.1rem; }
+.btn { border-radius: 8px; font-weight: 500; }
+.form-control, .form-select { border-radius: 8px; border-color: #D8DDE6; }
+.form-control:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(226,113,29,.18); }
+.tms-table thead th { background: #F8FAFC; text-transform: uppercase; font-size: .72rem; letter-spacing: .03em; padding-top: .7rem; padding-bottom: .7rem; }
+.tms-table tbody td { padding-top: .7rem; padding-bottom: .7rem; }
+.table-hover > tbody > tr:hover > * { --bs-table-bg-state: #F5F7FF; }
+.stat-tile-value { font-size: 1.9rem; }
+.tms-page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: .25rem; }
+
+.tms-check-list { display: grid; gap: .4rem; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); }
+.tms-check-item {
+  display: flex; align-items: center; gap: .5rem; padding: .5rem .7rem; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+}
+.tms-check-item:has(input:checked) { border-color: var(--primary); background: var(--primary-tint); }
+
+.tms-queue-card .card-header i { color: var(--primary); }
+
+
+/* ---------- Filter dropdown (тогтмол өргөнтэй, хүснэгтийн дээр давхарлах popover) ---------- */
+.tms-filter-panel {
+  width: 20rem; padding: 1rem 1.1rem 1.1rem; margin-top: .4rem;
+  border-radius: 12px; box-shadow: 0 12px 32px rgba(16, 24, 40, .16);
+}
+.tms-filter-panel .form-label { font-size: .8rem; font-weight: 600; color: var(--text-muted); margin-bottom: .3rem; }
+.tms-filter-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-bottom: .75rem; margin-bottom: .85rem; border-bottom: 1px solid var(--border);
+}
+.tms-filter-count {
+  min-width: 1.3rem; padding: 0 .4rem; border-radius: 999px;
+  background: var(--primary); color: #fff; font-size: .72rem; font-weight: 700; line-height: 1.3rem; text-align: center;
+}
+.tms-filter-toggle[open] > summary { background: var(--primary-tint); border-color: var(--primary); color: var(--primary); }
+.tms-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.tms-chip {
+  display: inline-flex; align-items: center; gap: .3rem; padding: .25rem .4rem .25rem .7rem;
+  border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+  font-size: .82rem; color: var(--text); text-decoration: none;
+}
+.tms-chip:hover { border-color: var(--primary); color: var(--primary); }
+
+
+/* ---------- Login: split screen ---------- */
+.tms-login { display: grid; grid-template-columns: 1.1fr 1fr; min-height: 100vh; }
+.tms-login-brand {
+  position: relative; overflow: hidden; color: #fff; padding: 3.5rem clamp(2rem, 5vw, 5rem);
+  display: flex; flex-direction: column; justify-content: space-between;
+  background: radial-gradient(1000px 520px at 110% -10%, #F6A45A 0%, transparent 60%),
+              radial-gradient(900px 500px at -10% 110%, #C9570F 0%, transparent 55%), #E97B2C;
+}
+.tms-login-brand h1 { font-size: 2.4rem; line-height: 1.15; letter-spacing: -.02em; max-width: 30rem; }
+.tms-login-brand p { color: #CBD5E1; max-width: 30rem; }
+.tms-login-features { list-style: none; padding: 0; margin: 2rem 0 0; display: grid; gap: .9rem; }
+.tms-login-features li { display: flex; gap: .75rem; align-items: flex-start; color: #E2E8F0; }
+.tms-login-features i {
+  flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 8px; display: inline-flex;
+  align-items: center; justify-content: center; background: rgba(255,255,255,.1); color: #fff;
+}
+.tms-login-form-wrap { display: flex; align-items: center; justify-content: center; padding: 2rem; background: var(--surface); }
+.tms-login-form { width: 100%; max-width: 24rem; }
+.tms-login-form .form-control { padding: .7rem .9rem; }
+.tms-login-form .input-group-text { background: var(--surface); border-color: #D8DDE6; color: var(--text-muted); }
+.tms-login-form .input-group .form-control { border-left: 0; }
+@media (max-width: 991.98px) {
+  .tms-login { grid-template-columns: 1fr; }
+  .tms-login-brand { padding: 2rem; }
+  .tms-login-brand .tms-login-features, .tms-login-brand .tms-login-foot { display: none; }
+  .tms-login-brand h1 { font-size: 1.6rem; }
+}
+
+/* Category → багууд: ангилал бүр нэг бүлэг, бүлгүүдийн хооронд тод зураас */
+.tms-category-table tbody.tms-category-group { border-top: 2px solid var(--border); }
+.tms-category-table tbody.tms-category-group:hover { background: #FAFBFF; }
+.tms-category-table td[rowspan] { vertical-align: top; padding-top: .9rem; }
+
+
+/* ---------- Foxt брэнд өнгөлгөө ---------- */
+h1, h2, h3, h4, h5, .tms-page-title, .tms-toolbar-title { color: var(--navy); font-weight: 800; }
+.btn, .form-control, .form-select, .card { border-radius: 12px; }
+.btn-primary { font-weight: 700; }
+.text-primary { color: var(--primary) !important; }
+.text-bg-primary { background-color: var(--primary) !important; }
+.tms-logo { background: #fff; color: var(--primary); }
+.tms-sidebar-brand { font-size: 1.25rem; }
+.tms-sidebar-brand span:last-child { color: #fff; }
+.tms-nav-label { color: #8E97D6; }
+.tms-nav-link:hover { background: rgba(255,255,255,.08); }
+.tms-nav-badge { background: #fff; color: var(--primary); }
+.tms-sidebar-new { background: var(--primary); border-color: var(--primary); }
+.table-hover > tbody > tr:hover > * { --bs-table-bg-state: #FFF7F0; }
+.stat-tile-label { color: #6B73A8; }
+.page-link { color: var(--primary-hover); }
+.page-item.active .page-link { background: var(--primary); border-color: var(--primary); }
+
+/* Login: Foxt poster маягийн улбар шар + цагаан дугуйрсан "pill" */
+.tms-login-brand h1 { color: var(--navy); background: #fff; display: inline-block; padding: .9rem 1.4rem; border-radius: 24px; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.tms-login-brand p { color: #FFF4EA; }
+.tms-login-features li { color: #fff; font-weight: 600; }
+.tms-login-features i { background: rgba(255,255,255,.22); }
+.tms-login-brand .tms-logo { background: #fff; color: var(--primary); }
+.tms-login-foot { color: #FFE3CC !important; }
+
+/* ---------- Sidebar: улбар шар дэвсгэр ---------- */
+:root { --sidebar-bg: linear-gradient(180deg, #EC8233 0%, #DC6A18 100%); --sidebar-fg: #FFF3E8; }
+.tms-sidebar { background: var(--sidebar-bg); }
+.tms-nav-label { color: rgba(255,255,255,.72); }
+.tms-nav-link { color: #FFF3E8; }
+.tms-nav-link:hover { background: rgba(255,255,255,.16); color: #fff; }
+.tms-nav-link.active { background: #fff; color: var(--primary-hover); box-shadow: 0 4px 14px rgba(120,50,0,.18); }
+.tms-nav-badge { background: var(--navy); color: #fff; }
+.tms-nav-link.active .tms-nav-badge { background: var(--primary); color: #fff; }
+.tms-sidebar-new, .tms-sidebar-new:hover, .tms-sidebar-new:focus {
+  background: var(--navy); border-color: var(--navy); color: #fff;
+}
+.tms-sidebar-new:hover { background: var(--navy-deep); border-color: var(--navy-deep); }
+.tms-sidebar-footer { border-top-color: rgba(255,255,255,.25); }
+.tms-sidebar-footer .input-group-text,
+.tms-sidebar-footer .form-select { background-color: rgba(255,255,255,.18); border-color: rgba(255,255,255,.3); color: #fff; }
+.tms-sidebar-footer .form-select option { color: #1D2433; }
+.tms-user-name { color: #fff; }
+.tms-user-name .small { color: rgba(255,255,255,.75); }
+.tms-sidebar .tms-avatar { background: #fff; color: var(--primary) !important; }
+.tms-sidebar .tms-icon-btn { color: #fff; }
+
+/* ---------- Login зүүн тал: гүн хар хөх дэвсгэр + улбар шар текст ---------- */
+.tms-login-brand {
+  background: radial-gradient(900px 500px at 110% -10%, #2A3796 0%, transparent 60%),
+              radial-gradient(800px 480px at -10% 110%, #0E1545 0%, transparent 55%), #161F5C;
+  color: #F29A4A;
+}
+.tms-login-brand h1 { background: transparent; box-shadow: none; padding: 0; color: #F29A4A; }
+.tms-login-brand p { color: #F6B77F; }
+.tms-login-brand .fs-5 { color: #F29A4A; }
+.tms-login-features li { color: #F29A4A; }
+.tms-login-features i { background: rgba(242,154,74,.16); color: #F29A4A; }
+.tms-login-brand .tms-logo { background: var(--primary); color: #fff; }
+.tms-login-foot { color: rgba(242,154,74,.7) !important; }
+
+/* Sidebar "Шинэ ticket": цагаан товч, улбар шар бичиг */
+.tms-sidebar-new, .tms-sidebar-new:focus { background: #fff; border-color: #fff; color: var(--primary-hover); }
+.tms-sidebar-new:hover { background: #FFF1E6; border-color: #FFF1E6; color: var(--primary-hover); }
+
+/* ---------- Тайлан хэвлэх / PDF ---------- */
+.print-only { display: none; }
+@media print {
+  .tms-sidebar, .tms-topbar, .no-print, .alert, .offcanvas { display: none !important; }
+  .print-only { display: block; }
+  .tms-main, .tms-content { margin: 0 !important; padding: 0 !important; }
+  body { background: #fff !important; }
+  .card { break-inside: avoid; box-shadow: none !important; }
+  details > *:not(summary) { display: block; }
+  details > summary { display: none; }
+  @page { size: A4; margin: 12mm; }
+}
+
+/* ---------- On/off toggle — брэндийн улбар шар ---------- */
+.form-check-input:checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+.form-check-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(226,113,29,.18);
+}
+.form-switch .form-check-input { cursor: pointer; width: 2.4em; }
+.form-switch .form-check-input:focus:not(:checked) {
+  /* Bootstrap-ийн цэнхэр бөмбөлгийг улбар шараар солино */
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23E2711D'/%3e%3c/svg%3e");
+}
+.form-switch .form-check-input:checked + .form-check-label { color: var(--primary); font-weight: 600; }
+.form-switch .form-check-input:disabled { cursor: not-allowed; }
+
+
+/* ---------- Баталгаажуулах цонх (confirm modal) ---------- */
+.tms-confirm .modal-content {
+  border: 0;
+  border-radius: 16px;
+  border-top: 4px solid var(--primary);
+  box-shadow: 0 20px 50px rgba(0,0,0,.18);
+}
+.tms-confirm-icon {
+  width: 3.5rem; height: 3.5rem; margin: 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--primary-tint);
+  color: var(--primary);
+  font-size: 1.6rem;
+}
+.tms-confirm .js-confirm-message { white-space: pre-line; }
+.tms-confirm .modal-backdrop, .modal-backdrop.show { opacity: .4; }
+
+/* ---------- Удирдлагын жагсаалтын хайлт / шүүлтүүр ---------- */
+.tms-list-toolbar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.tms-list-toolbar .form-select.is-set { border-color: var(--primary); background-color: var(--primary-tint); color: var(--primary); font-weight: 600; }
+.pagination .page-link { color: var(--primary); }
+.pagination .page-item.active .page-link { background: var(--primary); border-color: var(--primary); }
+
+/* ---------- Профайлын зураг ---------- */
+.tms-avatar.has-image, .profile-avatar.has-image { background: var(--primary-tint); overflow: hidden; }
+.tms-avatar img, .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.profile-avatar-form { width: 4.5rem; }
+.profile-avatar-picker { position: relative; display: block; border-radius: 50%; cursor: pointer; }
+.profile-avatar-overlay {
+  position: absolute; inset: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.45); color: #fff; font-size: 1.35rem;
+  opacity: 0; transition: opacity .15s;
+}
+.profile-avatar-picker:hover .profile-avatar-overlay,
+.profile-avatar-picker:focus-within .profile-avatar-overlay { opacity: 1; }
+.profile-avatar-picker:focus-within { box-shadow: 0 0 0 3px rgba(226,113,29,.35); }
+
+/* ---------- Багийн гишүүн сонгох ---------- */
+.tms-member-list {
+  max-height: 22rem; overflow-y: auto;
+  display: flex; flex-direction: column; gap: .35rem;
+  padding: .15rem; margin: 0 -.15rem .5rem;
+}
+.tms-member-list .tms-check-item[hidden] { display: none; }
+.tms-member-list .tms-check-item { min-width: 0; }
+.tms-member-picker .js-picker-filter .btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.tms-member-picker .js-dirty-mark { color: #fff; font-size: 1.2rem; line-height: 0; }
+
+/* ---------- Бөөнөөр үйлдэл ---------- */
+.tms-bulk-col { width: 1%; }
+.tms-bulk-col .form-check-input { cursor: pointer; margin: 0; }
+.tms-bulk-bar {
+  position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); z-index: 1040;
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; justify-content: center;
+  max-width: calc(100vw - 2rem);
+  padding: .6rem .9rem; border-radius: 14px;
+  background: linear-gradient(135deg, #F29A4A, #D9601A); color: #fff;
+  box-shadow: 0 12px 30px rgba(217,96,26,.35);
+}
+.tms-bulk-bar .form-select { border-color: transparent; font-weight: 600; }
+.tms-bulk-bar .form-select:focus { box-shadow: 0 0 0 3px rgba(255,255,255,.45); }
+.tms-bulk-bar .btn-apply { background: #fff; color: var(--primary); border: 0; font-weight: 700; }
+.tms-bulk-bar .btn-apply:hover { background: var(--primary-tint); color: var(--primary-hover); }
+.tms-bulk-bar .js-bulk-count { display: inline-flex; min-width: 1.6rem; height: 1.6rem; align-items: center; justify-content: center; border-radius: 999px; background: rgba(255,255,255,.25); padding: 0 .4rem; }
+.tms-bulk-bar[hidden] { display: none; }
+.tms-app .tms-bulk-bar { margin-left: calc(var(--sidebar-w, 0px) / 2); }
+
+/* ---------- @mention ---------- */
+.tms-mention { color: var(--primary); font-weight: 600; background: var(--primary-tint); border-radius: 4px; padding: 0 .2rem; }
+.tms-mention-menu {
+  position: absolute; left: 0; z-index: 20; min-width: 16rem; margin-top: .25rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,.12); border-radius: 10px; overflow: hidden;
+}
+.tms-mention-menu .list-group-item.active { background: var(--primary); border-color: var(--primary); }
+
+
+/* ---------- Профайл карт (Миний ажил) ---------- */
+.profile-card { overflow: hidden; border: 0; box-shadow: 0 6px 24px rgba(30,42,120,.08); }
+.profile-cover {
+  height: 4.5rem;
+  background:
+    radial-gradient(circle at 85% -20%, rgba(255,255,255,.35) 0 22%, transparent 23%),
+    linear-gradient(135deg, #F29A4A, #D9601A);
+}
+.profile-card .profile-avatar-form { margin-top: -2.4rem; width: 5rem; }
+.profile-card .profile-avatar { width: 5rem; height: 5rem; font-size: 1.6rem; border: 4px solid var(--surface); box-shadow: 0 4px 14px rgba(217,96,26,.35); }
+.profile-name { color: var(--text, #1F2937); font-weight: 800; }
+.profile-role {
+  display: inline-block; padding: .2rem .6rem; border-radius: 999px;
+  background: var(--primary-tint); color: var(--primary);
+  font-size: .75rem; font-weight: 700;
+}
+.profile-role.is-empty { background: #F1F5F9; color: var(--text-muted); }
+.profile-facts { list-style: none; margin: .75rem 0 0; padding: 0 1rem; font-size: .8125rem; }
+.profile-facts li {
+  display: grid; grid-template-columns: 1.1rem auto 1fr; align-items: center; gap: .55rem;
+  padding: .55rem 0; border-top: 1px solid var(--border);
+}
+.profile-facts i { color: var(--primary); }
+.profile-facts .label { color: var(--text-muted); white-space: nowrap; }
+.profile-facts .value { text-align: right; font-weight: 600; overflow-wrap: anywhere; }

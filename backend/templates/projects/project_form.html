@@ -9,13 +9,13 @@
     <div class="card mb-3">
       <div class="card-header">{% trans "Төслийн мэдээлэл" %}</div>
       <div class="card-body">
-        <form method="post">
+        <form method="post" data-deactivate-confirm="{% trans "Энэ төслийг идэвхгүй болгох уу? Шинэ ticket үүсгэх сонголтод гарахгүй болно." %}">
           {% csrf_token %}
           {% for field in form %}
-          <div class="mb-3 {% if field.name == 'is_active' %}form-check{% endif %}">
+          <div class="mb-3 {% if field.name == 'is_active' %}form-check form-switch{% endif %}">
             {% if field.name == "is_active" %}
               {{ field }}
-              <label class="form-check-label">{{ field.label }}</label>
+              <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
             {% else %}
               <label class="form-label">{{ field.label }}</label>
               {{ field }}
@@ -26,6 +26,10 @@
           <button type="submit" class="btn btn-primary">{% trans "Хадгалах" %}</button>
           <a href="{% url 'projects:project_list' %}" class="btn btn-link">{% trans "Цуцлах" %}</a>
         </form>
+        {% if project %}
+        <hr>
+        {% include "projects/_project_delete_form.html" with p=project full=True %}
+        {% endif %}
       </div>
     </div>
   </div>
@@ -33,10 +37,29 @@
   {% if project %}
   <div class="col-md-6">
     <div class="card">
-      <div class="card-header">Module-ууд</div>
+      <div class="card-header">{% trans "Модулиуд" %}</div>
       <ul class="list-group list-group-flush">
         {% for m in modules %}
-        <li class="list-group-item">{{ m.name }}</li>
+        <li class="list-group-item tms-module-item">
+          <div class="d-flex align-items-center gap-2 js-module-view">
+            <span class="flex-grow-1">{{ m.name }}
+              {% if m.ticket_count %}<span class="badge text-bg-light border ms-1">{% blocktrans count counter=m.ticket_count %}{{ counter }} ticket{% plural %}{{ counter }} ticket{% endblocktrans %}</span>{% endif %}
+            </span>
+            <button type="button" class="btn btn-sm tms-icon-btn js-module-edit" title="{% trans "Засах" %}" aria-label="{% trans "Засах" %}"><i class="bi bi-pencil"></i></button>
+            <form method="post" action="{% url 'projects:module_delete' project.id m.id %}" class="d-inline"
+                  data-confirm-danger
+                  data-confirm="{% if m.ticket_count %}{% blocktrans with name=m.name n=m.ticket_count %}'{{ name }}' модулийг устгахдаа итгэлтэй байна уу? Үүнд холбогдсон {{ n }} ticket-ийн модуль хоосон болно.{% endblocktrans %}{% else %}{% blocktrans with name=m.name %}'{{ name }}' модулийг устгахдаа итгэлтэй байна уу?{% endblocktrans %}{% endif %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm tms-icon-btn text-danger" title="{% trans "Устгах" %}" aria-label="{% trans "Устгах" %}"><i class="bi bi-trash"></i></button>
+            </form>
+          </div>
+          <form method="post" action="{% url 'projects:module_edit' project.id m.id %}" class="d-none gap-2 js-module-form">
+            {% csrf_token %}
+            <input type="text" name="name" value="{{ m.name }}" class="form-control form-control-sm" maxlength="150" required>
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Хадгалах" %}</button>
+            <button type="button" class="btn btn-sm btn-light js-module-cancel">{% trans "Цуцлах" %}</button>
+          </form>
+        </li>
         {% empty %}
         <li class="list-group-item text-muted">{% trans "Module алга байна." %}</li>
         {% endfor %}
@@ -52,4 +75,21 @@
   </div>
   {% endif %}
 </div>
+{% include "_deactivate_confirm_script.html" %}
+<script>
+// Модулийн нэрийг тухайн мөрөн дээр нь засна.
+document.querySelectorAll(".tms-module-item").forEach(function (item) {
+  var view = item.querySelector(".js-module-view"), form = item.querySelector(".js-module-form");
+  function show(editing) {
+    view.classList.toggle("d-none", editing);
+    view.classList.toggle("d-flex", !editing);
+    form.classList.toggle("d-none", !editing);
+    form.classList.toggle("d-flex", editing);
+    if (editing) form.name.select();
+  }
+  item.querySelector(".js-module-edit").addEventListener("click", function () { show(true); });
+  item.querySelector(".js-module-cancel").addEventListener("click", function () { form.reset(); show(false); });
+  form.addEventListener("keydown", function (e) { if (e.key === "Escape") { form.reset(); show(false); } });
+});
+</script>
 {% endblock %}

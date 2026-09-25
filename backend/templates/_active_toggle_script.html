@@ -1,0 +1,13 @@
+<script>
+// Toggle-ийг дармагц хадгална; идэвхгүй болгохын өмнө баталгаажуулна.
+document.querySelectorAll(".js-active-toggle input").forEach(function (input) {
+  input.addEventListener("change", function () {
+    var form = input.form;
+    function save() { input.disabled = true; form.submit(); }
+    if (!form.dataset.confirm) return save();
+    tmsConfirm(form.dataset.confirm).then(function (yes) {
+      if (yes) save(); else input.checked = !input.checked;
+    });
+  });
+});
+</script>

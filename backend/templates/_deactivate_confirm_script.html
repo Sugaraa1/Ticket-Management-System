@@ -1,0 +1,15 @@
+<script>
+// Засах маягт дээр "Идэвхтэй" toggle-ийг унтраагаад хадгалахад баталгаажуулна.
+(function () {
+  var input = document.querySelector('form input[name="is_active"]');
+  if (!input || !input.checked) return;
+  var form = input.form, confirmed = false;
+  form.addEventListener("submit", function (e) {
+    if (input.checked || confirmed) return;
+    e.preventDefault();
+    tmsConfirm(form.dataset.deactivateConfirm).then(function (yes) {
+      if (yes) { confirmed = true; form.requestSubmit(); }
+    });
+  });
+})();
+</script>

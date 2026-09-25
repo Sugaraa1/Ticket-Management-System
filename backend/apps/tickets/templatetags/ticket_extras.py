@@ -22,3 +22,21 @@ def status_label(value):
         return Ticket.Status(value).label
     except ValueError:
         return value
+
+
+@register.filter
+def basename(path):
+    """'attachments/2026/09/report.pdf' -> 'report.pdf'."""
+    return str(path).rsplit("/", 1)[-1] if path else ""
+
+
+@register.filter
+def with_mentions(text):
+    """Сэтгэгдлийг escape хийж, @username-ийг тодруулж, мөр шилжилтийг <br> болгоно."""
+    from django.utils.html import escape
+    from django.utils.safestring import mark_safe
+
+    from apps.tickets.notifications import MENTION_RE
+
+    html = MENTION_RE.sub(r'<span class="tms-mention">@\1</span>', escape(text or ""))
+    return mark_safe(html.replace("\n", "<br>"))

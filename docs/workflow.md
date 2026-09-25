@@ -32,15 +32,20 @@ graph LR
 
 | Одоогийн Status | Боломжит дараагийн Status | Хийж болох эрх |
 |---|---|---|
-| NEW | ASSIGNED | PM/Team Lead |
-| ASSIGNED | IN_PROGRESS | Developer/Agent |
-| IN_PROGRESS | RESOLVED | Developer/Agent |
-| IN_PROGRESS | REJECTED | Developer/Agent, PM/Team Lead |
-| RESOLVED | QA_TEST | Developer/Agent ("QA-д илгээх" товч дарж, гараар) |
-| QA_TEST | CLOSED | QA |
-| QA_TEST | REOPENED | QA (comment сонголтоор — заавал биш) |
-| REOPENED | IN_PROGRESS | Developer/Agent |
+| NEW | ASSIGNED | PM/Team Lead (хариуцагчийг багийн **идэвхтэй** гишүүдээс сонгоно) |
+| ASSIGNED | IN_PROGRESS | Зөвхөн хариуцагч Developer |
+| IN_PROGRESS | RESOLVED | Зөвхөн хариуцагч Developer |
+| IN_PROGRESS | REJECTED | Хариуцагч Developer, PM/Team Lead |
+| RESOLVED | QA_TEST | Зөвхөн хариуцагч Developer ("QA-д илгээх" товч дарж, гараар) |
+| QA_TEST | CLOSED | Тухайн багийн QA Tester (багт QA тохируулаагүй бол аль ч QA) |
+| QA_TEST | REOPENED | Тухайн багийн QA Tester (comment сонголтоор — заавал биш) |
+| REOPENED | IN_PROGRESS | Зөвхөн хариуцагч Developer |
 | REJECTED | REOPENED | PM/Team Lead |
+
+> "PM/Team Lead" гэдэг нь PM group-ийн хэрэглэгч, эсвэл тухайн ticket-ийн **багийн Team Lead** (ямар ч хэрэглэгч байж болно — зөвхөн өөрийн багийн ticket дээр). Admin бүх шилжилтийг хийж чадна. Эрхийн шалгалт `apps/tickets/permissions.py`-д (`TRANSITION_PERMISSIONS`, `ASSIGNEE_ONLY_TRANSITIONS`, `QA_TEAM_TRANSITIONS`).
+
+### Хариуцагч солих (reassign)
+Ticket оноогдсоны дараа (NEW, CLOSED, REJECTED-ээс бусад төлөвт) PM/Admin эсвэл тухайн багийн Team Lead хариуцагчийг багийн өөр идэвхтэй гишүүнээр сольж болно. Status өөрчлөгдөхгүй; өөрчлөлт сэтгэгдэлд бүртгэгдэж, шинэ хариуцагчид email очно. Хэрэглэгчийг идэвхгүй болгоход түүнд оноогдсон нээлттэй ticket-ийн тоог анхааруулна.
 
 > Дээрх хүснэгтэд байхгүй шилжилт (жишээ нь `NEW` → `CLOSED`) программаар хориглогдоно.
 > `RESOLVED → QA_TEST` шилжилт нь **гар аргаар** хийгдэнэ (Django signal-аар автоматаар шилжихгүй) — Developer "Илгээх QA-д" товч дарж явуулна.
@@ -60,17 +65,19 @@ ALLOWED_TRANSITIONS = {
 }
 
 def can_transition(current_status: str, new_status: str) -> bool:
+    if current_status == new_status:
+        return True
     return new_status in ALLOWED_TRANSITIONS.get(current_status, [])
 ```
 
 Status өөрчлөгдөх бүрд `StatusHistory` бичлэг үүсгэж, `from_status`, `to_status`, `changed_by`, `changed_at`-ийг хадгална.
 
 ### Comment заавал эсэх (Reopen дээр)
-`QA_TEST → REOPENED` болон `REJECTED → REOPENED` шилжилт хийхэд comment **заавал биш, сонголтоор**. UI дээр comment оруулах талбар харагдана, гэхдээ хоосон орхиод шууд submit хийж болно (`Comment.body` заавал биш `blank=True` байдлаар models дээр тохируулна).
+`QA_TEST → REOPENED` болон `REJECTED → REOPENED` шилжилт хийхэд comment **заавал биш, сонголтоор**. UI дээр comment оруулах талбар харагдана, гэхдээ хоосон орхиод шууд submit хийж болно (`Comment.body` нь models дээр `blank=True`). Харин ticket дээр гараар бичих ердийн сэтгэгдэл хоосон байж болохгүй (`CommentForm` шаардана).
 
 ## SLA болон Internal note — workflow-д нөлөөлөхгүй
 
 Дараах 2 боломж нь **зөвхөн мэдээллийн шинж чанартай** бөгөөд дээрх `ALLOWED_TRANSITIONS` state machine-д ямар ч байдлаар нөлөөлөхгүй, шинэ status нэмэгдээгүй:
 
-- **SLA due date (`sla_due_at`)** — Ticket үүсэх мөчид priority-с хамаарч автоматаар тооцоологдоно (`settings.SLA_HOURS_BY_PRIORITY`: CRITICAL=4ц, HIGH=24ц, MEDIUM=72ц, LOW=168ц). `Ticket.is_overdue` нь зөвхөн UI дээр (улаан өнгөөр) анхааруулах зориулалттай — хугацаа хэтэрсэн ч гэсэн ticket-ийг ямар ч status руу шилжүүлэхийг блоклохгүй. CLOSED/REJECTED төлөвт байгаа ticket "хэтэрсэн" гэж тооцогдохгүй.
-- **Internal note (`Comment.is_internal`)** — Comment нэмэхэд зэрэгцээ тохируулах checkbox, зөвхөн харагдах байдлыг ялгаж тэмдэглэнэ (UI дээр шар өнгө, 🔒 badge). Аль ч status шилжилтийн эрх/логикт нөлөөлөхгүй; `ticket.transition_to()`-оор автоматаар үүсдэг comment (status шилжилтийн тайлбар) үргэлж `is_internal=False`-аар үүснэ.
+- **SLA due date (`sla_due_at`, `first_response_due_at`)** — Ticket үүсэх мөчид priority-с хамаарч автоматаар тооцоологдоно (`settings.SLA_HOURS_BY_PRIORITY`: CRITICAL=4ц, HIGH=24ц, MEDIUM=72ц, LOW=168ц). `Ticket.is_overdue` нь зөвхөн UI дээр (улаан өнгөөр) анхааруулах зориулалттай — хугацаа хэтэрсэн ч гэсэн ticket-ийг ямар ч status руу шилжүүлэхийг блоклохгүй. CLOSED/REJECTED төлөвт байгаа ticket "хэтэрсэн" гэж тооцогдохгүй.
+- **Internal note (`Comment.is_internal`)** — зөвхөн PM/Admin, хариуцагч, багийн гишүүд / Team Lead / QA харж бичнэ (UI дээр шар өнгө, 🔒 badge). Аль ч status шилжилтийн эрх/логикт нөлөөлөхгүй; `ticket.transition_to()`-оор автоматаар үүсдэг comment (status шилжилтийн тайлбар) үргэлж `is_internal=False`-аар үүснэ.

@@ -1,30 +1,27 @@
-{% extends "base.html" %}
+{% extends "registration/auth_base.html" %}
 {% load i18n %}
 {% block title %}{% trans "Нэвтрэх" %}{% endblock %}
-{% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-4">
-    <div class="card mt-5">
-      <div class="card-body">
-        <h3 class="mb-3 text-center">{% trans "Нэвтрэх" %}</h3>
-        {% if form.errors %}
-        <div class="alert alert-danger">{% trans "Хэрэглэгчийн нэр эсвэл нууц үг буруу байна." %}</div>
-        {% endif %}
-        <form method="post">
-          {% csrf_token %}
-          <div class="mb-3">
-            <label class="form-label">{% trans "Хэрэглэгчийн нэр" %}</label>
-            {{ form.username }}
-          </div>
-          <div class="mb-3">
-            <label class="form-label">{% trans "Нууц үг" %}</label>
-            {{ form.password }}
-          </div>
-          <input type="hidden" name="next" value="{{ next }}">
-          <button type="submit" class="btn btn-primary w-100">{% trans "Нэвтрэх" %}</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
+{% block auth_footer_extra %}<a href="{% url 'password_reset' %}" class="small">{% trans "Нууц үгээ мартсан уу?" %}</a>{% endblock %}
+{% block auth_form %}
+      <h2 class="fw-bold mb-1">{% trans "Нэвтрэх" %}</h2>
+      <p class="text-muted mb-4">{% trans "Үргэлжлүүлэхийн тулд бүртгэлээрээ нэвтэрнэ үү." %}</p>
+      {% if form.errors %}
+      <div class="alert alert-danger py-2"><i class="bi bi-exclamation-circle"></i> {% trans "Хэрэглэгчийн нэр эсвэл нууц үг буруу байна." %}</div>
+      {% endif %}
+      <form method="post">
+        {% csrf_token %}
+        <label class="form-label fw-medium" for="id_username">{% trans "Хэрэглэгчийн нэр" %}</label>
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="bi bi-person"></i></span>
+          <input type="text" name="username" id="id_username" class="form-control" autocomplete="username" autofocus required value="{{ form.username.value|default:'' }}">
+        </div>
+        <label class="form-label fw-medium" for="id_password">{% trans "Нууц үг" %}</label>
+        <div class="input-group mb-4">
+          <span class="input-group-text"><i class="bi bi-lock"></i></span>
+          <input type="password" name="password" id="id_password" class="form-control" autocomplete="current-password" required>
+          <button class="btn btn-outline-secondary" type="button" onclick="var p=document.getElementById('id_password');p.type=p.type==='password'?'text':'password';this.firstElementChild.className=p.type==='password'?'bi bi-eye':'bi bi-eye-slash'" title="{% trans "Нууц үг харах" %}"><i class="bi bi-eye"></i></button>
+        </div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">{% trans "Нэвтрэх" %}</button>
+      </form>
 {% endblock %}

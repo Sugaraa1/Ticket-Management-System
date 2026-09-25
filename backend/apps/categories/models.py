@@ -26,8 +26,11 @@ class Team(TimeStampedModel):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        limit_choices_to=Q(groups__name="Project Manager") | Q(is_superuser=True),
-        help_text=_("'Project Manager' group-т багтсан (эсвэл superuser) хэрэглэгчид л сонголтод гарна."),
+        limit_choices_to={"is_active": True},
+        help_text=_(
+            "Ямар ч идэвхтэй хэрэглэгчийг томилж болно. Team Lead нь өөрийн багийн "
+            "ticket-ийг оноох, хариуцагч солих, багийн dashboard харах эрхтэй."
+        ),
     )
     qa_tester = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -62,22 +65,37 @@ class Category(TimeStampedModel):
 
 class CategoryTeamAssignment(TimeStampedModel):
     """
-    Category бүрийг аль Team рүү автоматаар chиглүүлэхийг тодорхойлно.
+    Category бүрийг аль Team(үүд) рүү автоматаар чиглүүлэхийг тодорхойлно.
     Team Lead / QA Tester нь Team дээр тохируулагдана.
 
-    Нэг Category зөвхөн нэг Team-тэй холбогдоно (routing-ийг энгийн байлгах үүднээс).
+    Нэг Category олон Team-тэй холбогдож болно — ticket үүсэхэд тэдгээрээс
+    хамгийн бага идэвхтэй ачаалалтай багт автоматаар чиглэнэ.
     """
 
-    category = models.OneToOneField(
-        Category, related_name="team_assignment", on_delete=models.CASCADE
+    category = models.ForeignKey(
+        Category, related_name="team_assignments", on_delete=models.CASCADE
     )
     team = models.ForeignKey(
         Team, related_name="category_assignments", on_delete=models.PROTECT
     )
 
     class Meta:
+        unique_together = [("category", "team")]
         verbose_name = "Category → Team Assignment"
         verbose_name_plural = "Category → Team Assignments"
 
     def __str__(self):
         return f"{self.category.name} → {self.team.name}"
+
+
+def route_team_for_category(category_id):
+    """Category-ийн багуудаас хамгийн цөөн идэвхтэй ticket-тэй багийг буцаана."""
+    from django.db.models import Count, Q
+
+    active = ["new", "assigned", "in_progress", "resolved", "qa_test", "reopened"]
+    return (
+        Team.objects.filter(category_assignments__category_id=category_id)
+        .annotate(load=Count("tickets", filter=Q(tickets__status__in=active)))
+        .order_by("load", "id")
+        .first()
+    )

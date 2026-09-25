@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n avatars %}
 {% block title %}{{ team.name }} — {% trans "гишүүд" %}{% endblock %}
 {% block content %}
 <h2 class="mb-3">{% blocktrans with name=team.name %}'{{ name }}' — гишүүд удирдах{% endblocktrans %}</h2>
@@ -23,53 +23,164 @@
         </form>
       </div>
     </div>
-    <div class="card mb-3">
-      <div class="card-header">{% trans "Гишүүн сонгох" %}</div>
-      <div class="card-body">
-        <form method="post">
-          {% csrf_token %}
-          <div class="mb-3">
-            {% for checkbox in form.members %}
-            <div class="form-check">
-              {{ checkbox.tag }}
-              <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
-            </div>
-            {% empty %}
-            <p class="text-muted small mb-0">{% blocktrans %}"Developer" group-т хэрэглэгч алга байна. Эхлээд Django admin → Users дээр хэрэглэгчийг "Developer" group-т нэмнэ үү.{% endblocktrans %}</p>
-            {% endfor %}
-          </div>
-          <button type="submit" class="btn btn-primary w-100">{% trans "Хадгалах" %}</button>
-        </form>
+    <div class="card mb-3 tms-member-picker">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>{% trans "Гишүүн сонгох" %}</span>
+        <span class="badge rounded-pill text-bg-primary js-selected-count">{{ selected_count }}</span>
       </div>
+      <form method="post" class="card-body">
+        {% csrf_token %}
+        {% if member_choices %}
+        <div class="tms-toolbar-search mb-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <input type="search" class="form-control form-control-sm js-picker-search" placeholder="{% trans "Нэр эсвэл username-ээр хайх" %}" autocomplete="off">
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="btn-group btn-group-sm js-picker-filter" role="group">
+            <button type="button" class="btn btn-outline-secondary active" data-filter="all">{% trans "Бүгд" %}</button>
+            <button type="button" class="btn btn-outline-secondary" data-filter="checked">{% trans "Сонгосон" %}</button>
+            <button type="button" class="btn btn-outline-secondary" data-filter="unchecked">{% trans "Сонгоогүй" %}</button>
+          </div>
+          <div class="small">
+            <button type="button" class="btn btn-link btn-sm p-0 js-picker-all">{% trans "Бүгдийг сонгох" %}</button> ·
+            <button type="button" class="btn btn-link btn-sm p-0 js-picker-none">{% trans "Цэвэрлэх" %}</button>
+          </div>
+        </div>
+        <div class="tms-member-list">
+          {% for c in member_choices %}
+          <label class="tms-check-item js-picker-item" data-search="{{ c.user.username|lower }} {{ c.user.get_full_name|lower }} {{ c.user.email|lower }}">
+            <input type="checkbox" name="members" value="{{ c.user.id }}" class="form-check-input m-0" {% if c.checked %}checked{% endif %}>
+            {% user_avatar c.user %}
+            <span class="flex-grow-1 text-truncate">
+              <span class="fw-medium">{{ c.user.get_full_name|default:c.user.username }}</span>
+              <span class="small text-muted d-block text-truncate">@{{ c.user.username }}</span>
+            </span>
+            <span class="badge rounded-pill {% if c.user.active_ticket_count == 0 %}text-bg-light border{% elif c.user.active_ticket_count < 3 %}bg-warning text-dark{% else %}bg-danger{% endif %}" title="{% trans "Бүх багт идэвхтэй ticket" %}">{{ c.user.active_ticket_count }}</span>
+          </label>
+          {% endfor %}
+          <p class="text-muted small text-center py-3 mb-0 js-picker-empty" hidden>{% trans "Хайлтад тохирох хэрэглэгч алга." %}</p>
+        </div>
+        <div class="form-text mb-2">{% trans "Тоо нь тухайн хүний бүх багт байгаа идэвхтэй ticket." %}</div>
+        {% else %}
+        <p class="text-muted small">{% blocktrans %}"Developer" group-т идэвхтэй хэрэглэгч алга байна. Хэрэглэгчид хуудаснаас хэрэглэгчид "Developer" эрх өгнө үү.{% endblocktrans %}</p>
+        {% endif %}
+        <button type="submit" class="btn btn-primary w-100">{% trans "Хадгалах" %} <span class="js-dirty-mark" hidden>•</span></button>
+      </form>
     </div>
-    <a href="{% url 'categories:team_list' %}" class="btn btn-link">← {% trans "Багууд руу буцах" %}</a>
   </div>
 
   <div class="col-md-7">
-    <div class="card">
-      <div class="card-header">{% trans "Одоогийн гишүүдийн ачаалал" %}</div>
+    <div class="card tms-workload">
+      <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span>{% trans "Одоогийн гишүүдийн ачаалал" %} <span class="text-muted small">({{ members_workload|length }})</span></span>
+        {% if members_workload %}
+        <div class="d-flex gap-2">
+          <input type="search" class="form-control form-control-sm js-workload-search" placeholder="{% trans "Хайх" %}" autocomplete="off" style="max-width: 12rem">
+          <select class="form-select form-select-sm w-auto js-workload-sort" aria-label="{% trans "Эрэмбэлэх" %}">
+            <option value="load-asc">{% trans "Ачаалал бага → их" %}</option>
+            <option value="load-desc">{% trans "Ачаалал их → бага" %}</option>
+            <option value="name">{% trans "Нэрээр (А-Я)" %}</option>
+          </select>
+        </div>
+        {% endif %}
+      </div>
       <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle">
           <thead class="table-light">
-            <tr><th>{% trans "Хэрэглэгч" %}</th><th>{% trans "Идэвхтэй ticket" %}</th></tr>
+            <tr><th>{% trans "Хэрэглэгч" %}</th><th style="width:45%">{% trans "Идэвхтэй ticket" %}</th></tr>
           </thead>
-          <tbody>
+          <tbody class="js-workload-body">
             {% for m in members_workload %}
-            <tr>
-              <td>{{ m.username }}</td>
+            <tr class="js-workload-row" data-name="{{ m.username|lower }}" data-search="{{ m.username|lower }} {{ m.get_full_name|lower }}" data-load="{{ m.active_ticket_count }}">
               <td>
-                <span class="badge {% if m.active_ticket_count == 0 %}bg-success{% elif m.active_ticket_count < 3 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
-                  {{ m.active_ticket_count }}
-                </span>
+                <a href="{% url 'tickets:ticket_list' %}?assignee={{ m.id }}" class="d-flex align-items-center gap-2 text-body text-decoration-none" title="{% trans "Энэ хүний ticket-үүд" %}">
+                  {% user_avatar m %}
+                  <span><span class="fw-medium">{{ m.get_full_name|default:m.username }}</span><span class="small text-muted d-block">@{{ m.username }}</span></span>
+                </a>
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="report-bar-track flex-grow-1">
+                    <div class="report-bar-fill" style="width: {% widthratio m.active_ticket_count max_load 100 %}%;{% if m.active_ticket_count >= 3 %} background: var(--priority-critical);{% endif %}"></div>
+                  </div>
+                  <span class="badge {% if m.active_ticket_count == 0 %}bg-success{% elif m.active_ticket_count < 3 %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ m.active_ticket_count }}</span>
+                </div>
               </td>
             </tr>
             {% empty %}
             <tr><td colspan="2" class="text-center text-muted py-3">{% trans "Гишүүн алга байна." %}</td></tr>
             {% endfor %}
+            <tr class="js-workload-empty" hidden><td colspan="2" class="text-center text-muted py-3">{% trans "Хайлтад тохирох гишүүн алга." %}</td></tr>
           </tbody>
         </table>
       </div>
     </div>
   </div>
 </div>
+<script>
+(function () {
+  // --- Гишүүн сонгох
+  var picker = document.querySelector(".tms-member-picker");
+  if (picker && picker.querySelector(".js-picker-search")) {
+    var items = Array.from(picker.querySelectorAll(".js-picker-item"));
+    var search = picker.querySelector(".js-picker-search"), filter = "all";
+    var initial = items.map(function (i) { return i.querySelector("input").checked; }).join();
+    function refresh() {
+      var q = search.value.trim().toLowerCase(), shown = 0, count = 0;
+      items.forEach(function (item) {
+        var checked = item.querySelector("input").checked;
+        if (checked) count++;
+        var ok = (!q || item.dataset.search.indexOf(q) !== -1)
+          && (filter === "all" || (filter === "checked") === checked);
+        item.hidden = !ok;
+        if (ok) shown++;
+      });
+      picker.querySelector(".js-selected-count").textContent = count;
+      picker.querySelector(".js-picker-empty").hidden = shown > 0;
+      var dirty = items.map(function (i) { return i.querySelector("input").checked; }).join() !== initial;
+      picker.querySelector(".js-dirty-mark").hidden = !dirty;
+    }
+    search.addEventListener("input", refresh);
+    picker.addEventListener("change", refresh);
+    picker.querySelectorAll(".js-picker-filter button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        filter = btn.dataset.filter;
+        picker.querySelectorAll(".js-picker-filter button").forEach(function (b) { b.classList.toggle("active", b === btn); });
+        refresh();
+      });
+    });
+    function setVisible(value) {
+      items.forEach(function (i) { if (!i.hidden) i.querySelector("input").checked = value; });
+      refresh();
+    }
+    picker.querySelector(".js-picker-all").addEventListener("click", function () { setVisible(true); });
+    picker.querySelector(".js-picker-none").addEventListener("click", function () { setVisible(false); });
+  }
+
+  // --- Ачааллын хүснэгт: хайлт + эрэмбэ
+  var body = document.querySelector(".js-workload-body");
+  var wsearch = document.querySelector(".js-workload-search");
+  if (body && wsearch) {
+    var rows = Array.from(body.querySelectorAll(".js-workload-row"));
+    var sort = document.querySelector(".js-workload-sort");
+    function apply() {
+      var q = wsearch.value.trim().toLowerCase(), shown = 0;
+      var mode = sort.value;
+      rows.sort(function (a, b) {
+        if (mode === "name") return a.dataset.name.localeCompare(b.dataset.name);
+        var d = a.dataset.load - b.dataset.load;
+        return (mode === "load-desc" ? -d : d) || a.dataset.name.localeCompare(b.dataset.name);
+      });
+      rows.forEach(function (row) {
+        row.hidden = q && row.dataset.search.indexOf(q) === -1;
+        if (!row.hidden) shown++;
+        body.insertBefore(row, body.querySelector(".js-workload-empty"));
+      });
+      body.querySelector(".js-workload-empty").hidden = shown > 0;
+    }
+    wsearch.addEventListener("input", apply);
+    sort.addEventListener("change", apply);
+  }
+})();
+</script>
 {% endblock %}

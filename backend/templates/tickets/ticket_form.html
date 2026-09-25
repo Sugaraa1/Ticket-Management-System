@@ -1,21 +1,31 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}{% trans "Шинэ Ticket" %}{% endblock %}
+{% block title %}{% if ticket %}{{ ticket.code }} — {% trans "Засах" %}{% else %}{% trans "Шинэ Ticket" %}{% endif %}{% endblock %}
 {% block content %}
+{% if ticket %}
+<h2 class="mb-3"><span class="text-muted font-monospace fs-5">{{ ticket.code }}</span> {% trans "Ticket засах" %}</h2>
+{% else %}
 <h2 class="mb-3">{% trans "Шинэ Ticket үүсгэх" %}</h2>
+{% endif %}
 <div class="card">
   <div class="card-body">
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
       {% for field in form %}
       <div class="mb-3">
         <label class="form-label">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
         {{ field }}
+        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
         {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
       </div>
       {% endfor %}
+      {% if ticket %}
+      <button type="submit" class="btn btn-primary">{% trans "Хадгалах" %}</button>
+      <a href="{% url 'tickets:ticket_detail' ticket.pk %}" class="btn btn-link">{% trans "Цуцлах" %}</a>
+      {% else %}
       <button type="submit" class="btn btn-primary">{% trans "Үүсгэх" %}</button>
       <a href="{% url 'tickets:ticket_list' %}" class="btn btn-link">{% trans "Цуцлах" %}</a>
+      {% endif %}
     </form>
   </div>
 </div>

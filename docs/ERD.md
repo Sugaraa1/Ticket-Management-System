@@ -8,7 +8,10 @@ erDiagram
     USER ||--o{ TICKET : "assigned_to"
     USER ||--o{ COMMENT : "writes"
     USER ||--o{ ATTACHMENT : "uploads"
-    USER ||--o{ CATEGORY_TEAM_ASSIGNMENT : "team_lead / qa_tester"
+    USER ||--o| PROFILE : "has"
+    USER }o--o{ TEAM : "members"
+    USER ||--o{ TEAM : "team_lead / qa_tester"
+    USER ||--o{ STATUS_HISTORY : "changed_by"
 
     TEAM ||--o{ CATEGORY_TEAM_ASSIGNMENT : "assigned to"
     TEAM ||--o{ TICKET : "routed to"
@@ -28,12 +31,21 @@ erDiagram
         int id PK
         string username
         string email
-        string role
+        boolean is_active
+        boolean is_superuser
+    }
+
+    PROFILE {
+        int id PK
+        int user_id FK
+        image avatar
     }
 
     TEAM {
         int id PK
         string name
+        int team_lead_id FK
+        int qa_tester_id FK
     }
 
     CATEGORY {
@@ -46,14 +58,13 @@ erDiagram
         int id PK
         int category_id FK
         int team_id FK
-        int team_lead_id FK
-        int qa_tester_id FK
     }
 
     PROJECT {
         int id PK
         string name
         text description
+        boolean is_active
     }
 
     MODULE {
@@ -76,6 +87,9 @@ erDiagram
         int reported_by_id FK
         int assigned_to_id FK
         datetime sla_due_at
+        datetime first_response_due_at
+        datetime first_responded_at
+        datetime last_activity_at
         datetime created_at
         datetime updated_at
     }
@@ -94,7 +108,7 @@ erDiagram
         int ticket_id FK
         file file
         int uploaded_by_id FK
-        datetime uploaded_at
+        datetime created_at
     }
 
     STATUS_HISTORY {
@@ -110,19 +124,22 @@ erDiagram
 ## Entity тайлбар
 
 ### User
-Django-ийн стандарт `User` эсвэл `AbstractUser`-аас өргөтгөсөн custom модель. Group-оор эрх ялгах (Admin / PM-TeamLead / QA / Developer).
+Django-ийн стандарт `User` модель. Эрхийг `role` талбараар биш, Django **Group**-оор ялгана (Admin / Project Manager / QA Tester / Developer). `is_active=False` бол нэвтрэх эрхгүй, ticket оноогдохгүй, харин түүх нь хадгалагдана (ticket-тэй хэрэглэгчийг устгах оронд идэвхгүй болгоно).
+
+### Profile
+User-тэй 1:1 холбоотой нэмэлт мэдээлэл — одоогоор зөвхөн профайлын зураг (`avatar`, 256×256 болгон тайрч хадгална).
 
 ### Team
-Хөгжүүлэлтийн баг. Category бүр нэг буюу хэд хэдэн Team-тэй холбогдож болно (routing-д ашиглагдана).
+Хөгжүүлэлтийн баг. `members` (M2M → User, Developer group), `team_lead` (ямар ч идэвхтэй хэрэглэгч), `qa_tester` (QA group) талбартай. Team Lead нь өөрийн багийн ticket дээр PM-ийн эрхтэй (оноох, хариуцагч/чухлын зэрэг солих, татгалзах, дахин нээх) болон багийн dashboard харна. Category бүр нэг буюу хэд хэдэн Team-тэй холбогдож болно (routing-д ашиглагдана).
 
 ### Category
-Ticket-ийн ангилал (жишээ: "Backend API", "UI/UX", "Database"). Category бүрт Team Lead болон QA Tester тохируулагдана.
+Ticket-ийн ангилал (жишээ: "Backend API", "UI/UX", "Database"). Нэг Category **олон Team**-тэй холбогдож болно (CategoryTeamAssignment-аар).
 
 ### CategoryTeamAssignment
-Category ↔ Team-ийн холбоос хүснэгт. `team_lead`, `qa_tester` талбарууд нь тухайн category-д хариуцлагатай хүмүүсийг заана. **Ticket auto-routing** энэ хүснэгтээс уншиж, category-д тохирох team-ийг ticket дээр автоматаар онооно.
+Category ↔ Team-ийн холбоос хүснэгт (`unique(category, team)`) — нэг Category олон Team-тэй байж болно. **Ticket auto-routing:** ticket үүсэхэд тухайн Category-ийн багуудаас хамгийн цөөн идэвхтэй ticket-тэй багийг сонгож `ticket.team`-д автоматаар онооно. Team Lead / QA Tester нь Team дээр тохируулагдана.
 
 ### Project / Module
-Ticket аль төсөл, аль модультай холбоотойг заана. Module нь Project-ийн дэд түвшин.
+Ticket аль төсөл, аль модультай холбоотойг заана. Module нь Project-ийн дэд түвшин (нэг төсөлд модулийн нэр давхцахгүй). `Project.is_active=False` бол шинэ ticket үүсгэх сонголтод гарахгүй. Ticket-тэй төслийг устгах боломжгүй (`PROTECT`) — оронд нь идэвхгүй болгоно. Module устгавал холбогдох ticket-ийн `module` хоосон болно (`SET_NULL`).
 
 ### Ticket
 Системийн гол entity. `ticket_type` (bug/task/change_request), `status` (workflow дагуу), `priority` талбартай.
@@ -136,17 +153,21 @@ Ticket аль төсөл, аль модультай холбоотойг заа�
 | MEDIUM | 3 өдөр (72 цаг) |
 | LOW | 7 өдөр (168 цаг) |
 
+SLA нь Jira Service Management-ийн адил 2 metric-тэй: **Time to First Response** (`first_response_due_at` / `first_responded_at`, `settings.SLA_FIRST_RESPONSE_HOURS_BY_PRIORITY`) ба **Time to Resolution** (`sla_due_at`). Priority өөрчлөгдвөл хоёулаа ticket үүссэн мөчөөс дахин тооцоологдоно. `last_activity_at` нь идэвхгүй ticket-ийн сануулгад (`check_stale_tickets`) ашиглагдана.
+
 `Ticket.is_overdue` property нь `sla_due_at`-г одоогийн цагтай харьцуулж, ticket хугацаандаа шийдэгдээгүй эсэхийг тодорхойлно (CLOSED/REJECTED төлөвт байгаа ticket-д хамаарахгүй).
 
 ### Comment / Attachment
 Ticket дээрх харилцан яриа, хавсаргасан файлууд.
 
-**Internal note vs Public reply:** Comment дээр `is_internal` boolean талбар байгаа бөгөөд `True` бол зөвхөн дотоод багийн гишүүд (PM/QA/Developer/Admin) харах зориулалттай тэмдэглэл гэдгийг илэрхийлнэ (Zendesk/Freshdesk-ийн "Internal note" загвартай адилхан). Одоогийн хувилбарт энэ талбар зөвхөн **UI дээр тусгайлан тэмдэглэгдэж харагдана** (шар өнгөөр тодруулсан, 🔒 badge-тай) — ирээдүйд гадаад (customer-facing) портал нэмэгдвэл харагдах эрхийг хязгаарлахад ашиглана.
+**Internal note vs Public reply:** Comment дээр `is_internal` boolean талбар байгаа бөгөөд `True` бол зөвхөн дотоод багийн гишүүд (PM/QA/Developer/Admin) харах зориулалттай тэмдэглэл гэдгийг илэрхийлнэ (Zendesk/Freshdesk-ийн "Internal note" загвартай адилхан). Дотоод тэмдэглэлийг зөвхөн PM/Admin, ticket-ийн хариуцагч болон тухайн багийн гишүүн / Team Lead / QA Tester харж, бичнэ. Бусад хэрэглэгч (жишээ нь багт хамааралгүй мэдээлэгч) харахгүй, "Internal note" сонголт ч гарахгүй. UI дээр шар өнгө, 🔒 badge-аар ялгагдана. Гараар бичих сэтгэгдэл хоосон байж болохгүй; status шилжилтийн тайлбар л хоосон байж болно.
+
+**Хавсралт файл** нь нийтэд нээлттэй `media/`-д биш `private_media/`-д хадгалагдаж, зөвхөн нэвтэрсэн хэрэглэгч `/attachments/<id>/` view-ээр татна (зураг, pdf, txt хөтөч дотор нээгдэнэ; бусад төрөл татагдана).
 
 ### StatusHistory
 Ticket-ийн status өөрчлөгдөх бүрт бичигдэх audit trail — хэн, хэзээ, ямар төлөвөөс ямар төлөвт шилжүүлснийг хадгална.
 
-## Тодруулга, шийдвэрлэх шаардлагатай асуултууд
-- `User.role` талбарыг Django Group-оор бүрэн орлуулах уу, эсвэл нэмэлт `Profile.role` талбар хэрэгтэй юу?
-- Нэг Category хэд хэдэн Team-тэй байж болох уу (олон нийтийн routing), эсвэл 1:1 харьцаа хангалттай юу?
-- Attachment-ийн файлын хэмжээ/төрлийн хязгаарлалт хэрэгтэй юу (жишээ: зөвхөн зураг, max 10MB)?
+## Шийдвэрлэгдсэн асуултууд
+- **Эрх** — `User.role` талбар нэмэлгүй, Django Group-оор бүрэн орлуулсан.
+- **Category ↔ Team** — нэг Category олон Team-тэй байж болно; ачааллаар routing хийнэ.
+- **Attachment** — нэг файл хамгийн ихдээ 10MB, зөвшөөрөгдсөн өргөтгөлүүд `settings.ATTACHMENT_ALLOWED_EXTENSIONS`-д.

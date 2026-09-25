@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n avatars %}
 {% block title %}{% trans "Ангилал" %}{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -11,32 +11,51 @@
 </div>
 <p class="text-muted">{% blocktrans %}Ticket үүсгэхэд энд заасан ангиллаас нь <strong>Баг автоматаар routing</strong> хийгдэнэ.{% endblocktrans %}</p>
 
+{% include "_list_toolbar.html" %}
 <div class="card">
   <div class="table-responsive">
-    <table class="table table-hover mb-0 align-middle">
-      <thead class="table-light">
-        <tr><th>{% trans "Нэр" %}</th><th>{% trans "Баг" %}</th><th>Team Lead</th><th>QA Tester</th><th></th></tr>
-      </thead>
-      <tbody>
-        {% for c in categories %}
+    <table class="table mb-0 align-middle tms-table tms-category-table">
+      <thead>
         <tr>
-          <td class="fw-medium">{{ c.name }}</td>
-          <td>
-            {% if c.team_assignment %}
-              {{ c.team_assignment.team.name }}
-            {% else %}
-              <span class="text-danger small">{% trans "Тохируулаагүй" %}</span>
-            {% endif %}
+          <th style="width:22%">{% trans "Ангилал" %}</th>
+          <th>{% trans "Баг" %}</th>
+          <th>Team Lead</th>
+          <th>QA Tester</th>
+          <th class="text-end" style="width:1%"></th>
+        </tr>
+      </thead>
+      {% for c in categories %}
+      {% with teams=c.team_assignments.all %}
+      <tbody class="tms-category-group">
+        {% for a in teams %}
+        <tr>
+          {% if forloop.first %}
+          <td rowspan="{{ teams|length }}" class="fw-semibold">
+            {{ c.name }}
+            {% if teams|length > 1 %}<div class="small text-muted fw-normal">{% blocktrans with n=teams|length %}{{ n }} баг · ачааллаар хуваарилна{% endblocktrans %}</div>{% endif %}
           </td>
-          <td>{{ c.team_assignment.team.team_lead.username|default:"—" }}</td>
-          <td>{{ c.team_assignment.team.qa_tester.username|default:"—" }}</td>
-          <td><a href="{% url 'categories:category_edit' c.id %}" class="btn btn-sm btn-outline-primary">{% trans "Засах" %}</a></td>
+          {% endif %}
+          <td><span class="d-inline-flex align-items-center gap-2"><i class="bi bi-people text-primary"></i><span class="fw-medium">{{ a.team.name }}</span></span></td>
+          <td>{% if a.team.team_lead %}<span class="d-inline-flex align-items-center gap-2">{% user_avatar a.team.team_lead %}{{ a.team.team_lead.username }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td>{% if a.team.qa_tester %}<span class="d-inline-flex align-items-center gap-2">{% user_avatar a.team.qa_tester %}{{ a.team.qa_tester.username }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          {% if forloop.first %}
+          <td rowspan="{{ teams|length }}" class="text-end"><a href="{% url 'categories:category_edit' c.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> {% trans "Засах" %}</a></td>
+          {% endif %}
         </tr>
         {% empty %}
-        <tr><td colspan="5" class="text-center text-muted py-4">{% trans "Ангилал алга байна." %}</td></tr>
+        <tr>
+          <td class="fw-semibold">{{ c.name }}</td>
+          <td colspan="3"><span class="text-danger small"><i class="bi bi-exclamation-circle"></i> {% trans "Баг тохируулаагүй — ticket routing хийгдэхгүй" %}</span></td>
+          <td class="text-end"><a href="{% url 'categories:category_edit' c.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> {% trans "Засах" %}</a></td>
+        </tr>
         {% endfor %}
       </tbody>
+      {% endwith %}
+      {% empty %}
+      <tbody><tr><td colspan="5" class="text-center text-muted py-4">{% if list_is_filtered %}{% trans "Хайлтад тохирох ангилал олдсонгүй." %}{% else %}{% trans "Ангилал алга байна." %}{% endif %}</td></tr></tbody>
+      {% endfor %}
     </table>
   </div>
 </div>
+{% include "_pagination.html" %}
 {% endblock %}

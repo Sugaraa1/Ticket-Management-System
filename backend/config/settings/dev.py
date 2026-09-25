@@ -4,4 +4,4 @@ from .base import *  # noqa
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# Email: base.py — EMAIL_HOST заагаагүй бол console (лог) руу хэвлэнэ.

@@ -1,0 +1,79 @@
+{% load i18n %}
+<div class="offcanvas offcanvas-end tms-drawer" tabindex="-1" id="quickTicket" aria-labelledby="quickTicketLabel">
+  <div class="offcanvas-header border-bottom">
+    <h5 class="offcanvas-title mb-0" id="quickTicketLabel"><i class="bi bi-plus-circle text-primary"></i> {% trans "Шинэ ticket үүсгэх" %}</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="{% trans "Хаах" %}"></button>
+  </div>
+  <form method="post" action="{% url 'tickets:ticket_create' %}" enctype="multipart/form-data" class="d-flex flex-column h-100 overflow-hidden">
+    {% csrf_token %}
+    <div class="offcanvas-body">
+      {% with f=quick_ticket_form %}
+      <div class="mb-3">
+        <label class="form-label" for="{{ f.title.id_for_label }}">{{ f.title.label }} *</label>
+        {{ f.title }}
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-sm-6">
+          <label class="form-label" for="{{ f.ticket_type.id_for_label }}">{{ f.ticket_type.label }} *</label>
+          {{ f.ticket_type }}
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label" for="{{ f.category.id_for_label }}">{{ f.category.label }} *</label>
+          {{ f.category }}
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="{{ f.priority.id_for_label }}">{{ f.priority.label }} *</label>
+        {{ f.priority }}
+        <div class="form-text">{% trans "Сонгосон зэргээс хамаарч хариу өгөх болон шийдвэрлэх SLA хугацаа автоматаар тооцоологдоно." %}</div>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-sm-6">
+          <label class="form-label" for="{{ f.project.id_for_label }}">{{ f.project.label }} *</label>
+          {{ f.project }}
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label" for="{{ f.module.id_for_label }}">{{ f.module.label }}</label>
+          {{ f.module }}
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="{{ f.description.id_for_label }}">{{ f.description.label }} *</label>
+        {{ f.description }}
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="{{ f.attachment.id_for_label }}"><i class="bi bi-paperclip"></i> {{ f.attachment.label }}</label>
+        {{ f.attachment }}
+        <div class="form-text">{{ f.attachment.help_text }}</div>
+      </div>
+      {% endwith %}
+    </div>
+    <div class="border-top p-3 d-flex gap-2 justify-content-end bg-body">
+      <button type="button" class="btn btn-light" data-bs-dismiss="offcanvas">{% trans "Цуцлах" %}</button>
+      <button type="submit" class="btn btn-primary">{% trans "Үүсгэх" %}</button>
+    </div>
+  </form>
+</div>
+
+{{ quick_modules_by_project|json_script:"qt-modules-by-project" }}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var data = document.getElementById("qt-modules-by-project");
+  var project = document.getElementById("qt_project");
+  var module = document.getElementById("qt_module");
+  if (!data || !project || !module) return;
+  var byProject = JSON.parse(data.textContent);
+  function refresh() {
+    var modules = byProject[project.value] || [];
+    module.innerHTML = '<option value="">---------</option>';
+    modules.forEach(function (m) {
+      var o = document.createElement("option");
+      o.value = m.id;
+      o.textContent = m.name;
+      module.appendChild(o);
+    });
+  }
+  project.addEventListener("change", refresh);
+  refresh();
+});
+</script>

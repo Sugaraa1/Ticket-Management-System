@@ -2,87 +2,136 @@
 {% load i18n %}
 {% block title %}{% trans "Бүх ticket" %}{% endblock %}
 {% block content %}
-<h2 class="mb-3">{% trans "Бүх ticket" %}</h2>
 
-<form method="get" class="row g-2 mb-3 align-items-end">
-  <div class="col-auto">
-    <label class="form-label mb-0 small text-muted">{% trans "Хайх" %}</label>
-    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="{% trans "Гарчгаар хайх" %}">
+<form method="get">
+  <div class="tms-toolbar mb-2">
+    <h2 class="tms-toolbar-title mb-0">{% trans "Бүх ticket" %}</h2>
+    <div class="tms-toolbar-search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/>
+        <path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <input type="search" name="q" value="{{ q }}" class="form-control" id="ticket-search" autocomplete="off" placeholder="{% trans "Гарчиг эсвэл дугаараар хайх (FXT000001)" %}">
+    </div>
+    <details class="tms-filter-toggle" id="filter-toggle">
+      <summary class="btn btn-outline-secondary">
+        <i class="bi bi-funnel"></i> {% trans "Шүүлтүүр" %}
+        <span class="tms-filter-count" id="filter-count" {% if not active_filters %}hidden{% endif %}>{{ active_filters|length }}</span>
+      </summary>
+      <div class="tms-filter-panel">
+        <div class="tms-filter-head">
+          <span class="fw-semibold">{% trans "Шүүлтүүр" %}</span>
+          <a href="{% url 'tickets:ticket_list' %}" class="small">{% trans "Цэвэрлэх" %}</a>
+        </div>
+        <label class="form-label">{% trans "Гарчиг" %}</label>
+        <input type="text" name="title" value="{{ current_title }}" class="form-control mb-3 js-live-filter js-live-text" placeholder="{% trans "Гарчиг агуулсан..." %}" autocomplete="off">
+        <label class="form-label">{% trans "Төлөв" %}</label>
+        <select name="status" class="form-select mb-3 js-live-filter">
+          <option value="">{% trans "Бүгд" %}</option>
+          {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if value == current_status %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <label class="form-label">{% trans "Чухлын зэрэг" %}</label>
+        <select name="priority" class="form-select mb-3 js-live-filter">
+          <option value="">{% trans "Бүгд" %}</option>
+          {% for value, label in priority_choices %}
+          <option value="{{ value }}" {% if value == current_priority %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <label class="form-label">{% trans "Ангилал" %}</label>
+        <select name="category" class="form-select mb-3 js-live-filter">
+          <option value="">{% trans "Бүгд" %}</option>
+          {% for c in categories %}
+          <option value="{{ c.id }}" {% if current_category == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+        <label class="form-label">{% trans "Хариуцагч" %}</label>
+        <select name="assignee" class="form-select mb-3 js-live-filter">
+          <option value="">{% trans "Бүгд" %}</option>
+          <option value="none" {% if current_assignee == "none" %}selected{% endif %}>{% trans "Оноогдоогүй" %}</option>
+          {% for u in users %}
+          <option value="{{ u.id }}" {% if current_assignee == u.id|stringformat:"s" %}selected{% endif %}>{{ u.get_full_name|default:u.username }}{% if u.id == user.id %} ({% trans "Би" %}){% endif %}</option>
+          {% endfor %}
+        </select>
+        <label class="form-label">{% trans "Мэдээлсэн" %}</label>
+        <select name="reporter" class="form-select js-live-filter">
+          <option value="">{% trans "Бүгд" %}</option>
+          {% for u in users %}
+          <option value="{{ u.id }}" {% if current_reporter == u.id|stringformat:"s" %}selected{% endif %}>{{ u.get_full_name|default:u.username }}{% if u.id == user.id %} ({% trans "Би" %}){% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </details>
+    {% if can_export %}{% include "tickets/_export_menu.html" with export_query=querystring %}{% endif %}
+    <button type="button" class="btn btn-primary tms-toolbar-add" data-bs-toggle="offcanvas" data-bs-target="#quickTicket">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      {% trans "Шинэ ticket" %}
+    </button>
   </div>
-  <div class="col-auto">
-    <label class="form-label mb-0 small text-muted">{% trans "Төлөв" %}</label>
-    <select name="status" class="form-select">
-      <option value="">{% trans "Бүгд" %}</option>
-      {% for value, label in status_choices %}
-      <option value="{{ value }}" {% if value == current_status %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="col-auto">
-    <label class="form-label mb-0 small text-muted">{% trans "Чухлын зэрэг" %}</label>
-    <select name="priority" class="form-select">
-      <option value="">{% trans "Бүгд" %}</option>
-      {% for value, label in priority_choices %}
-      <option value="{{ value }}" {% if value == current_priority %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="col-auto">
-    <label class="form-label mb-0 small text-muted">{% trans "Ангилал" %}</label>
-    <select name="category" class="form-select">
-      <option value="">{% trans "Бүгд" %}</option>
-      {% for c in categories %}
-      <option value="{{ c.id }}" {% if current_category == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="col-auto">
-    <button type="submit" class="btn btn-primary">{% trans "Шүүх" %}</button>
-    <a href="{% url 'tickets:ticket_list' %}" class="btn btn-link">{% trans "Цэвэрлэх" %}</a>
-  </div>
+  <input type="submit" class="d-none" aria-hidden="true">
 </form>
+
+<div id="ticket-results">
+{% if active_filters %}
+<div class="tms-chips mb-2">
+  {% for f in active_filters %}
+  <a href="{{ f.remove_url }}" class="tms-chip" title="{% trans "Хасах" %}"><span class="text-muted">{{ f.title }}:</span> {{ f.label }} <i class="bi bi-x"></i></a>
+  {% endfor %}
+</div>
+{% endif %}
+<p class="text-muted small mb-2">
+  {% blocktrans with start=page_obj.start_index end=page_obj.end_index total=page_obj.paginator.count %}Нийт {{ total }} ticket-ээс {{ start }}–{{ end }}-г харуулж байна{% endblocktrans %}
+</p>
 
 <div class="card">
   <div class="table-responsive">
-    <table class="table table-hover mb-0 align-middle">
+    <table class="table table-hover mb-0 align-middle tms-table">
       <thead class="table-light">
         <tr>
-          <th>#</th><th>{% trans "Гарчиг" %}</th><th>{% trans "Төрөл" %}</th><th>{% trans "Ангилал" %}</th>
-          <th>{% trans "Төлөв" %}</th><th>{% trans "Чухлын зэрэг" %}</th><th>SLA</th><th>{% trans "Хариуцагч" %}</th><th></th>
+{% if can_bulk %}<th class="tms-bulk-col"><input type="checkbox" class="form-check-input js-bulk-all" aria-label="{% trans "Энэ хуудсыг бүгдийг сонгох" %}"></th>{% endif %}
+          <th>{% trans "Төлөв" %}</th>
+          <th>ID</th>
+          <th>{% trans "Гарчиг" %}</th>
+          <th>{% trans "Чухлын зэрэг" %}</th>
+          <th>{% trans "Хариуцагч" %}</th>
+          <th>{% trans "Үүсгэсэн огноо" %}</th>
+          <th>{% trans "Шинэчилсэн огноо" %}</th>
+          <th>{% trans "Мэдээлсэн" %}</th>
+          <th>{% trans "Дуусах огноо" %}</th>
+          <th>{% trans "Ангилал" %}</th>
         </tr>
       </thead>
       <tbody>
         {% for t in tickets %}
-        <tr class="ticket-row {% if t.is_overdue %}table-danger{% endif %}">
-          <td class="text-muted">#{{ t.id }}</td>
-          <td><a href="{% url 'tickets:ticket_detail' t.id %}" class="text-decoration-none text-dark fw-medium">{{ t.title }}</a></td>
-          <td>{{ t.get_ticket_type_display }}</td>
-          <td>{{ t.category.name }}</td>
-          <td><span class="status-badge status-{{ t.status }}">{{ t.get_status_display }}</span></td>
-          <td><span class="priority-dot priority-{{ t.priority }}"></span>{{ t.get_priority_display }}</td>
-          <td>
+        <tr class="ticket-row {% if t.is_overdue %}is-overdue{% endif %}" onclick="window.location='{% url 'tickets:ticket_detail' t.id %}'">
+          {% if can_bulk %}<td class="tms-bulk-col" onclick="event.stopPropagation()"><input type="checkbox" name="ids" value="{{ t.id }}" form="bulk-form" class="form-check-input js-bulk-check" aria-label="{{ t.code }}"></td>{% endif %}
+          <td><span class="status-dot-label status-fg-{{ t.status }}">{{ t.get_status_display }}</span></td>
+          <td class="text-muted text-nowrap font-monospace">{{ t.code }}</td>
+          <td class="tms-cell-title">
+            <a href="{% url 'tickets:ticket_detail' t.id %}" class="text-decoration-none text-body fw-medium">{{ t.title }}</a>
+            <div class="small text-muted">{{ t.get_ticket_type_display }}</div>
+          </td>
+          <td><span class="priority-pill priority-pill-{{ t.priority }}">{{ t.get_priority_display }}</span></td>
+          <td class="text-nowrap">{{ t.assigned_to.username|default:"—" }}</td>
+          <td class="text-nowrap small">{{ t.created_at|date:"Y-m-d" }}</td>
+          <td class="text-nowrap small">{{ t.updated_at|date:"Y-m-d" }}</td>
+          <td class="text-nowrap">{{ t.reported_by.username }}</td>
+          <td class="text-nowrap small">
             {% if t.is_overdue %}
-            <span class="text-danger fw-semibold">⚠ {% trans "Хугацаа хэтэрсэн" %}</span>
-            {% elif t.sla_due_at %}
-            <span class="text-muted small">{{ t.sla_due_at|date:"Y-m-d H:i" }}</span>
+            <span class="text-danger fw-semibold" title="{% trans "Хугацаа хэтэрсэн" %}">⚠ {{ t.sla_due_at|date:"Y-m-d H:i" }}</span>
             {% else %}
-            <span class="text-muted">—</span>
+            {{ t.sla_due_at|date:"Y-m-d H:i"|default:"—" }}
             {% endif %}
           </td>
-          <td>{{ t.assigned_to.username|default:"—" }}</td>
-          <td><a href="{% url 'tickets:ticket_detail' t.id %}" class="btn btn-sm btn-outline-primary">{% trans "Харах" %}</a></td>
+          <td class="text-nowrap">{{ t.category.name }}</td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="9">
-            <div class="empty-state">
-              <div class="empty-icon">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 12h6m-6 4h3m-7 4h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z" stroke="currentColor" stroke-width="1.5"/>
-                </svg>
-              </div>
-              {% trans "Таны хайлтад тохирох ticket олдсонгүй." %}
-            </div>
+          <td colspan="{% if can_bulk %}11{% else %}10{% endif %}">
+            <div class="empty-state">{% trans "Таны хайлтад тохирох ticket олдсонгүй." %}</div>
           </td>
         </tr>
         {% endfor %}
@@ -114,4 +163,136 @@
   </ul>
 </nav>
 {% endif %}
+</div>
+
+{% if can_bulk %}
+<form method="post" action="{% url 'tickets:ticket_bulk' %}" id="bulk-form" class="tms-bulk-bar" hidden>
+  {% csrf_token %}
+  <input type="hidden" name="next" value="">
+  <span class="fw-semibold text-nowrap"><span class="js-bulk-count">0</span> {% trans "сонгосон" %}</span>
+  <select name="bulk_action" class="form-select form-select-sm w-auto js-bulk-action" aria-label="{% trans "Үйлдэл" %}">
+    <option value="assign">{% trans "Оноох / хариуцагч солих" %}</option>
+    <option value="priority">{% trans "Чухлын зэрэг" %}</option>
+    <option value="status">{% trans "Төлөв шилжүүлэх" %}</option>
+  </select>
+  <select class="form-select form-select-sm w-auto js-bulk-value" data-for="assign" aria-label="{% trans "Хариуцагч" %}">
+    {% for u in bulk_assignees %}<option value="{{ u.id }}">{{ u.get_full_name|default:u.username }}</option>{% endfor %}
+  </select>
+  <select class="form-select form-select-sm w-auto js-bulk-value" data-for="priority" aria-label="{% trans "Чухлын зэрэг" %}" hidden>
+    {% for value, label in priority_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+  </select>
+  <select class="form-select form-select-sm w-auto js-bulk-value" data-for="status" aria-label="{% trans "Төлөв" %}" hidden>
+    {% for value, label in bulk_statuses %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+  </select>
+  <input type="hidden" name="value">
+  <button type="submit" class="btn btn-sm btn-apply">{% trans "Хэрэгжүүлэх" %}</button>
+  <button type="button" class="btn btn-sm btn-link text-white text-decoration-none js-bulk-clear">{% trans "Цуцлах" %}</button>
+</form>
+<script>
+// Бөөнөөр үйлдэл: checkbox-ууд live хайлтаар солигдож болох тул document түвшинд сонсоно.
+(function () {
+  var bar = document.getElementById("bulk-form");
+  var action = bar.querySelector(".js-bulk-action");
+  function checks() { return Array.from(document.querySelectorAll(".js-bulk-check")); }
+  function refresh() {
+    var n = checks().filter(function (c) { return c.checked; }).length;
+    bar.hidden = n === 0;
+    bar.querySelector(".js-bulk-count").textContent = n;
+    var all = document.querySelector(".js-bulk-all");
+    if (all) { all.checked = n > 0 && n === checks().length; all.indeterminate = n > 0 && n < checks().length; }
+  }
+  document.addEventListener("change", function (e) {
+    if (e.target.matches(".js-bulk-all")) checks().forEach(function (c) { c.checked = e.target.checked; });
+    if (e.target.matches(".js-bulk-check, .js-bulk-all")) refresh();
+  });
+  action.addEventListener("change", function () {
+    bar.querySelectorAll(".js-bulk-value").forEach(function (s) { s.hidden = s.dataset.for !== action.value; });
+  });
+  bar.querySelector(".js-bulk-clear").addEventListener("click", function () {
+    checks().forEach(function (c) { c.checked = false; }); refresh();
+  });
+  bar.addEventListener("submit", function (e) {
+    var sel = bar.querySelector('.js-bulk-value[data-for="' + action.value + '"]');
+    bar.value.value = sel ? sel.value : "";
+    bar.next.value = location.pathname + location.search;
+    if (bar.dataset.confirmed) return;
+    e.preventDefault();
+    var label = action.options[action.selectedIndex].text + " → " + (sel ? sel.options[sel.selectedIndex].text : "");
+    tmsConfirm(bar.querySelector(".js-bulk-count").textContent + " ticket: " + label).then(function (yes) {
+      if (yes) { bar.dataset.confirmed = "1"; bar.submit(); }
+    });
+  });
+  // Live хайлтын дараа сонголт алга болсон тул тоог шинэчилнэ.
+  new MutationObserver(refresh).observe(document.getElementById("ticket-results"), { childList: true });
+})();
+</script>
+{% endif %}
+<script>
+(function () {
+  var input = document.getElementById("ticket-search");
+  var results = document.getElementById("ticket-results");
+  if (!input || !results) return;
+  var form = input.form, timer = null, controller = null;
+
+  function search() {
+    var params = new URLSearchParams(new FormData(form));
+    params.delete("page");
+    if (!params.get("q")) params.delete("q");
+    var url = window.location.pathname + (params.toString() ? "?" + params : "");
+    if (controller) controller.abort();
+    controller = new AbortController();
+    results.style.opacity = ".55";
+    fetch(url, { signal: controller.signal, headers: { "X-Requested-With": "fetch" } })
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var doc = new DOMParser().parseFromString(html, "text/html");
+        var fresh = doc.getElementById("ticket-results");
+        if (fresh) results.innerHTML = fresh.innerHTML;
+        history.replaceState(null, "", url);
+      })
+      .catch(function () {})
+      .finally(function () { results.style.opacity = ""; });
+  }
+
+  function updateCount() {
+    var n = 0;
+    form.querySelectorAll(".js-live-filter").forEach(function (el) { if (el.value) n++; });
+    var badge = document.getElementById("filter-count");
+    badge.textContent = n;
+    badge.hidden = n === 0;
+  }
+  form.querySelectorAll(".js-live-filter").forEach(function (el) {
+    if (el.classList.contains("js-live-text")) {
+      el.addEventListener("input", function () {
+        clearTimeout(timer);
+        timer = setTimeout(function () { updateCount(); search(); }, 250);
+      });
+    } else {
+      el.addEventListener("change", function () { updateCount(); search(); });
+    }
+  });
+  var toggle = document.getElementById("filter-toggle");
+  document.addEventListener("click", function (e) {
+    if (toggle.open && !toggle.contains(e.target)) toggle.open = false;
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") toggle.open = false; });
+
+  input.addEventListener("input", function () {
+    clearTimeout(timer);
+    timer = setTimeout(search, 200);
+  });
+  // Live шүүлтүүр URL-ийг шинэчилдэг тул татах линк одоогийн шүүлтүүрийг ашиглана.
+  document.querySelectorAll(".js-export-link").forEach(function (link) {
+    link.addEventListener("click", function () {
+      var params = new URLSearchParams(window.location.search);
+      params.delete("page");
+      params.set("export", link.dataset.format);
+      link.href = window.location.pathname + "?" + params;
+    });
+  });
+  form.addEventListener("submit", function (e) {
+    e.preventDefault(); clearTimeout(timer); updateCount(); search();
+  });
+})();
+</script>
 {% endblock %}

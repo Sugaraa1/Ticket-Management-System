@@ -1,3 +1,4 @@
+import re
 from datetime import timedelta
 
 from django.conf import settings
@@ -9,6 +10,8 @@ from django.utils.translation import gettext_lazy as _
 from apps.categories.models import Category
 from apps.core.models import TimeStampedModel
 from apps.projects.models import Module, Project
+
+from .storage import private_storage
 
 # ---------------------------------------------------------------------------
 # Workflow: docs/workflow.md-тэй тааруулсан зөвшөөрөгдсөн status шилжилтүүд.
@@ -30,6 +33,17 @@ def can_transition(current_status: str, new_status: str) -> bool:
     if current_status == new_status:
         return True
     return new_status in ALLOWED_TRANSITIONS.get(current_status, [])
+
+
+def format_ticket_code(pk):
+    return f"{settings.TICKET_CODE_PREFIX}{pk or 0:06d}"
+
+
+def parse_ticket_code(text):
+    """'FXT000012' / 'fxt12' -> 12; тохирохгүй бол None."""
+    prefix = settings.TICKET_CODE_PREFIX
+    match = re.fullmatch(rf"(?i){re.escape(prefix)}0*(\d+)", (text or "").strip())
+    return int(match.group(1)) if match else None
 
 
 class Ticket(TimeStampedModel):
@@ -153,7 +167,33 @@ class Ticket(TimeStampedModel):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"#{self.pk} {self.title}"
+        return f"{self.code} {self.title}"
+
+    @property
+    def code(self):
+        """Хэрэглэгчид харагдах 9 оронтой дугаар: 3 үсэг + 6 цифр (жишээ: FXT000001)."""
+        return format_ticket_code(self.pk)
+
+    @classmethod
+    def priority_choices_with_sla(cls):
+        """
+        Priority сонголт бүрд харгалзах Time to First Response / Time to
+        Resolution хугацааг (цагаар) хамт харуулна — priority сонгох мөчид
+        SLA-ийн үр дагаврыг шууд ойлгомжтой болгох зорилготой (ticket
+        үүсгэх/засах маягт, ticket жагсаалтын шүүлтүүрт ашиглагдана).
+        """
+        return [
+            (
+                value,
+                _("%(label)s — хариу: %(first_response)sц, шийдвэрлэлт: %(resolution)sц")
+                % {
+                    "label": label,
+                    "first_response": settings.SLA_FIRST_RESPONSE_HOURS_BY_PRIORITY.get(value),
+                    "resolution": settings.SLA_HOURS_BY_PRIORITY.get(value),
+                },
+            )
+            for value, label in cls.Priority.choices
+        ]
 
     @property
     def is_overdue(self):
@@ -234,12 +274,55 @@ class Ticket(TimeStampedModel):
         self.last_activity_at = when
         self.stale_reminder_sent_at = None
 
+    def change_priority(self, new_priority, user=None):
+        """
+        Priority-г сольж, SLA хугацааг ticket үүссэн мөчөөс эхлэн шинэ priority-оор
+        дахин тооцоолно (Jira SM-ийн адил). Анхааруулга/escalation тэмдэглэгээг
+        цэвэрлэж, шинэ хугацаанд дахин шалгагдах боломжтой болгоно.
+        """
+        if new_priority == self.priority:
+            return False
+        old_label = self.get_priority_display()
+        self.priority = new_priority
+        start = self.created_at or timezone.now()
+        self.sla_due_at = start + timedelta(
+            hours=settings.SLA_HOURS_BY_PRIORITY.get(new_priority, 72)
+        )
+        self.sla_warning_sent_at = None
+        self.sla_breach_notified_at = None
+        update_fields = [
+            "priority", "sla_due_at", "sla_warning_sent_at", "sla_breach_notified_at", "updated_at",
+        ]
+        if self.first_responded_at is None:
+            self.first_response_due_at = start + timedelta(
+                hours=settings.SLA_FIRST_RESPONSE_HOURS_BY_PRIORITY.get(new_priority, 24)
+            )
+            self.first_response_warning_sent_at = None
+            self.first_response_breach_notified_at = None
+            update_fields += [
+                "first_response_due_at",
+                "first_response_warning_sent_at",
+                "first_response_breach_notified_at",
+            ]
+        self.save(update_fields=update_fields)
+        Comment.objects.create(
+            ticket=self,
+            author=user,
+            body=_("Чухлын зэрэг өөрчлөгдлөө: %(old)s → %(new)s") % {
+                "old": old_label, "new": self.get_priority_display(),
+            },
+        )
+        self.mark_activity()
+        return True
+
     def _auto_route_team(self):
-        """Category-д тохирсон Team-ийг олж, team талбарт байхгүй бол автоматаар тавина."""
+        """Category-ийн багуудаас хамгийн бага ачаалалтайг team талбарт автоматаар тавина."""
         if self.category_id and not self.team_id:
-            assignment = getattr(self.category, "team_assignment", None)
-            if assignment:
-                self.team_id = assignment.team_id
+            from apps.categories.models import route_team_for_category
+
+            team = route_team_for_category(self.category_id)
+            if team:
+                self.team_id = team.id
 
     def save(self, *args, **kwargs):
         is_new = self._state.adding
@@ -327,12 +410,12 @@ class Comment(TimeStampedModel):
 
     def __str__(self):
         marker = " [internal]" if self.is_internal else ""
-        return f"Comment #{self.pk} on Ticket #{self.ticket_id}{marker}"
+        return f"Comment #{self.pk} on {format_ticket_code(self.ticket_id)}{marker}"
 
 
 class Attachment(TimeStampedModel):
     ticket = models.ForeignKey(Ticket, related_name="attachments", on_delete=models.CASCADE)
-    file = models.FileField(upload_to="attachments/%Y/%m/")
+    file = models.FileField(upload_to="attachments/%Y/%m/", storage=private_storage)
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
     )
@@ -341,7 +424,7 @@ class Attachment(TimeStampedModel):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Attachment #{self.pk} on Ticket #{self.ticket_id}"
+        return f"Attachment #{self.pk} on {format_ticket_code(self.ticket_id)}"
 
 
 class StatusHistory(models.Model):
@@ -360,4 +443,4 @@ class StatusHistory(models.Model):
         ordering = ["changed_at"]
 
     def __str__(self):
-        return f"Ticket #{self.ticket_id}: {self.from_status or '—'} → {self.to_status}"
+        return f"{format_ticket_code(self.ticket_id)}: {self.from_status or '—'} → {self.to_status}"

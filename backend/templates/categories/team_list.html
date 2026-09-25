@@ -24,22 +24,23 @@
     </div>
   </div>
   <div class="col-md-7">
+    {% include "_list_toolbar.html" %}
     <div class="card">
       <ul class="list-group list-group-flush">
         {% for t in teams %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
+        <a href="{% url 'categories:team_detail' t.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
           <span>
-            {{ t.name }} <span class="text-muted small">({% blocktrans with n=t.members.count %}{{ n }} гишүүн{% endblocktrans %})</span><br>
+            {{ t.name }} <span class="text-muted small">({% blocktrans with n=t.member_count %}{{ n }} гишүүн{% endblocktrans %} · {% blocktrans with n=t.open_ticket_count %}{{ n }} нээлттэй ticket{% endblocktrans %})</span><br>
             <span class="text-muted small">Team Lead: {{ t.team_lead.username|default:"—" }} · QA Tester: {{ t.qa_tester.username|default:"—" }}</span>
           </span>
-          <a href="{% url 'categories:team_detail' t.id %}" class="btn btn-sm btn-outline-primary">{% trans "Дэлгэрэнгүй" %}</a>
-        </li>
+          <i class="bi bi-chevron-right text-muted"></i>
+        </a>
         {% empty %}
-        <li class="list-group-item text-muted">{% trans "Баг алга байна." %}</li>
+        <li class="list-group-item text-muted">{% if list_is_filtered %}{% trans "Хайлтад тохирох баг олдсонгүй." %}{% else %}{% trans "Баг алга байна." %}{% endif %}</li>
         {% endfor %}
       </ul>
     </div>
+    {% include "_pagination.html" %}
   </div>
 </div>
-<a href="{% url 'categories:category_list' %}" class="btn btn-link mt-3">← {% trans "Ангилал руу буцах" %}</a>
 {% endblock %}

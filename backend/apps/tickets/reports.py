@@ -16,6 +16,7 @@ from datetime import timedelta
 
 from django.db.models import OuterRef, Subquery
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from .models import StatusHistory, Ticket
 
@@ -37,11 +38,12 @@ def clean_period(value):
 
 
 def _closed_at_subquery():
+    # Дахин нээгдээд дахин хаагдсан бол хамгийн сүүлийн хаалтыг тооцно.
     return Subquery(
         StatusHistory.objects.filter(
             ticket=OuterRef("pk"), to_status=Ticket.Status.CLOSED
         )
-        .order_by("changed_at")
+        .order_by("-changed_at")
         .values("changed_at")[:1]
     )
 
@@ -172,18 +174,18 @@ def _agent_rows(tickets, now):
     return rows
 
 
-def _daily_trend(period_tickets, since, now, days):
+def _daily_trend(period_tickets, since, now, days, team=None):
     created_per_day = defaultdict(int)
     for ticket in period_tickets:
         created_per_day[timezone.localtime(ticket.created_at).date()] += 1
 
     closed_per_day = defaultdict(int)
-    closures = (
-        StatusHistory.objects.filter(
-            to_status=Ticket.Status.CLOSED, changed_at__gte=since
-        )
-        .values_list("changed_at", flat=True)
+    closures = StatusHistory.objects.filter(
+        to_status=Ticket.Status.CLOSED, changed_at__gte=since
     )
+    if team:
+        closures = closures.filter(ticket__team=team)
+    closures = closures.values_list("changed_at", flat=True)
     for changed_at in closures:
         closed_per_day[timezone.localtime(changed_at).date()] += 1
 
@@ -246,7 +248,7 @@ def _trend_chart(trend):
         return PAD_TOP + plot_height * (1 - value / y_max)
 
     series = []
-    for key, label in (("created", "Үүссэн"), ("closed", "Хаагдсан")):
+    for key, label in (("created", _("Үүссэн")), ("closed", _("Хаагдсан"))):
         points = [
             {
                 "x": round(x_at(i), 2),
@@ -314,19 +316,21 @@ def _breakdown(tickets, attribute, labels=None):
     return rows
 
 
-def build_report(days=DEFAULT_PERIOD):
+def build_report(days=DEFAULT_PERIOD, team=None):
+    """`team` өгвөл зөвхөн тухайн багийн ticket-ээр тооцно (Team Lead-ийн dashboard)."""
     now = timezone.now()
     since = now - timedelta(days=days)
+    scope = Ticket.objects.filter(team=team) if team else Ticket.objects.all()
 
     period_tickets = list(
-        Ticket.objects.filter(created_at__gte=since)
+        scope.filter(created_at__gte=since)
         .annotate(closed_at=_closed_at_subquery())
         .select_related("assigned_to", "category")
     )
 
-    trend = _daily_trend(period_tickets, since, now, days)
+    trend = _daily_trend(period_tickets, since, now, days, team)
     closed_in_period = sum(row["closed"] for row in trend)
-    open_now = Ticket.objects.exclude(status__in=Ticket._SLA_EXEMPT_STATUSES).count()
+    open_now = scope.exclude(status__in=Ticket._SLA_EXEMPT_STATUSES).count()
 
     priority_labels = dict(Ticket.Priority.choices)
     resolution_hours = [
@@ -337,6 +341,10 @@ def build_report(days=DEFAULT_PERIOD):
 
     return {
         "days": days,
+        "team": team,
+        "days_str": str(days),
+        "since": since,
+        "generated_at": now,
         "periods": ALLOWED_PERIODS,
         "created_count": len(period_tickets),
         "closed_count": closed_in_period,

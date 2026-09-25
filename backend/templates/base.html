@@ -1,92 +1,194 @@
-{% load static i18n %}
+{% load static i18n avatars %}
 <!DOCTYPE html>
 <html lang="{{ LANGUAGE_CODE }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}{% trans "Ticket Management System" %}{% endblock %}</title>
+<title>{% block title %}TMS Foxt{% endblock %}</title>
+<link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+<link rel="icon" href="{% static 'img/favicon-32.png' %}" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
+<meta name="theme-color" content="#E2711D">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <link href="{% static 'css/theme.css' %}" rel="stylesheet">
 </head>
-<body>
+<body class="{% if user.is_authenticated %}tms-app{% else %}tms-public{% endif %}">
 
-<nav class="navbar navbar-expand-lg navbar-dark tms-navbar mb-4">
-  <div class="container">
-    <a class="navbar-brand tms-brand" href="{% url 'tickets:dashboard' %}">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a1.5 1.5 0 0 0 0 3v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a1.5 1.5 0 0 0 0-3V8Z" stroke="#fff" stroke-width="1.6"/>
-        <path d="M9 6v12" stroke="#fff" stroke-width="1.6" stroke-dasharray="2.5 2.5"/>
-      </svg>
-      Ticket Management System
+{% if user.is_authenticated %}
+{% url 'tickets:dashboard' as profile_url %}{% url 'tickets:ticket_list' as list_url %}{% url 'tickets:reports' as reports_url %}{% url 'tickets:my_team' as team_url %}
+<aside class="tms-sidebar" id="tmsSidebar">
+  <a class="tms-sidebar-brand" href="{{ list_url }}">
+    <span class="tms-logo"><i class="bi bi-ticket-perforated"></i></span>
+    <span>TMS Foxt</span>
+  </a>
+
+  <button type="button" class="btn btn-primary w-100 mb-3 tms-sidebar-new" data-bs-toggle="offcanvas" data-bs-target="#quickTicket">
+    <i class="bi bi-plus-lg"></i> <span>{% trans "Шинэ ticket" %}</span>
+  </button>
+
+  <nav class="tms-nav">
+    {% if can_view_dashboard %}
+    <a class="tms-nav-link {% if request.path == reports_url %}active{% endif %}" href="{{ reports_url }}">
+      <i class="bi bi-speedometer2"></i><span>Dashboard</span>
     </a>
-    {% if user.is_authenticated %}
-    <div class="collapse navbar-collapse">
-      <ul class="navbar-nav me-auto">
-        <li class="nav-item"><a class="nav-link" href="{% url 'tickets:dashboard' %}">{% trans "Нүүр" %}</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'tickets:ticket_list' %}">{% trans "Бүх ticket" %}</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'tickets:ticket_create' %}">+ {% trans "Шинэ ticket" %}</a></li>
-        {% if can_manage_catalog %}
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">{% trans "Удирдлага" %}</a>
-          <ul class="dropdown-menu dropdown-menu-dark">
-            <li><a class="dropdown-item" href="{% url 'tickets:reports' %}">{% trans "Тайлан" %}</a></li>
-            <li><a class="dropdown-item" href="{% url 'categories:category_list' %}">{% trans "Ангилал" %}</a></li>
-            <li><a class="dropdown-item" href="{% url 'categories:team_list' %}">{% trans "Баг" %}</a></li>
-            <li><a class="dropdown-item" href="{% url 'projects:project_list' %}">{% trans "Төсөл" %}</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li>
-              <form action="{% url 'tickets:run_sla_check' %}" method="post" class="px-3 py-1">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-outline-light w-100">{% trans "SLA шалгалт ажиллуулах" %}</button>
-              </form>
-            </li>
-            <li>
-              <form action="{% url 'tickets:run_stale_check' %}" method="post" class="px-3 py-1">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-outline-light w-100">{% trans "Идэвхгүй ticket шалгах" %}</button>
-              </form>
-            </li>
-          </ul>
-        </li>
-        {% endif %}
-      </ul>
-      <form action="{% url 'set_language' %}" method="post" class="d-inline me-3">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <select name="language" class="form-select form-select-sm d-inline-block w-auto" onchange="this.form.submit()">
-          {% get_current_language as CURRENT_LANGUAGE %}
-          {% get_available_languages as AVAILABLE_LANGUAGES %}
+    {% endif %}
+    <div class="tms-nav-label">{% trans "Ажил" %}</div>
+    <a class="tms-nav-link {% if request.path == list_url %}active{% endif %}" href="{{ list_url }}">
+      <i class="bi bi-list-task"></i><span>{% trans "Бүх ticket" %}</span>
+    </a>
+    <a class="tms-nav-link {% if request.path == profile_url %}active{% endif %}" href="{{ profile_url }}">
+      <i class="bi bi-inbox"></i><span>{% trans "Миний ажил" %}</span>
+      {% if my_action_count %}<span class="tms-nav-badge">{{ my_action_count }}</span>{% endif %}
+    </a>
+    <a class="tms-nav-link {% if request.path == team_url %}active{% endif %}" href="{{ team_url }}">
+      <i class="bi bi-people-fill"></i><span>{% trans "Миний баг" %}</span>
+    </a>
+
+    {% if can_manage_catalog %}
+    <div class="tms-nav-label">{% trans "Удирдлага" %}</div>
+    <a class="tms-nav-link {% if '/manage/categories' in request.path %}active{% endif %}" href="{% url 'categories:category_list' %}">
+      <i class="bi bi-tags"></i><span>{% trans "Ангилал" %}</span>
+    </a>
+    <a class="tms-nav-link {% if '/manage/teams' in request.path %}active{% endif %}" href="{% url 'categories:team_list' %}">
+      <i class="bi bi-people"></i><span>{% trans "Баг" %}</span>
+    </a>
+    <a class="tms-nav-link {% if '/manage/projects' in request.path %}active{% endif %}" href="{% url 'projects:project_list' %}">
+      <i class="bi bi-kanban"></i><span>{% trans "Төсөл" %}</span>
+    </a>
+    {% endif %}
+    {% if is_admin %}
+    <a class="tms-nav-link {% if '/manage/users' in request.path %}active{% endif %}" href="{% url 'accounts:user_list' %}">
+      <i class="bi bi-person-gear"></i><span>{% trans "Хэрэглэгчид" %}</span>
+    </a>
+    {% endif %}
+  </nav>
+
+  <div class="tms-sidebar-footer">
+    <form action="{% url 'set_language' %}" method="post" class="mb-2">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      {% get_current_language as CURRENT_LANGUAGE %}
+      {% get_available_languages as AVAILABLE_LANGUAGES %}
+      <div class="input-group input-group-sm">
+        <span class="input-group-text"><i class="bi bi-translate"></i></span>
+        <select name="language" class="form-select form-select-sm" onchange="this.form.submit()">
           {% for code, name in AVAILABLE_LANGUAGES %}
           <option value="{{ code }}" {% if code == CURRENT_LANGUAGE %}selected{% endif %}>{{ name }}</option>
           {% endfor %}
         </select>
-      </form>
-      <span class="navbar-text text-white-50 me-3">{{ user.username }}</span>
-      <form method="post" action="{% url 'logout' %}" class="d-inline">
+      </div>
+    </form>
+    <div class="tms-user">
+      <a href="{{ profile_url }}" class="text-decoration-none" title="{% trans "Миний профайл" %}">{% user_avatar user %}</a>
+      <div class="tms-user-name">
+        <div class="fw-semibold text-truncate">{{ user.get_full_name|default:user.username }}</div>
+        <div class="small text-truncate">@{{ user.username }}</div>
+      </div>
+      <a href="{% url 'password_change' %}" class="btn btn-sm tms-icon-btn" title="{% trans "Нууц үг солих" %}"><i class="bi bi-key"></i></a>
+      <form method="post" action="{% url 'logout' %}">
         {% csrf_token %}
-        <button class="btn btn-outline-light btn-sm" type="submit">{% trans "Гарах" %}</button>
+        <button class="btn btn-sm tms-icon-btn" type="submit" title="{% trans "Гарах" %}"><i class="bi bi-box-arrow-right"></i></button>
       </form>
     </div>
-    {% endif %}
   </div>
-</nav>
+</aside>
+{% endif %}
 
-<div class="container pb-5">
-  {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-      {{ message }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-  {% endfor %}
+<div class="tms-main">
+  {% if user.is_authenticated %}
+  <header class="tms-topbar d-lg-none">
+    <button class="btn tms-icon-btn" type="button" onclick="document.getElementById('tmsSidebar').classList.toggle('open')"><i class="bi bi-list fs-4"></i></button>
+    <span class="fw-bold">TMS Foxt</span>
+    <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#quickTicket"><i class="bi bi-plus-lg"></i></button>
+  </header>
+  {% endif %}
 
-  {% block content %}{% endblock %}
+  <main class="tms-content">
+    {% for message in messages %}
+      <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show js-auto-dismiss" role="alert"
+           data-dismiss-after="{% if message.tags == 'error' or message.tags == 'warning' %}8000{% else %}4000{% endif %}">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+
+    {% block content %}{% endblock %}
+  </main>
 </div>
 
+{% if quick_ticket_form %}{% include "tickets/_quick_ticket_drawer.html" %}{% endif %}
+
+{% if user.is_authenticated %}
+<div class="modal fade tms-confirm" id="tmsConfirm" tabindex="-1" aria-labelledby="tmsConfirmTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <div class="tms-confirm-icon mb-3"><i class="bi bi-exclamation-lg"></i></div>
+        <h5 class="mb-2" id="tmsConfirmTitle">{% trans "Итгэлтэй байна уу?" %}</h5>
+        <p class="text-muted mb-4 js-confirm-message"></p>
+        <div class="d-flex gap-2 justify-content-center">
+          <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">{% trans "Цуцлах" %}</button>
+          <button type="button" class="btn btn-primary px-4 js-confirm-ok">{% trans "Тийм" %}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Сайтын загвартай баталгаажуулах цонх: tmsConfirm(message, {danger}) → Promise<bool>.
+// data-confirm="..." атрибуттай form илгээхээс өмнө автоматаар асууна.
+window.tmsConfirm = function (message, opts) {
+  opts = opts || {};
+  var el = document.getElementById("tmsConfirm");
+  if (!el) return Promise.resolve(window.confirm(message));
+  el.querySelector(".js-confirm-message").textContent = message;
+  el.classList.toggle("is-danger", !!opts.danger);
+  el.querySelector(".tms-confirm-icon i").className = opts.danger ? "bi bi-trash3" : "bi bi-exclamation-lg";
+  var modal = bootstrap.Modal.getOrCreateInstance(el);
+  return new Promise(function (resolve) {
+    var ok = el.querySelector(".js-confirm-ok"), result = false;
+    function onOk() { result = true; modal.hide(); }
+    ok.addEventListener("click", onOk, { once: true });
+    el.addEventListener("hidden.bs.modal", function () {
+      ok.removeEventListener("click", onOk);
+      resolve(result);
+    }, { once: true });
+    el.addEventListener("shown.bs.modal", function () { ok.focus(); }, { once: true });
+    modal.show();
+  });
+};
+document.addEventListener("submit", function (e) {
+  var form = e.target;
+  if (!form.matches("form[data-confirm]:not(.js-active-toggle)") || form.dataset.confirmed) return;
+  e.preventDefault();
+  tmsConfirm(form.dataset.confirm, { danger: "confirmDanger" in form.dataset }).then(function (yes) {
+    if (yes) { form.dataset.confirmed = "1"; form.submit(); }
+  });
+});
+</script>
+<script>
+// Үйлдлийн мэдэгдлийг хугацааны дараа автоматаар хаана (амжилт 4с, алдаа/анхааруулга 8с).
+// Хулгана дээр нь байх үед хүлээнэ.
+document.querySelectorAll(".js-auto-dismiss").forEach(function (el) {
+  var timer;
+  function start() {
+    timer = setTimeout(function () { bootstrap.Alert.getOrCreateInstance(el).close(); },
+                       parseInt(el.dataset.dismissAfter, 10) || 4000);
+  }
+  el.addEventListener("mouseenter", function () { clearTimeout(timer); });
+  el.addEventListener("mouseleave", start);
+  start();
+});
+</script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

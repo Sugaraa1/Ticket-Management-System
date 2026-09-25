@@ -59,6 +59,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.user_roles_context",
+                "apps.core.context_processors.quick_ticket_context",
             ],
         },
     },
@@ -99,16 +100,42 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+# Хавсралт файл — вэб серверээр шууд үйлчлэхгүй, зөвхөн эрх шалгадаг view-ээр татагдана.
+PRIVATE_MEDIA_ROOT = BASE_DIR / "private_media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- Auth ---
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "tickets:dashboard"
+LOGIN_REDIRECT_URL = "tickets:ticket_list"
 LOGOUT_REDIRECT_URL = "login"
+# "Нууц үгээ мартсан" линкийн хүчинтэй хугацаа (секунд).
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24
 
-# --- Email (жагсаалт: dev дээр console, prod дээр smtp) ---
+# --- Email ---
+# .env-д EMAIL_HOST заасан бол SMTP-ээр жинхэнэ мэйл илгээнэ, үгүй бол мэйлийг
+# зөвхөн серверийн лог (console) руу хэвлэнэ.
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@ticket-system.local")
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_TIMEOUT = 15
+# Мэйл доторх ticket-ийн линкэд ашиглана.
+SITE_URL = env("SITE_URL", default="http://localhost:8000")
+EMAIL_BACKEND = (
+    "django.core.mail.backends.smtp.EmailBackend"
+    if EMAIL_HOST
+    else "django.core.mail.backends.console.EmailBackend"
+)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "loggers": {"apps": {"handlers": ["console"], "level": "INFO"}},
+}
 
 # --- SLA (Service Level Agreement) ---
 # Jira Service Management-ийн загварчлалтай адил 2 тусдаа SLA metric ашиглана:
@@ -142,3 +169,16 @@ SLA_WARNING_THRESHOLD = 0.8
 # давтан илгээгдэнэ (Zendesk/Jira-ийн "time-based automation"-той адил).
 # apps.tickets.management.commands.check_stale_tickets-ээр ашиглагдана.
 STALE_TICKET_REMINDER_HOURS = 48
+
+# Хавсралт файлын хязгаар (Jira/Zendesk-ийн стандарттай ойролцоо): нэг файл 10MB,
+# зөвхөн нийтлэг баримт/зураг/архив төрөл зөвшөөрөгдөнө.
+ATTACHMENT_MAX_SIZE_MB = 10
+ATTACHMENT_ALLOWED_EXTENSIONS = [
+    "png", "jpg", "jpeg", "gif", "webp",
+    "pdf", "txt", "log", "csv", "json",
+    "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+    "zip",
+]
+
+# Ticket-ийн харагдах дугаар: 3 үсэгтэй угтвар + 6 оронтой дугаар (жишээ: FXT000001).
+TICKET_CODE_PREFIX = "FXT"

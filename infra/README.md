@@ -1,11 +1,12 @@
 # Infra — Docker орчин
 
-`docker-compose.yml` нь дараах 2 service-ийг ажиллуулна:
+`docker-compose.yml` нь дараах 3 service-ийг ажиллуулна:
 
 | Service | Тайлбар | Port |
 |---|---|---|
-| `db` | PostgreSQL 16 | 5432 |
+| `db` | PostgreSQL 16 | 5433 (host) → 5432 (container) |
 | `web` | Django backend (migrate автоматаар ажилладаг + runserver) | 8000 |
+| `scheduler` | SLA / идэвхгүй ticket-ийн тогтмол шалгалт (`run_scheduler`) | — |
 
 ## Ашиглах алхмууд
 
@@ -26,6 +27,16 @@ docker compose up --build
 
 ```bash
 docker compose exec web python manage.py createsuperuser
+```
+
+## SLA мэдэгдэл — `scheduler` service
+
+`scheduler` контейнер `python manage.py run_scheduler`-ийг ажиллуулж, 15 минут тутам `check_sla_deadlines` (SLA анхааруулга / escalation), 60 минут тутам `check_stale_tickets` (идэвхгүй ticket сануулга)-г автоматаар дуудна. Лог харах: `docker compose logs -f scheduler`.
+
+## Шинэ dependency / migration нэмэгдсэний дараа
+
+```bash
+docker compose up --build    # requirements.txt өөрчлөгдсөн бол (жишээ нь openpyxl)
 ```
 
 ## Зогсоох / устгах

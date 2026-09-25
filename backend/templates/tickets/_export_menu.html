@@ -1,0 +1,14 @@
+{% load i18n %}
+<div class="dropdown">
+  <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+    <i class="bi bi-download"></i> {% trans "Татах" %}
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><a class="dropdown-item js-export-link" href="?{% if export_query %}{{ export_query }}&{% endif %}export=xlsx" data-format="xlsx"><i class="bi bi-file-earmark-excel me-2"></i>Excel (.xlsx)</a></li>
+    <li><a class="dropdown-item js-export-link" href="?{% if export_query %}{{ export_query }}&{% endif %}export=csv" data-format="csv"><i class="bi bi-filetype-csv me-2"></i>CSV (.csv)</a></li>
+    {% if pdf %}
+    <li><hr class="dropdown-divider"></li>
+    <li><button type="button" class="dropdown-item" onclick="window.print()"><i class="bi bi-file-earmark-pdf me-2"></i>PDF / {% trans "Хэвлэх" %}</button></li>
+    {% endif %}
+  </ul>
+</div>

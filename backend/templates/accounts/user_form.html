@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% if target %}{% trans "Хэрэглэгч засах" %}{% else %}{% trans "Шинэ хэрэглэгч" %}{% endif %}{% endblock %}
+{% block content %}
+<h2 class="tms-page-title mb-3">{% if target %}{% blocktrans with name=target.username %}'{{ name }}' хэрэглэгчийг засах{% endblocktrans %}{% else %}{% trans "Шинэ хэрэглэгч бүртгэх" %}{% endif %}</h2>
+<div class="row"><div class="col-lg-8 col-xxl-6">
+  <div class="card"><div class="card-body">
+    <form method="post" novalidate data-deactivate-confirm="{% trans "Энэ хэрэглэгчийг идэвхгүй болгох уу? Нэвтэрч чадахгүй болно." %}">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="row g-3">
+        {% for field in form %}
+        <div class="{% if field.name == 'first_name' or field.name == 'last_name' or field.name == 'password1' or field.name == 'password2' or field.name == 'new_password1' or field.name == 'new_password2' %}col-md-6{% else %}col-12{% endif %}">
+          {% if field.name == 'is_active' %}
+          <div class="form-check form-switch">{{ field }} <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label></div>
+          <div class="form-text">{{ field.help_text }}</div>
+          {% else %}
+          <label class="form-label fw-medium" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          {{ field }}
+          {% endif %}
+          {% if field.errors %}<div class="text-danger small">{{ field.errors|striptags }}</div>{% endif %}
+          {% if field.name == 'new_password1' or field.name == 'email' and field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+          {% if field.name == 'password1' and field.help_text %}<details class="form-text"><summary>{% trans "Нууц үгийн шаардлага" %}</summary>{{ field.help_text|safe }}</details>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <div class="mt-4 d-flex gap-2">
+        {% if target %}
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> {% trans "Хадгалах" %}</button>
+        {% else %}
+        <button type="submit" class="btn btn-primary"><i class="bi bi-person-plus"></i> {% trans "Бүртгэх" %}</button>
+        {% endif %}
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-light">{% trans "Цуцлах" %}</a>
+      </div>
+    </form>
+  </div></div>
+</div></div>
+{% include "_deactivate_confirm_script.html" %}
+{% endblock %}

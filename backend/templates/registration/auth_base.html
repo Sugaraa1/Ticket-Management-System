@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load i18n %}
+{# Нэвтрэх / нууц үг сэргээх хуудсуудын нийтлэг layout (зүүн талд брэнд). #}
+
+{% block content %}
+<div class="tms-login">
+  <section class="tms-login-brand">
+    <div class="d-flex align-items-center gap-2 fs-5 fw-bold">
+      <span class="tms-logo"><i class="bi bi-ticket-perforated"></i></span> TMS Foxt
+    </div>
+    <div>
+      <h1 class="fw-bold mb-3">{% trans "Bug, Task, Change Request — бүгд нэг дор." %}</h1>
+      <p class="mb-0">{% trans "Ticket бүртгэж, зөв багт автоматаар чиглүүлж, SLA хугацааг хянаж, QA хүртэлх явцыг нэг дороос удирдана." %}</p>
+      <ul class="tms-login-features">
+        <li><i class="bi bi-diagram-3"></i><span>{% trans "Ангиллаар нь зөв баг руу автоматаар routing" %}</span></li>
+        <li><i class="bi bi-stopwatch"></i><span>{% trans "Хариу өгөх болон шийдвэрлэх SLA хяналт, escalation" %}</span></li>
+        <li><i class="bi bi-clipboard-check"></i><span>{% trans "Developer → QA → хаах хүртэлх тодорхой workflow" %}</span></li>
+      </ul>
+    </div>
+    <div class="small tms-login-foot" style="color:#94A3B8">© {% now "Y" %} TMS Foxt</div>
+  </section>
+
+  <section class="tms-login-form-wrap">
+    <div class="tms-login-form">
+{% block auth_form %}{% endblock %}
+      <div class="mt-4 d-flex justify-content-between align-items-center gap-2">
+      <form action="{% url 'set_language' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        {% get_current_language as CURRENT_LANGUAGE %}{% get_available_languages as LANGS %}
+        <select name="language" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+          {% for code, name in LANGS %}<option value="{{ code }}" {% if code == CURRENT_LANGUAGE %}selected{% endif %}>{{ name }}</option>{% endfor %}
+        </select>
+      </form>
+      {% block auth_footer_extra %}{% endblock %}
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

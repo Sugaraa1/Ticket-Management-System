@@ -7,31 +7,48 @@
   <a href="{% url 'projects:project_create' %}" class="btn btn-primary">+ {% trans "Шинэ төсөл" %}</a>
 </div>
 
+{% include "_list_toolbar.html" %}
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover mb-0 align-middle">
       <thead class="table-light">
-        <tr><th>{% trans "Нэр" %}</th><th>Module-ууд</th><th>{% trans "Идэвхтэй" %}</th><th></th></tr>
+        <tr><th>{% trans "Нэр" %}</th><th>{% trans "Модулиуд" %}</th><th>{% trans "Идэвхтэй" %}</th><th></th></tr>
       </thead>
       <tbody>
         {% for p in projects %}
-        <tr>
-          <td class="fw-medium">{{ p.name }}</td>
-          <td>{{ p.modules.count }}</td>
+        <tr class="clickable-row" data-href="{% url 'projects:project_edit' p.id %}">
+          <td class="fw-medium"><a href="{% url 'projects:project_edit' p.id %}" class="text-body text-decoration-none">{{ p.name }}</a></td>
+          <td>{{ p.module_count }}</td>
           <td>
-            {% if p.is_active %}
-            <span class="status-badge status-closed">{% trans "Идэвхтэй" %}</span>
-            {% else %}
-            <span class="status-badge status-rejected">{% trans "Идэвхгүй" %}</span>
-            {% endif %}
+            <form method="post" action="{% url 'projects:project_toggle_active' p.id %}"
+                  class="form-check form-switch mb-0 js-active-toggle"
+                  {% if p.is_active %}data-confirm="{% trans "Энэ төслийг идэвхгүй болгох уу? Шинэ ticket үүсгэх сонголтод гарахгүй болно." %}"{% endif %}>
+              {% csrf_token %}
+              <input class="form-check-input" type="checkbox" role="switch" id="project-active-{{ p.id }}" {% if p.is_active %}checked{% endif %}>
+              <label class="form-check-label small" for="project-active-{{ p.id }}">{% if p.is_active %}{% trans "Идэвхтэй" %}{% else %}{% trans "Идэвхгүй" %}{% endif %}</label>
+            </form>
           </td>
-          <td><a href="{% url 'projects:project_edit' p.id %}" class="btn btn-sm btn-outline-primary">{% trans "Засах" %}</a></td>
+          <td class="text-end text-nowrap">
+            {% include "projects/_project_delete_form.html" %}
+            <i class="bi bi-chevron-right text-muted ms-1"></i>
+          </td>
         </tr>
         {% empty %}
-        <tr><td colspan="4" class="text-center text-muted py-4">{% trans "Төсөл алга байна." %}</td></tr>
+        <tr><td colspan="4" class="text-center text-muted py-4">{% if list_is_filtered %}{% trans "Хайлтад тохирох төсөл олдсонгүй." %}{% else %}{% trans "Төсөл алга байна." %}{% endif %}</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+{% include "_pagination.html" %}
+{% include "_active_toggle_script.html" %}
+<script>
+// Мөр дээр дарахад төсөл рүү орно (toggle, линк, товч дээр дарахыг алгасна).
+document.querySelectorAll(".clickable-row").forEach(function (row) {
+  row.addEventListener("click", function (e) {
+    if (e.target.closest("a, button, input, label, form")) return;
+    window.location = row.dataset.href;
+  });
+});
+</script>
 {% endblock %}

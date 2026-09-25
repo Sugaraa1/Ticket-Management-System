@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load i18n avatars %}
+{% block title %}{% trans "Хэрэглэгчид" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="tms-page-title mb-0">{% trans "Хэрэглэгчид" %}</h2>
+  <a href="{% url 'accounts:user_create' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> {% trans "Шинэ хэрэглэгч" %}</a>
+</div>
+{% include "_list_toolbar.html" %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle tms-table">
+      <thead><tr>
+        <th>{% trans "Хэрэглэгч" %}</th><th>{% trans "И-мэйл" %}</th><th>{% trans "Эрх" %}</th>
+        <th>{% trans "Төлөв" %}</th><th>{% trans "Сүүлд нэвтэрсэн" %}</th><th class="text-end"></th>
+      </tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr class="{% if not u.is_active %}text-muted{% endif %}">
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              {% user_avatar u %}
+              <div><div class="fw-medium">{{ u.get_full_name|default:u.username }}</div><div class="small text-muted">@{{ u.username }}</div></div>
+            </div>
+          </td>
+          <td>{{ u.email|default:"—" }}</td>
+          <td>
+            {% if u.is_superuser %}<span class="badge text-bg-dark">Superuser</span>{% endif %}
+            {% for g in u.groups.all %}<span class="badge text-bg-light border">{{ g.name }}</span>{% empty %}{% if not u.is_superuser %}—{% endif %}{% endfor %}
+          </td>
+          <td>
+            {% if u != user and not u.is_superuser or u != user and user.is_superuser %}
+            <form method="post" action="{% if u.is_active %}{% url 'accounts:user_deactivate' u.pk %}{% else %}{% url 'accounts:user_activate' u.pk %}{% endif %}"
+                  class="form-check form-switch mb-0 js-active-toggle"
+                  {% if u.is_active %}data-confirm="{% trans "Энэ хэрэглэгчийг идэвхгүй болгох уу? Нэвтэрч чадахгүй болно." %}"{% endif %}>
+              {% csrf_token %}
+              <input class="form-check-input" type="checkbox" role="switch" id="active-{{ u.pk }}" {% if u.is_active %}checked{% endif %}>
+              <label class="form-check-label small" for="active-{{ u.pk }}">{% if u.is_active %}{% trans "Идэвхтэй" %}{% else %}{% trans "Идэвхгүй" %}{% endif %}</label>
+            </form>
+            {% else %}
+            <div class="form-check form-switch mb-0" title="{% if u == user %}{% trans "Өөрийгөө идэвхгүй болгох боломжгүй" %}{% else %}{% trans "Superuser-ийг зөвхөн superuser өөрчилнө" %}{% endif %}">
+              <input class="form-check-input" type="checkbox" role="switch" {% if u.is_active %}checked{% endif %} disabled>
+              <label class="form-check-label small">{% if u.is_active %}{% trans "Идэвхтэй" %}{% else %}{% trans "Идэвхгүй" %}{% endif %}</label>
+            </div>
+            {% endif %}
+          </td>
+          <td class="small">{{ u.last_login|date:"Y-m-d H:i"|default:"—" }}</td>
+          <td class="text-end text-nowrap">
+            {% if not u.is_superuser or user.is_superuser %}
+            <a href="{% url 'accounts:user_edit' u.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> {% trans "Засах" %}</a>
+            {% endif %}
+            {% if u != user %}
+              {% if u.is_active %}
+              <form method="post" action="{% url 'accounts:user_delete' u.pk %}" class="d-inline" data-confirm-danger
+                    data-confirm="{% trans "Энэ хэрэглэгчийг устгахдаа итгэлтэй байна уу? Ticket-ийн түүхтэй бол устгахын оронд идэвхгүй болно." %}">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> {% trans "Устгах" %}</button>
+              </form>
+              {% endif %}
+            {% else %}<span class="small text-muted">{% trans "Та" %}</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "_pagination.html" %}
+{% include "_active_toggle_script.html" %}
+{% endblock %}

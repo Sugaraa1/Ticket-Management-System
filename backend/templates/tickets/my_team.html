@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load i18n avatars %}
+{% block title %}{% trans "Миний баг" %}{% endblock %}
+{% block content %}
+<h2 class="tms-page-title mb-3">{% trans "Миний баг" %}</h2>
+
+{% for b in team_blocks %}
+<div class="card mb-4">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span class="fs-5"><i class="bi bi-people-fill text-primary"></i> {{ b.team.name }}</span>
+    <span class="small text-muted fw-normal d-flex align-items-center gap-2 flex-wrap">
+      {% if b.can_view_report %}
+      <a href="{% url 'tickets:team_report' b.team.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-speedometer2"></i> Dashboard</a>
+      {% endif %}
+      <span>Team Lead: <strong>{{ b.team.team_lead.username|default:"—" }}</strong> ·
+      QA Tester: <strong>{{ b.team.qa_tester.username|default:"—" }}</strong></span>
+    </span>
+  </div>
+  <div class="card-body">
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-3"><div class="stat-tile-label">{% trans "Нээлттэй ticket" %}</div><div class="stat-tile-value">{{ b.stats.open }}</div></div>
+      <div class="col-6 col-md-3"><div class="stat-tile-label">{% trans "Оноогдоогүй" %}</div><div class="stat-tile-value {% if b.stats.unassigned %}text-primary{% endif %}">{{ b.stats.unassigned }}</div></div>
+      <div class="col-6 col-md-3"><div class="stat-tile-label">{% trans "QA шалгалтад" %}</div><div class="stat-tile-value">{{ b.stats.qa }}</div></div>
+      <div class="col-6 col-md-3"><div class="stat-tile-label">{% trans "SLA хэтэрсэн" %}</div><div class="stat-tile-value {% if b.stats.overdue %}text-danger{% endif %}">{{ b.stats.overdue }}</div></div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-4">
+        <h6 class="mb-2">{% trans "Гишүүд ба ачаалал" %}</h6>
+        <ul class="list-group mb-3">
+          {% for m in b.members %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span class="d-flex align-items-center gap-2">
+              {% user_avatar m %}
+              {{ m.get_full_name|default:m.username }}{% if m.id == user.id %} <span class="badge text-bg-light border">{% trans "Би" %}</span>{% endif %}
+            </span>
+            <span class="badge rounded-pill {% if m.active_ticket_count %}text-bg-primary{% else %}text-bg-light border{% endif %}">
+              {% blocktrans with n=m.active_ticket_count %}{{ n }} идэвхтэй{% endblocktrans %}
+            </span>
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted">{% trans "Багт гишүүн нэмэгдээгүй байна." %}</li>
+          {% endfor %}
+        </ul>
+        <h6 class="mb-2">{% trans "Хариуцдаг ангилал" %}</h6>
+        <div class="d-flex flex-wrap gap-1">
+          {% for c in b.categories %}<span class="badge text-bg-light border">{{ c.name }}</span>{% empty %}<span class="text-muted small">—</span>{% endfor %}
+        </div>
+      </div>
+      <div class="col-lg-8">
+        <h6 class="mb-2">{% trans "Багийн нээлттэй ticket" %}</h6>
+        <div class="border rounded-3 overflow-hidden">
+          {% include "tickets/_mini_ticket_table.html" with rows=b.tickets empty_text=_("Багт нээлттэй ticket алга.") %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% empty %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-people fs-1"></i></div>
+    <h5 class="mb-1">{% trans "Танд одоогоор баг алга байна." %}</h5>
+    <p class="mb-0">{% trans "Та ямар нэг багт гишүүн, Team Lead эсвэл QA Tester-ээр бүртгэгдээгүй байна. PM/Admin-д хандаж багт нэмүүлнэ үү." %}</p>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

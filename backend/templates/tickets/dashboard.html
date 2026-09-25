@@ -1,50 +1,118 @@
 {% extends "base.html" %}
-{% load ticket_extras i18n %}
-{% block title %}{% trans "Нүүр хуудас" %}{% endblock %}
+{% load i18n avatars %}
+{% block title %}{% trans "Миний ажил" %}{% endblock %}
 {% block content %}
-<h2 class="mb-1">{% trans "Нүүр хуудас" %}</h2>
-<p class="text-muted mb-4">{% blocktrans %}Нийт <strong>{{ total_tickets }}</strong> ticket бүртгэгдсэн байна.{% endblocktrans %}</p>
-
-<div class="row g-3 mb-4">
-  {% for value, label in status_choices %}
-  <div class="col-6 col-md-3">
-    <div class="card status-stat-card h-100" style="--stat-color: var(--status-{{ value }}-fg);">
-      <div class="card-body">
-        <span class="status-badge status-{{ value }} mb-2">{{ label }}</span>
-        <h2 class="mb-0 mt-2">{{ status_map|get_item:value }}</h2>
+<div class="row g-4">
+  <aside class="col-lg-3">
+    <div class="card profile-card">
+      <div class="profile-cover"></div>
+      <div class="card-body text-center pt-0">
+        <form method="post" action="{% url 'accounts:avatar_update' %}" enctype="multipart/form-data" class="profile-avatar-form mx-auto mb-2">
+          {% csrf_token %}
+          <label class="profile-avatar-picker" title="{% trans "Профайлын зураг солих" %}">
+            {% user_avatar profile_user "profile-avatar" %}
+            <span class="profile-avatar-overlay"><i class="bi bi-camera"></i></span>
+            <input type="file" name="avatar" accept="image/png,image/jpeg,image/webp,image/gif" class="visually-hidden" onchange="this.form.submit()">
+          </label>
+        </form>
+        <h4 class="profile-name mb-0">{{ profile_user.get_full_name|default:profile_user.username }}</h4>
+        <div class="text-muted small mb-2">@{{ profile_user.username }}</div>
+        {% if profile_user.profile.avatar %}
+        <form method="post" action="{% url 'accounts:avatar_update' %}" class="mb-2" data-confirm="{% trans "Профайлын зургаа устгахдаа итгэлтэй байна уу?" %}">
+          {% csrf_token %}
+          <button type="submit" name="action" value="remove" class="btn btn-link btn-sm text-muted p-0 small">{% trans "Зураг устгах" %}</button>
+        </form>
+        {% endif %}
+        <div class="d-flex flex-wrap justify-content-center gap-1">
+          {% for role in roles %}<span class="profile-role">{{ role }}</span>{% empty %}<span class="profile-role is-empty">{% trans "Эрх тохируулаагүй" %}</span>{% endfor %}
+        </div>
+      </div>
+      <ul class="profile-facts">
+        <li><i class="bi bi-envelope"></i><span class="label">{% trans "И-мэйл" %}</span>
+          <span class="value">{% if profile_user.email %}{{ profile_user.email }}{% else %}<span class="text-muted">—</span>{% endif %}</span></li>
+        <li><i class="bi bi-people"></i><span class="label">{% trans "Баг" %}</span>
+          <span class="value">{% for t in teams %}{{ t.name }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="text-muted">—</span>{% endfor %}</span></li>
+        {% if qa_teams %}
+        <li><i class="bi bi-clipboard-check"></i><span class="label">{% trans "QA хариуцдаг баг" %}</span>
+          <span class="value">{% for t in qa_teams %}{{ t.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</span></li>
+        {% endif %}
+        {% if led_teams %}
+        <li><i class="bi bi-star"></i><span class="label">{% trans "Ахалдаг баг" %}</span>
+          <span class="value">{% for t in led_teams %}{{ t.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</span></li>
+        {% endif %}
+        <li><i class="bi bi-calendar3"></i><span class="label">{% trans "Бүртгүүлсэн" %}</span><span class="value">{{ profile_user.date_joined|date:"Y-m-d" }}</span></li>
+        <li><i class="bi bi-clock-history"></i><span class="label">{% trans "Сүүлд нэвтэрсэн" %}</span><span class="value">{{ profile_user.last_login|date:"Y-m-d H:i"|default:"—" }}</span></li>
+      </ul>
+      <div class="card-body pt-2">
+        <a href="{% url 'password_change' %}" class="btn btn-outline-primary w-100"><i class="bi bi-key"></i> {% trans "Нууц үг солих" %}</a>
       </div>
     </div>
-  </div>
-  {% endfor %}
-</div>
+  </aside>
 
-<div class="row">
-  <div class="col-md-6">
-    <h5 class="mb-3">{% trans "Надад оноогдсон ticket" %}</h5>
-    <ul class="list-group mb-4">
-      {% for t in my_tickets %}
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-        <a href="{% url 'tickets:ticket_detail' t.id %}" class="text-decoration-none">#{{ t.id }} {{ t.title }}</a>
-        <span class="status-badge status-{{ t.status }}">{{ t.get_status_display }}</span>
-      </li>
-      {% empty %}
-      <li class="list-group-item text-muted">{% trans "Танд оноогдсон ticket алга байна." %}</li>
-      {% endfor %}
-    </ul>
-  </div>
+  <section class="col-lg-9">
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-xl"><div class="card h-100"><div class="card-body">
+        <div class="stat-tile-label"><i class="bi bi-person-check"></i> {% trans "Надад оноогдсон" %}</div>
+        <div class="stat-tile-value">{{ stats.assigned_active }}</div>
+      </div></div></div>
+      {% if qa_teams %}
+      <div class="col-6 col-xl"><div class="card h-100"><div class="card-body">
+        <div class="stat-tile-label"><i class="bi bi-clipboard-check"></i> {% trans "QA шалгалт хүлээж буй" %}</div>
+        <div class="stat-tile-value {% if stats.qa_waiting %}text-primary{% endif %}">{{ stats.qa_waiting }}</div>
+      </div></div></div>
+      {% endif %}
+      {% if led_teams %}
+      <div class="col-6 col-xl"><div class="card h-100"><div class="card-body">
+        <div class="stat-tile-label"><i class="bi bi-person-plus"></i> {% trans "Оноох хүлээж буй" %}</div>
+        <div class="stat-tile-value {% if stats.lead_unassigned %}text-primary{% endif %}">{{ stats.lead_unassigned }}</div>
+      </div></div></div>
+      {% endif %}
+      <div class="col-6 col-xl"><div class="card h-100"><div class="card-body">
+        <div class="stat-tile-label"><i class="bi bi-exclamation-triangle"></i> {% trans "SLA хэтэрсэн" %}</div>
+        <div class="stat-tile-value {% if stats.overdue %}text-danger{% endif %}">{{ stats.overdue }}</div>
+      </div></div></div>
+      <div class="col-6 col-xl"><div class="card h-100"><div class="card-body">
+        <div class="stat-tile-label"><i class="bi bi-megaphone"></i> {% trans "Миний мэдээлсэн (нээлттэй)" %}</div>
+        <div class="stat-tile-value">{{ stats.reported_open }}</div>
+      </div></div></div>
+      <div class="col-6 col-xl"><div class="card h-100"><div class="card-body">
+        <div class="stat-tile-label"><i class="bi bi-check2-circle"></i> {% trans "Миний хаасан" %}</div>
+        <div class="stat-tile-value">{{ stats.closed_by_me }}</div>
+      </div></div></div>
+    </div>
 
-  <div class="col-md-6">
-    <h5 class="mb-3">{% trans "Сүүлд үүссэн ticket" %}</h5>
-    <ul class="list-group mb-4">
-      {% for t in recent_tickets %}
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-        <a href="{% url 'tickets:ticket_detail' t.id %}" class="text-decoration-none">#{{ t.id }} {{ t.title }}</a>
-        <span class="status-badge status-{{ t.status }}">{{ t.get_status_display }}</span>
-      </li>
-      {% empty %}
-      <li class="list-group-item text-muted">{% trans "Ticket алга байна." %}</li>
-      {% endfor %}
-    </ul>
-  </div>
+    {% if qa_teams %}
+    <div class="card mb-4 tms-queue-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clipboard-check"></i> {% trans "QA шалгалт хүлээж буй ticket" %}</span>
+        <span class="small text-muted fw-normal">{% trans "Таны QA хариуцдаг багийн 'Чанарын шалгалтад' төлөвт ирсэн ticket-үүд" %}</span>
+      </div>
+      {% include "tickets/_mini_ticket_table.html" with rows=qa_queue empty_text=_("QA шалгалт хүлээж буй ticket алга.") %}
+    </div>
+    {% endif %}
+
+    {% if led_teams %}
+    <div class="card mb-4 tms-queue-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-person-plus"></i> {% trans "Миний багт ирсэн, оноогдоогүй ticket" %}</span>
+        <span class="small text-muted fw-normal">{% trans "Team Lead-ийн хувьд хариуцагч оноох шаардлагатай" %}</span>
+      </div>
+      {% include "tickets/_mini_ticket_table.html" with rows=lead_queue empty_text=_("Оноох хүлээж буй ticket алга.") %}
+    </div>
+    {% endif %}
+
+    <div class="card mb-4 tms-queue-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-person-check"></i> {% trans "Надад оноогдсон ticket" %}</span>
+        <span class="small text-muted fw-normal">{% trans "Дуусах хугацаагаар эрэмбэлсэн" %}</span>
+      </div>
+      {% include "tickets/_mini_ticket_table.html" with rows=assigned_active empty_text=_("Танд оноогдсон идэвхтэй ticket алга.") %}
+    </div>
+
+    <div class="card tms-queue-card">
+      <div class="card-header"><i class="bi bi-megaphone"></i> {% trans "Миний мэдээлсэн ticket" %}</div>
+      {% include "tickets/_mini_ticket_table.html" with rows=reported_open empty_text=_("Таны мэдээлсэн нээлттэй ticket алга.") %}
+    </div>
+  </section>
 </div>
 {% endblock %}

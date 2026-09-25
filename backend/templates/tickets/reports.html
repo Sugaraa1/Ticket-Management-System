@@ -1,17 +1,40 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}{% trans "Тайлан" %}{% endblock %}
+{% block title %}{% if team %}{{ team.name }} — {% endif %}Dashboard{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <h2 class="mb-0">{% trans "Тайлан" %}</h2>
-  <div class="btn-group report-period-nav" role="group" aria-label="{% trans "Хугацааны хүрээ" %}">
-    {% for period in periods %}
-    <a href="?days={{ period }}"
-       class="btn btn-sm {% if period == days %}btn-primary{% else %}btn-outline-secondary{% endif %}">
-      {% blocktrans %}{{ period }} хоног{% endblocktrans %}
-    </a>
-    {% endfor %}
+  <div>
+    {% if team %}
+    <h2 class="mb-0">{% blocktrans with name=team.name %}{{ name }} багийн dashboard{% endblocktrans %}</h2>
+    {% else %}
+    <h2 class="mb-0">Dashboard</h2>
+    {% endif %}
   </div>
+  <div class="d-flex align-items-center gap-2 no-print">
+    {% if team_choices %}
+    <select class="form-select form-select-sm w-auto" aria-label="{% trans "Баг сонгох" %}"
+            onchange="window.location = this.value + '?days={{ days }}'">
+      <option value="{% url 'tickets:reports' %}" {% if not team %}selected{% endif %}>{% trans "Бүх баг" %}</option>
+      {% for t in team_choices %}
+      <option value="{% url 'tickets:team_report' t.pk %}" {% if team and team.pk == t.pk %}selected{% endif %}>{{ t.name }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+    <div class="btn-group report-period-nav" role="group" aria-label="{% trans "Хугацааны хүрээ" %}">
+      {% for period in periods %}
+      <a href="?days={{ period }}"
+         class="btn btn-sm {% if period == days %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+        {% blocktrans %}{{ period }} хоног{% endblocktrans %}
+      </a>
+      {% endfor %}
+    </div>
+    {% include "tickets/_export_menu.html" with export_query="days="|add:days_str pdf=True %}
+  </div>
+</div>
+<div class="print-only report-print-meta mb-3">
+  {% blocktrans with d=days %}Сүүлийн {{ d }} хоног{% endblocktrans %}
+  ({{ since|date:"Y-m-d" }} — {{ generated_at|date:"Y-m-d" }}) ·
+  {% trans "Гаргасан" %}: {{ generated_at|date:"Y-m-d H:i" }}, {{ user.get_full_name|default:user.username }}
 </div>
 
 <div class="row g-3 mb-3">
