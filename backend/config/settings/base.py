@@ -78,12 +78,17 @@ DATABASES = {
     )
 }
 
+# Django-гийнхтэй ижил дүрэм, зөвхөн мессеж нь монголоор (apps/accounts/password_validation.py).
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {"NAME": "apps.accounts.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "apps.accounts.password_validation.MinimumLengthValidator"},
+    {"NAME": "apps.accounts.password_validation.CommonPasswordValidator"},
+    {"NAME": "apps.accounts.password_validation.NumericPasswordValidator"},
 ]
+
+# Нэвтрэх оролдлогын хязгаар: хэдэн удаа буруу оролдвол хэдэн минут түгжих.
+LOGIN_FAILURE_LIMIT = env.int("LOGIN_FAILURE_LIMIT", default=5)
+LOGIN_LOCKOUT_MINUTES = env.int("LOGIN_LOCKOUT_MINUTES", default=15)
 
 LANGUAGE_CODE = "mn"
 LANGUAGES = [

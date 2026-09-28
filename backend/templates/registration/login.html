@@ -5,7 +5,9 @@
 {% block auth_form %}
       <h2 class="fw-bold mb-1">{% trans "Нэвтрэх" %}</h2>
       <p class="text-muted mb-4">{% trans "Үргэлжлүүлэхийн тулд бүртгэлээрээ нэвтэрнэ үү." %}</p>
-      {% if form.errors %}
+      {% if form.locked_out %}
+      <div class="alert alert-warning py-2"><i class="bi bi-shield-lock"></i> {{ form.non_field_errors.0 }}</div>
+      {% elif form.errors %}
       <div class="alert alert-danger py-2"><i class="bi bi-exclamation-circle"></i> {% trans "Хэрэглэгчийн нэр эсвэл нууц үг буруу байна." %}</div>
       {% endif %}
       <form method="post">

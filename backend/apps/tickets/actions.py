@@ -27,6 +27,10 @@ class ActionError(Exception):
     pass
 
 
+# Татгалзах, дахин нээхэд шалтгаан заавал (docs/rules.md — WF-02, WF-03).
+REASON_REQUIRED_STATUSES = {Ticket.Status.REJECTED, Ticket.Status.REOPENED}
+
+
 def _team_member(ticket, user_id):
     members = {str(u.id): u for u in team_members_with_workload(ticket.team)}
     member = members.get(str(user_id or ""))
@@ -40,6 +44,11 @@ def transition(ticket, new_status, user, comment="", assignee_id=None):
     allowed, error = can_user_transition(ticket, new_status, user)
     if not allowed:
         raise ActionError(error)
+    if new_status in REASON_REQUIRED_STATUSES and not (comment or "").strip():
+        raise ActionError(
+            _("\"%(status)s\" төлөвт шилжүүлэхдээ шалтгаанаа тайлбар хэсэгт бичнэ үү.")
+            % {"status": Ticket.Status(new_status).label}
+        )
     if new_status == Ticket.Status.ASSIGNED:
         if not assignee_id:
             raise ActionError(_("Хариуцах хэрэглэгчийг сонгоно уу."))

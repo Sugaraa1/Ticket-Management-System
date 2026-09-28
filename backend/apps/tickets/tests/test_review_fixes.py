@@ -150,9 +150,9 @@ class DeveloperTransitionScopeTests(TestCase):
         for status in statuses:
             self.ticket.transition_to(status)
 
-    def _post(self, user, status):
+    def _post(self, user, status, comment=""):
         self.client.force_login(user)
-        self.client.post(self.url, {"action": "transition", "new_status": status})
+        self.client.post(self.url, {"action": "transition", "new_status": status, "comment": comment})
         self.ticket.refresh_from_db()
         return self.ticket.status
 
@@ -167,7 +167,8 @@ class DeveloperTransitionScopeTests(TestCase):
 
     def test_pm_can_reject_in_progress_ticket(self):
         self._move("assigned", "in_progress")
-        self.assertEqual(self._post(self.pm, "rejected"), "rejected")
+        # WF-02: татгалзахад шалтгаан заавал.
+        self.assertEqual(self._post(self.pm, "rejected", comment="Давхардсан ticket"), "rejected")
 
     def test_pm_cannot_do_developer_work(self):
         self._move("assigned")

@@ -22,7 +22,29 @@ def validate_attachment(uploaded):
             _("'.%(ext)s' төрлийн файл зөвшөөрөгдөхгүй. Зөвшөөрөгдөх: %(allowed)s")
             % {"ext": ext, "allowed": ", ".join(settings.ATTACHMENT_ALLOWED_EXTENSIONS)}
         )
+    if ext in IMAGE_EXTENSIONS and not _is_real_image(uploaded):
+        raise forms.ValidationError(
+            _("Файлын агуулга '.%(ext)s' зураг биш байна.") % {"ext": ext}
+        )
     return uploaded
+
+
+# Browser шууд харуулдаг тул агуулгыг нь (magic bytes) шалгана (docs/rules.md — ATT-04).
+IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp", "bmp"}
+
+
+def _is_real_image(uploaded):
+    from PIL import Image
+
+    try:
+        uploaded.seek(0)
+        # Image.open нь зөвхөн толгой (magic bytes)-г уншиж форматыг таньдаг.
+        with Image.open(uploaded):
+            return True
+    except Exception:
+        return False
+    finally:
+        uploaded.seek(0)
 
 
 def attachment_help_text():

@@ -26,8 +26,8 @@
 | AUTH-04 | Хэрэглэгчийн нэртэй төстэй нууц үгийг хориглоно | NIST §5.1.1.2 | `test_similar_to_username_rejected` | ✅ |
 | AUTH-05 | 64 тэмдэгт хүртэлх урт нууц үгийг зөвшөөрнө | NIST §5.1.1.2 | `test_long_passphrase_accepted` | ✅ |
 | AUTH-06 | Тэмдэгт/том үсэг заавал шаардахгүй (найрлагын дүрэмгүй) | NIST §5.1.1.2 | `test_no_forced_composition_rules` | ✅ |
-| AUTH-07 | Нууц үгийн алдааны мессеж монгол хэл дээр | UX / i18n | `test_error_messages_are_in_mongolian` | ❌ |
-| AUTH-08 | 5 удаа буруу оролдсоны дараа нэвтрэлтийг түр хаана | ASVS 2.2.1 | `test_repeated_failed_logins_are_throttled` | ❌ |
+| AUTH-07 | Нууц үгийн алдааны мессеж монгол хэл дээр | UX / i18n | `test_error_messages_are_in_mongolian` | ✅ |
+| AUTH-08 | 5 удаа буруу оролдсоны дараа нэвтрэлтийг түр хаана | ASVS 2.2.1 | `test_repeated_failed_logins_are_throttled` | ✅ |
 | AUTH-09 | Нэвтэрсний дараа гадны сайт руу шилжүүлэхгүй (open redirect) | ASVS 5.1.5 | `test_external_next_redirect_is_ignored` | ✅ |
 | AUTH-10 | Гарсны дараа session дуусна | ASVS 3.3.1 | `test_logout_ends_session` | ✅ |
 | AUTH-11 | Идэвхгүй хэрэглэгч нэвтэрч чадахгүй | ASVS 2.1 | `accounts/tests.py` → `test_deactivate_button_blocks_login_but_keeps_user` | ✅ |
@@ -56,7 +56,7 @@
 | ATT-01 | Зөвхөн зөвшөөрөгдсөн өргөтгөл (зураг, баримт, zip); том/жижиг үсэг ялгахгүй | `test_images_are_accepted`, `test_documents_are_accepted`, `test_extension_is_case_insensitive` | ✅ |
 | ATT-02 | Ажиллах файл, скрипт, html, svg-г хориглоно | `test_executables_and_scripts_are_rejected`, `test_html_and_svg_are_rejected` | ✅ |
 | ATT-03 | Давхар өргөтгөл (`a.png.exe`) болон өргөтгөлгүй файлыг хориглоно | `test_double_extension_is_judged_by_last_one`, `test_file_without_extension_is_rejected` | ✅ |
-| ATT-04 | Файлын **агуулга** өргөтгөлтэйгөө таарна (magic bytes) | `test_file_content_must_match_extension` | ❌ |
+| ATT-04 | Файлын **агуулга** өргөтгөлтэйгөө таарна (magic bytes) | `test_file_content_must_match_extension` | ✅ |
 | ATT-05 | Хэмжээний хязгаар (яг хязгаар ✅, +1 байт ❌) | `test_file_at_limit_is_accepted`, `test_file_over_limit_is_rejected` | ✅ |
 | ATT-06 | Хуудсаар илгээхэд ч дүрэм мөрдөгдөнө; хэн хавсаргасныг бүртгэнэ | `test_allowed_file_is_saved_to_ticket`, `test_forbidden_file_is_not_saved` | ✅ |
 | ATT-07 | Хавсаргах/татахад нэвтрэлт шаардана; файл нийтийн `media/`-д биш | `test_anonymous_user_cannot_upload`; `test_access_rules.py` → `test_attachment_requires_login_and_is_not_under_media` | ✅ |
@@ -85,8 +85,8 @@
 | ID | Дүрэм | Тест | Төлөв |
 |---|---|---|---|
 | WF-01 | Төлөв шилжих бүрт хэн/хэзээ/хаанаас хаашаа гэдгийг бүртгэнэ (аудит) | `test_rules_tickets.py` → `test_transition_is_audited_with_actor`; `test_models.py` → `test_creates_status_history_on_create` | ✅ |
-| WF-02 | Татгалзахдаа шалтгаан заавал бичнэ | `test_rejection_requires_reason`, `test_rejection_with_reason_succeeds` | ❌ |
-| WF-03 | QA буцаахдаа (дахин нээх) шалтгаан заавал бичнэ | `test_qa_reopen_requires_reason` | ❌ |
+| WF-02 | Татгалзахдаа шалтгаан заавал бичнэ | `test_rejection_requires_reason`, `test_rejection_with_reason_succeeds` | ✅ |
+| WF-03 | QA буцаахдаа (дахин нээх) шалтгаан заавал бичнэ | `test_qa_reopen_requires_reason` | ✅ |
 | WF-04 | Татгалзсан тикетийг зөвхөн PM/Admin дахин нээнэ | `test_developer_cannot_reopen_rejected_ticket` | ✅ |
 | WF-05 | Хаагдсан тикет эцсийн төлөв | `test_closed_ticket_is_final` | ✅ |
 | WF-06 | QA-г алгасаж хаах боломжгүй | `test_reporter_cannot_close_own_ticket_bypassing_qa`; `test_review_fixes.py` → `test_other_team_qa_cannot_close` | ✅ |
@@ -124,13 +124,13 @@
 
 | Хэсэг | Дүрэм | ✅ | ❌ |
 |---|---|---|---|
-| AUTH | 12 | 10 | 2 (AUTH-07, AUTH-08) |
+| AUTH | 12 | 12 | 0 |
 | SEC | 7 | 7 | 0 |
-| ATT | 9 | 8 | 1 (ATT-04) |
+| ATT | 9 | 9 | 0 |
 | TKT | 12 | 12 | 0 |
-| WF | 9 | 7 | 2 (WF-02, WF-03) |
+| WF | 9 | 9 | 0 |
 | PERM | 8 | 8 | 0 |
 | SLA / NOTIF | 6 | 6 | 0 |
-| **Нийт** | **63** | **58** | **5** |
+| **Нийт** | **63** | **63** | **0** |
 
 Шинэ дүрэм нэмэхдээ: энэ хүснэгтэд ID-тай мөр нэмж, docstring нь `"""[ID] ..."""` гэж эхэлсэн тест бичнэ.

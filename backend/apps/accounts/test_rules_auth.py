@@ -5,6 +5,7 @@
 V5 (redirect), V13/V14 (CSRF, HTTP header).
 """
 from django.contrib.auth.password_validation import validate_password
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -63,6 +64,9 @@ class LoginRulesTests(TestCase):
     def setUp(self):
         self.user = make_user("bat", password="Tq9#mZ4pX")
         self.url = reverse("login")
+        # Буруу оролдлогын тоолуур cache-д хадгалагддаг — тест хооронд цэвэрлэнэ.
+        cache.clear()
+        self.addCleanup(cache.clear)
 
     def _login(self, password, **extra):
         return self.client.post(self.url, {"username": "bat", "password": password, **extra})
@@ -73,6 +77,27 @@ class LoginRulesTests(TestCase):
             self._login("буруу")
         self._login("Tq9#mZ4pX")
         self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_lockout_message_and_other_users_unaffected(self):
+        """[AUTH-08] Locked-out user sees a wait message; other users can still log in"""
+        for _ in range(5):
+            self._login("буруу")
+        response = self._login("Tq9#mZ4pX")
+        self.assertContains(response, "минутын дараа дахин оролдоно уу")
+        make_user("saraa", password="Tq9#mZ4pX")
+        self.client.post(self.url, {"username": "saraa", "password": "Tq9#mZ4pX"})
+        self.assertIn("_auth_user_id", self.client.session)
+
+    def test_successful_login_resets_failure_count(self):
+        """[AUTH-08] A successful login resets the failed-attempt counter"""
+        for _ in range(4):
+            self._login("буруу")
+        self._login("Tq9#mZ4pX")
+        self.client.logout()
+        for _ in range(4):
+            self._login("буруу")
+        self._login("Tq9#mZ4pX")
+        self.assertIn("_auth_user_id", self.client.session)
 
     def test_external_next_redirect_is_ignored(self):
         """[AUTH-09] No redirect to an external site after login (?next=https://evil.com)"""
