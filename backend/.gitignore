@@ -9,3 +9,11 @@ venv/
 *.egg-info/
 .DS_Store
 private_media/
+
+# Browser E2E тестүүд (Playwright) — локал дээр л ажиллуулна
+e2e/
+requirements-dev.txt
+test-results/
+test-logs/
+.coverage
+htmlcov/

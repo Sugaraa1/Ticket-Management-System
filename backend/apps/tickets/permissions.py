@@ -85,11 +85,14 @@ def can_user_transition(ticket, new_status, user):
 
 def can_user_reassign(ticket, user):
     """
-    Оноогдсон ticket-ийн хариуцагчийг солих эрх: PM/Admin, эсвэл тухайн багийн
-    Team Lead. Хаагдсан/татгалзсан болон хараахан оноогоогүй (NEW) ticket-д хамаарахгүй.
+    Оноогдсон ticket-ийн хариуцагчийг солих эрх: PM/Admin, тухайн багийн Team Lead,
+    эсвэл одоогийн хариуцагч өөрөө (багийн өөр гишүүн рүү шилжүүлэх).
+    Хаагдсан/татгалзсан болон хараахан оноогоогүй (NEW) ticket-д хамаарахгүй.
     """
     if ticket.status in (*CLOSED_TICKET_STATUSES, "new"):
         return False
+    if ticket.assigned_to_id is not None and ticket.assigned_to_id == user.id:
+        return True
     return can_user_assign(user, ticket)
 
 

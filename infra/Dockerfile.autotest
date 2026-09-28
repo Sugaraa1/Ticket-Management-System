@@ -1,0 +1,25 @@
+# Автомат тестийн worker (run_autotest_worker) — зөвхөн энэ image-д Chromium суулгана,
+# тиймээс үндсэн `web` image-ийн хэмжээ өөрчлөгдөхгүй.
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+WORKDIR /app
+
+# psycopg2-binary ашигладаг тул gcc/libpq-dev хэрэггүй — Chromium-ын сангуудыг playwright өөрөө суулгана.
+
+COPY requirements.txt requirements-autotest.txt ./
+# Алхам тус бүр тусдаа layer — build тасарвал дууссан алхмууд cache-аас авагдана.
+# pip-ийн cache mount: татаж дууссан сангууд дараагийн build-д дахин татагдахгүй.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements-autotest.txt
+# Debian image татсан .deb-ээ устгадаг (docker-clean) — cache-д үлдээхийн тулд унтраана.
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    rm -f /etc/apt/apt.conf.d/docker-clean \
+    && playwright install-deps chromium
+RUN playwright install chromium
+
+COPY . .

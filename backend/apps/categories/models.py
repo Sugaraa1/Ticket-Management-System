@@ -63,6 +63,23 @@ class Category(TimeStampedModel):
         return self.name
 
 
+class Subcategory(TimeStampedModel):
+    """Ангиллын дэд ангилал (ж: Mobile → iOS, Android). Заавал биш."""
+
+    category = models.ForeignKey(
+        Category, related_name="subcategories", on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name_plural = "Subcategories"
+        ordering = ["name"]
+        unique_together = [("category", "name")]
+
+    def __str__(self):
+        return f"{self.category.name} / {self.name}"
+
+
 class CategoryTeamAssignment(TimeStampedModel):
     """
     Category бүрийг аль Team(үүд) рүү автоматаар чиглүүлэхийг тодорхойлно.

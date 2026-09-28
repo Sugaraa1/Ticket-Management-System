@@ -34,7 +34,7 @@
         <hr>
         <dl class="row mb-0 small">
           <dt class="col-sm-3 text-muted fw-normal">{% trans "Төрөл" %}</dt><dd class="col-sm-9">{{ ticket.get_ticket_type_display }}</dd>
-          <dt class="col-sm-3 text-muted fw-normal">{% trans "Ангилал" %}</dt><dd class="col-sm-9">{{ ticket.category.name }}</dd>
+          <dt class="col-sm-3 text-muted fw-normal">{% trans "Ангилал" %}</dt><dd class="col-sm-9">{{ ticket.category.name }}{% if ticket.subcategory %} / {{ ticket.subcategory.name }}{% endif %}</dd>
           <dt class="col-sm-3 text-muted fw-normal">{% trans "Төсөл / Модуль" %}</dt>
           <dd class="col-sm-9">{{ ticket.project.name }}{% if ticket.module %} / {{ ticket.module.name }}{% endif %}</dd>
           <dt class="col-sm-3 text-muted fw-normal">{% trans "Баг" %}</dt><dd class="col-sm-9">{{ ticket.team.name|default:"—" }}</dd>

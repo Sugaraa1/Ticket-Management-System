@@ -138,12 +138,13 @@ def project_delete(request, pk):
     """
     project = get_object_or_404(Project, pk=pk)
     name = project.name
-    if project.tickets.exists():
+    # Автомат тестийн апп / өгөгдлийн файл нь төсөлтэй PROTECT-ээр холбогдсон.
+    if project.tickets.exists() or project.test_apps.exists() or project.test_data_files.exists():
         project.is_active = False
         project.save(update_fields=["is_active", "updated_at"])
         messages.warning(
             request,
-            _("'%(name)s' төсөл ticket-тэй тул устгах боломжгүй — оронд нь идэвхгүй болголоо.")
+            _("'%(name)s' төсөл ticket эсвэл автомат тесттэй тул устгах боломжгүй — оронд нь идэвхгүй болголоо.")
             % {"name": name},
         )
     else:

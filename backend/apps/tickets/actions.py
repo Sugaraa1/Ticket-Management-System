@@ -10,7 +10,11 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 
 from .models import Comment, Ticket
-from .notifications import notify_status_changed, notify_ticket_assigned
+from .notifications import (
+    notify_status_changed,
+    notify_ticket_assigned,
+    notify_ticket_handed_over,
+)
 from .permissions import (
     can_user_assign,
     can_user_reassign,
@@ -61,6 +65,7 @@ def reassign(ticket, assignee_id, user):
     if member.id == ticket.assigned_to_id:
         return False
     old_name = ticket.assigned_to.username if ticket.assigned_to else _("Оноогдоогүй")
+    handed_over = ticket.assigned_to_id == user.id  # хариуцагч өөрөө шилжүүлж байна
     ticket.assigned_to = member
     ticket.save(update_fields=["assigned_to", "updated_at"])
     Comment.objects.create(
@@ -70,6 +75,8 @@ def reassign(ticket, assignee_id, user):
     )
     ticket.mark_activity()
     notify_ticket_assigned(ticket, changed_by=user)
+    if handed_over:
+        notify_ticket_handed_over(ticket, from_user=user)
     return True
 
 

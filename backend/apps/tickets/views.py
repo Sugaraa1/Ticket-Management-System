@@ -48,6 +48,17 @@ def _modules_by_project():
     return grouped
 
 
+def _subcategories_by_category():
+    """Category.id -> [{id, name}] — "Дэд ангилал" dropdown-ыг сонгосон ангиллаар нь
+    клиент талд шүүнэ (дэд ангилалгүй бол dropdown саарал/идэвхгүй болно)."""
+    from apps.categories.models import Subcategory
+
+    grouped = {}
+    for sub in Subcategory.objects.order_by("name"):
+        grouped.setdefault(str(sub.category_id), []).append({"id": sub.id, "name": sub.name})
+    return grouped
+
+
 @login_required
 def dashboard(request):
     """Хэрэглэгчийн профайл/ажлын талбар: өөрийн мэдээлэл + өөрөөс үйлдэл хүлээж буй ticket-үүд."""
@@ -269,13 +280,17 @@ def ticket_create(request):
     return render(
         request,
         "tickets/ticket_form.html",
-        {"form": form, "modules_by_project": _modules_by_project()},
+        {
+            "form": form,
+            "modules_by_project": _modules_by_project(),
+            "subcategories_by_category": _subcategories_by_category(),
+        },
     )
 
 
 @login_required
 def ticket_edit(request, pk):
-    ticket = get_object_or_404(Ticket.objects.select_related("team", "category", "project", "module"), pk=pk)
+    ticket = get_object_or_404(Ticket.objects.select_related("team", "category", "subcategory", "project", "module"), pk=pk)
     if not can_user_edit_ticket(ticket, request.user):
         messages.error(request, _("Танд энэ ticket-ийг засах эрх байхгүй."))
         return redirect("tickets:ticket_detail", pk=pk)
@@ -302,7 +317,12 @@ def ticket_edit(request, pk):
     return render(
         request,
         "tickets/ticket_form.html",
-        {"form": form, "ticket": ticket, "modules_by_project": _modules_by_project()},
+        {
+            "form": form,
+            "ticket": ticket,
+            "modules_by_project": _modules_by_project(),
+            "subcategories_by_category": _subcategories_by_category(),
+        },
     )
 
 

@@ -1514,10 +1514,10 @@ msgstr "Hello %(name)s,"
 
 #: templates/registration/password_reset_email.html:3
 msgid ""
-"TMS Foxt дээрх таны бүртгэлийн нууц үгийг шинэчлэх хүсэлт ирлээ. Доорх "
+"Foxt TMS дээрх таны бүртгэлийн нууц үгийг шинэчлэх хүсэлт ирлээ. Доорх "
 "линкээр орж шинэ нууц үгээ тохируулна уу:"
 msgstr ""
-"We received a request to reset the password for your TMS Foxt account. Use "
+"We received a request to reset the password for your Foxt TMS account. Use "
 "the link below to set a new password:"
 
 #: templates/registration/password_reset_email.html:8
@@ -1551,8 +1551,8 @@ msgid "И-мэйл бүртгэлгүй бол Admin-д хандаж нууц ү
 msgstr "If you have no email on file, ask an Admin to reset your password."
 
 #: templates/registration/password_reset_subject.txt:1
-msgid "TMS Foxt — нууц үг шинэчлэх"
-msgstr "TMS Foxt — password reset"
+msgid "Foxt TMS — нууц үг шинэчлэх"
+msgstr "Foxt TMS — password reset"
 
 #: templates/tickets/_export_menu.html:4
 msgid "Татах"
@@ -2050,3 +2050,55 @@ msgstr "Change status"
 #: templates/tickets/ticket_list.html:188
 msgid "Хэрэгжүүлэх"
 msgstr "Apply"
+
+msgid "'%(name)s' ангилалд %(n)s ticket холбоотой тул устгах боломжгүй."
+msgstr "Category '%(name)s' has %(n)s linked tickets and cannot be deleted."
+
+msgid "'%(name)s' ангилал устгагдлаа."
+msgstr "Category '%(name)s' was deleted."
+
+msgid "%(n)s ticket холбоотой тул устгах боломжгүй"
+msgstr "Cannot delete: %(n)s linked tickets"
+
+msgid ""
+"'%(name)s' ангиллыг устгахдаа итгэлтэй байна уу? Багийн холбоосууд нь хамт "
+"устана. Энэ үйлдлийг буцаах боломжгүй."
+msgstr ""
+"Are you sure you want to delete category '%(name)s'? Its team links will be "
+"removed too. This cannot be undone."
+
+msgid "Дэд ангилал"
+msgstr "Subcategory"
+
+msgid "Дэд ангилал байхгүй"
+msgstr "No subcategories"
+
+msgid "Сонгосон дэд ангилал сонгосон ангилалд харьяалагдахгүй байна."
+msgstr "The selected subcategory does not belong to the selected category."
+
+msgid "Дэд ангиллын нэрийг оруулна уу."
+msgstr "Please enter a subcategory name."
+
+msgid "'%(name)s' дэд ангилал аль хэдийн байна."
+msgstr "Subcategory '%(name)s' already exists."
+
+msgid "'%(name)s' дэд ангилал нэмэгдлээ."
+msgstr "Subcategory '%(name)s' was added."
+
+msgid "'%(name)s' дэд ангилал устгагдлаа."
+msgstr "Subcategory '%(name)s' was deleted."
+
+msgid ""
+"'%(name)s' дэд ангиллыг устгахдаа итгэлтэй байна уу? Холбоотой ticket-үүдийн "
+"дэд ангилал хоосон болно."
+msgstr ""
+"Are you sure you want to delete subcategory '%(name)s'? Linked tickets will "
+"lose their subcategory."
+
+msgid ""
+"Дэд ангилал алга. Ticket үүсгэхэд энэ талбар саарал (идэвхгүй) харагдана."
+msgstr ""
+"No subcategories. This field will appear greyed out when creating a ticket."
+
+msgid "ж: iOS"
+msgstr "e.g. iOS"

@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "apps.categories",
     "apps.projects",
     "apps.tickets",
+    "apps.autotest",
 ]
 
 MIDDLEWARE = [
@@ -106,6 +107,9 @@ PRIVATE_MEDIA_ROOT = BASE_DIR / "private_media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- Auth ---
+# Тест бүрийг дугаарлаж, хэсгээр нь дэлгэрэнгүй хэвлээд test-logs/-д хадгална.
+TEST_RUNNER = "config.test_runner.DetailedTestRunner"
+
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "tickets:ticket_list"
 LOGOUT_REDIRECT_URL = "login"
@@ -182,3 +186,10 @@ ATTACHMENT_ALLOWED_EXTENSIONS = [
 
 # Ticket-ийн харагдах дугаар: 3 үсэгтэй угтвар + 6 оронтой дугаар (жишээ: FXT000001).
 TICKET_CODE_PREFIX = "FXT"
+
+# --- Автомат тест (apps.autotest) ---
+# Нэг өгөгдлийн файлын хамгийн их мөр, мөр хооронд хүлээх хугацаа (шалгаж буй апп-д ачаалал өгөхгүй).
+AUTOTEST_MAX_ROWS = env.int("AUTOTEST_MAX_ROWS", default=1000)
+AUTOTEST_ROW_DELAY_MS = env.int("AUTOTEST_ROW_DELAY_MS", default=300)
+# localhost / дотоод сүлжээний (192.168.x ...) апп шалгахыг зөвшөөрөх эсэх.
+AUTOTEST_ALLOW_PRIVATE_HOSTS = env.bool("AUTOTEST_ALLOW_PRIVATE_HOSTS", default=False)

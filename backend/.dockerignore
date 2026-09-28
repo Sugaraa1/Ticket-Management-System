@@ -1,0 +1,15 @@
+.venv
+venv
+.env
+**/__pycache__
+**/*.pyc
+db.sqlite3
+media
+private_media
+.git
+e2e
+test-logs
+test-results
+htmlcov
+.coverage
+requirements-dev.txt

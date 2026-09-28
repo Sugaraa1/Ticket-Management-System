@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ app.name }}{% endblock %}
+{% block content %}
+<nav class="small mb-2"><a href="{% url 'autotest:home' %}">{% trans "Автомат тест" %}</a> / {{ app.name }}</nav>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h2 class="mb-0">{{ app.name }}</h2>
+    <div class="text-muted small">{{ app.project.name }}{% if app.description %} · {{ app.description }}{% endif %}</div>
+  </div>
+  {% if can_edit %}
+  {% if environments %}
+  <a href="{% url 'autotest:scenario_create' app.pk %}" class="btn btn-primary">+ {% trans "Шинэ сценари" %}</a>
+  {% else %}
+  <span class="text-muted small">{% trans "Сценари үүсгэхийн өмнө орчны хаяг нэмнэ үү." %}</span>
+  {% endif %}
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">{% trans "Сценариуд" %}</div>
+      <ul class="list-group list-group-flush">
+        {% for s in scenarios %}
+        <a href="{% url 'autotest:scenario_detail' s.pk %}" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+          <i class="bi bi-diagram-3 text-primary"></i>
+          <div class="flex-grow-1">
+            <div class="fw-medium">{{ s.name }}</div>
+            <div class="small text-muted font-monospace">{{ s.page_path }}</div>
+          </div>
+          <span class="small text-muted">{% blocktrans count n=s.run_count %}{{ n }} удаа ажилласан{% plural %}{{ n }} удаа ажилласан{% endblocktrans %}</span>
+          <i class="bi bi-chevron-right text-muted"></i>
+        </a>
+        {% empty %}
+        <li class="list-group-item text-muted py-4 text-center">{% trans "Сценари алга. Жишээ нь: Бүртгүүлэх, Нэвтрэх, Хайлт." %}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header">{% trans "Орчин (хаяг)" %}</div>
+      <ul class="list-group list-group-flush">
+        {% for env in environments %}
+        <li class="list-group-item d-flex align-items-center gap-2">
+          <span class="badge text-bg-light border">{{ env.name }}</span>
+          <span class="small font-monospace text-truncate flex-grow-1">{{ env.base_url }}</span>
+          {% if can_manage %}
+          <form method="post" action="{% url 'autotest:env_delete' app.pk env.pk %}" data-confirm-danger
+                data-confirm="{% blocktrans with name=env.name %}'{{ name }}' орчныг устгах уу?{% endblocktrans %}">
+            {% csrf_token %}
+            <button class="btn btn-sm tms-icon-btn text-danger" title="{% trans "Устгах" %}"><i class="bi bi-trash"></i></button>
+          </form>
+          {% endif %}
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted">{% trans "Орчин нэмээгүй байна." %}</li>
+        {% endfor %}
+      </ul>
+      {% if can_manage %}
+      <div class="card-body">
+        <form method="post" action="{% url 'autotest:env_create' app.pk %}" class="row g-2">
+          {% csrf_token %}
+          <div class="col-4">{{ env_form.name }}</div>
+          <div class="col-8">{{ env_form.base_url }}</div>
+          <div class="col-12"><button class="btn btn-outline-primary btn-sm">+ {% trans "Орчин нэмэх" %}</button></div>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if can_manage %}
+    <div class="card">
+      <div class="card-header">{% trans "Апп-ын мэдээлэл" %}</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          {% for field in form %}
+          <div class="mb-2">
+            <label class="form-label small" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+          </div>
+          {% endfor %}
+          <button class="btn btn-primary btn-sm">{% trans "Хадгалах" %}</button>
+        </form>
+        <hr>
+        <form method="post" action="{% url 'autotest:app_delete' app.pk %}" data-confirm-danger
+              data-confirm="{% blocktrans with name=app.name %}'{{ name }}' апп-ыг бүх сценари, үр дүнгийн хамт устгах уу?{% endblocktrans %}">
+          {% csrf_token %}
+          <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> {% trans "Апп устгах" %}</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

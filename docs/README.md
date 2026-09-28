@@ -7,7 +7,7 @@
 
 ```
 Ticket-Management-System/
-├── backend/    # Django backend (apps: accounts, categories, core, projects, tickets)
+├── backend/    # Django backend (apps: accounts, autotest, categories, core, projects, tickets)
 ├── docs/       # ERD, workflow баримт
 └── infra/      # Docker, docker-compose, deployment
 ```
@@ -49,7 +49,7 @@ Ticket-Management-System/
 - "+ Шинэ ticket" товч хуудас шилжихгүйгээр баруун талаас гарч ирэх маягт (drawer) нээнэ; чухлын зэрэг сонгоход SLA хугацаа (хариу/шийдвэрлэлт) харагдана
 - PM/Admin ticket-ийн чухлын зэргийг өөрчлөх боломжтой — SLA хугацаа ticket үүссэн мөчөөс шинэ зэргээр дахин тооцоологдож, өөрчлөлт сэтгэгдэлд бүртгэгдэнэ
 - **SLA** — Time to First Response ба Time to Resolution (priority-оос хамаарна); хугацаанд ойртох/хэтрэхэд email анхааруулга (`check_sla_deadlines`), идэвхгүй ticket-ийн давтан сануулга (`check_stale_tickets`)
-- **Хариуцагч солих** — PM/Admin эсвэл багийн Team Lead оноогдсон ticket-ийг багийн өөр идэвхтэй гишүүнд шилжүүлнэ
+- **Хариуцагч солих** — PM/Admin, багийн Team Lead эсвэл одоогийн хариуцагч өөрөө оноогдсон ticket-ийг багийн өөр идэвхтэй гишүүнд шилжүүлнэ
 - **Dashboard (тайлан)** — 7/30/90 хоногийн SLA биелэлт %, ticket-ийн урсгал, ажилтны гүйцэтгэл, чухлын зэрэг/ангиллын задаргаа. Admin/PM нийт болон дурын багийнхыг (баг сонгогчоор), Team Lead зөвхөн өөрийн багийнхыг "Миний баг" хуудаснаас харна
 - **Экспорт** — Dashboard-оос Excel (олон sheet) / CSV / PDF (хэвлэх), ticket жагсаалтаас одоогийн шүүлтүүрээр Excel / CSV (Admin/PM бүгдийг, Team Lead зөвхөн өөрийн багийнхыг)
 - **Удирдлага** (PM/Admin) — Хэрэглэгч (зөвхөн Admin: бүртгэх, засах, эрх/нууц үг солих, идэвхтэй/идэвхгүй toggle, устгах), Төсөл/Модуль (нэмэх, засах, устгах, идэвхтэй toggle), Ангилал, Баг. Жагсаалт бүр хайлт, шүүлтүүр, эрэмбэ, хуудаслалттай
@@ -57,6 +57,7 @@ Ticket-Management-System/
 - Хавсралт файлууд нийтэд нээлттэй биш (`private_media/`), зөвхөн нэвтэрсэн хэрэглэгч татна; дотоод тэмдэглэл зөвхөн багт харагдана
 - Профайлын зураг ("Миний ажил" хуудасны зураг дээр дарж солино)
 - Монгол / англи хэл (`locale/en`)
+- **Автомат тест** (`apps/autotest`) — QA өгөгдлийн файл (Excel/CSV) бэлдээд, шалгах апп-ын хуудсан дээр (бүртгүүлэх, нэвтрэх, хайлт ...) мөр бүрийг Chromium-аар автоматаар бөглүүлж, гарсан хариуг хүлээгдэж буй үр дүнтэй тулгана. Дэлгэрэнгүй: [autotest.md](autotest.md)
 
 ## 5. Хэрэглэгчийн эрх (Django Groups)
 
@@ -89,6 +90,8 @@ Ticket үүсгэх, жагсаалт харах эрх нэвтэрсэн бү�
 **SLA мэдэгдэл (тогтмол шалгалт):** Docker-т `scheduler` service автоматаар ажиллана. Docker-гүй бол тусдаа terminal дээр `python manage.py run_scheduler` (15 мин тутам `check_sla_deadlines`, 60 мин тутам `check_stale_tickets`), эсвэл cron-оор тус тусад нь дуудна.
 
 **Production:** `DJANGO_SETTINGS_MODULE=config.settings.prod`, `.env`-д жинхэнэ `SECRET_KEY` заавал (default түлхүүрээр асахгүй), `ALLOWED_HOSTS`, SMTP тохиргоо.
+
+**Автомат тест (worker):** Docker-т `autotest_worker` service (Chromium зөвхөн энэ image-д) ажиллана. Docker-гүй бол `pip install -r requirements-autotest.txt && playwright install chromium`, дараа нь тусдаа terminal дээр `python manage.py run_autotest_worker`.
 
 ## 7. Холбоотой баримтууд
 - [`docs/ERD.md`](./ERD.md) — Өгөгдлийн сангийн бүтэц

@@ -13,6 +13,7 @@ urlpatterns = [
     path("manage/", include("apps.accounts.urls")),
     path("manage/", include("apps.categories.urls")),
     path("manage/", include("apps.projects.urls")),
+    path("autotest/", include("apps.autotest.urls")),
     path("", include("apps.tickets.urls")),
 ]
 

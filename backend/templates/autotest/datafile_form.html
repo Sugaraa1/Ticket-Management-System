@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Файл оруулах" %}{% endblock %}
+{% block content %}
+<nav class="small mb-2"><a href="{% url 'autotest:home' %}">{% trans "Автомат тест" %}</a> / <a href="{% url 'autotest:datafile_list' %}">{% trans "Өгөгдлийн файлууд" %}</a></nav>
+<h2 class="mb-3">{% trans "Өгөгдлийн файл оруулах" %}</h2>
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card"><div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="mb-3">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">{% trans "Оруулах" %}</button>
+        <a href="{% url 'autotest:datafile_list' %}" class="btn btn-link">{% trans "Цуцлах" %}</a>
+      </form>
+    </div></div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card"><div class="card-body small">
+      <h6>{% trans "Файлыг хэрхэн бэлдэх вэ" %}</h6>
+      <ul class="mb-3">
+        <li>{% trans "Эхний мөрөнд баганын нэрс (email, password, phone ...)" %}</li>
+        <li>{% trans "Мөр бүр нэг тест" %}</li>
+        <li>{% blocktrans %}<b>хүлээгдэх</b> баганад: <code>амжилттай</code>, <code>алдаа</code> эсвэл <code>алдаа: мессежийн хэсэг</code>{% endblocktrans %}</li>
+        <li><code>{% templatetag openvariable %}random{% templatetag closevariable %}</code> — {% trans "мөр бүрт шинэ утга (давхардахгүй имэйл үүсгэхэд)" %}: <code>test{% templatetag openvariable %}random{% templatetag closevariable %}@mail.mn</code></li>
+      </ul>
+      <table class="table table-sm table-bordered mb-3">
+        <tr class="table-light"><th>Тайлбар</th><th>email</th><th>password</th><th>хүлээгдэх</th></tr>
+        <tr><td>Зөв бүртгэл</td><td>test{% templatetag openvariable %}random{% templatetag closevariable %}@mail.mn</td><td>Pass123!</td><td>амжилттай</td></tr>
+        <tr><td>Буруу имэйл</td><td>bat@@mail</td><td>Pass123!</td><td>алдаа</td></tr>
+      </table>
+      <a href="{% url 'autotest:template_download' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> {% trans "Жишээ загвар татах" %}</a>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

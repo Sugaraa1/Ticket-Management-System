@@ -15,7 +15,8 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ticket_user} -d ${POSTGRES_DB:-ticket_db}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 120s
 
   web:
     build:
@@ -57,6 +58,28 @@ services:
       DEBUG: ${DEBUG:-True}
       DATABASE_URL: postgres://${POSTGRES_USER:-ticket_user}:${POSTGRES_PASSWORD:-ticket_pass}@db:5432/${POSTGRES_DB:-ticket_db}
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@ticket-system.local}
+    depends_on:
+      web:
+        condition: service_started
+
+  # Автомат тест: QA-ийн сценариудыг Chromium-аар ажиллуулна (Chromium зөвхөн энэ image-д).
+  autotest_worker:
+    build:
+      context: ../backend
+      dockerfile: ../infra/Dockerfile.autotest
+    container_name: ticket_autotest_worker
+    restart: unless-stopped
+    command: python manage.py run_autotest_worker
+    volumes:
+      - ../backend:/app
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-change-me-in-production}
+      DEBUG: ${DEBUG:-True}
+      DATABASE_URL: postgres://${POSTGRES_USER:-ticket_user}:${POSTGRES_PASSWORD:-ticket_pass}@db:5432/${POSTGRES_DB:-ticket_db}
+      AUTOTEST_ALLOW_PRIVATE_HOSTS: ${AUTOTEST_ALLOW_PRIVATE_HOSTS:-False}
+    # Chromium-д хуваалцах санах ой хангалттай байх ёстой.
+    shm_size: "1gb"
     depends_on:
       web:
         condition: service_started

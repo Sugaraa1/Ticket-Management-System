@@ -3,7 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .forms import CategoryTeamsForm, TeamForm
-from .models import Category, CategoryTeamAssignment, Team
+from .models import Category, CategoryTeamAssignment, Subcategory, Team
 
 
 class TeamFormTests(TestCase):
@@ -61,3 +61,93 @@ class TeamDetailPickerTests(TestCase):
     def test_saving_members_still_works(self):
         self.client.post(self.url, {"members": [self.alice.pk, self.bob.pk]})
         self.assertEqual(set(self.team.members.values_list("username", flat=True)), {"alice", "bob"})
+
+
+class CategoryDeleteTests(TestCase):
+    def setUp(self):
+        from apps.tickets.permissions import ROLE_ADMIN, ROLE_PM
+        from apps.tickets.tests.helpers import make_user
+
+        self.admin = make_user("adm", ROLE_ADMIN)
+        self.pm = make_user("pm", ROLE_PM)
+        self.team = Team.objects.create(name="T")
+        self.category = Category.objects.create(name="API")
+        CategoryTeamAssignment.objects.create(category=self.category, team=self.team)
+        self.url = reverse("categories:category_delete", args=[self.category.pk])
+
+    def test_admin_deletes_category_without_tickets(self):
+        self.client.force_login(self.admin)
+        self.client.post(self.url)
+        self.assertFalse(Category.objects.filter(pk=self.category.pk).exists())
+        self.assertTrue(Team.objects.filter(pk=self.team.pk).exists())
+
+    def test_pm_cannot_delete(self):
+        self.client.force_login(self.pm)
+        self.client.post(self.url)
+        self.assertTrue(Category.objects.filter(pk=self.category.pk).exists())
+
+    def test_get_does_not_delete(self):
+        self.client.force_login(self.admin)
+        self.client.get(self.url)
+        self.assertTrue(Category.objects.filter(pk=self.category.pk).exists())
+
+    def test_category_with_tickets_is_kept(self):
+        from apps.tickets.models import Ticket
+        from apps.tickets.tests.helpers import make_project
+
+        Ticket.objects.create(
+            title="x", description="d", ticket_type="bug", category=self.category,
+            project=make_project(), reported_by=self.admin,
+        )
+        self.client.force_login(self.admin)
+        self.client.post(self.url)
+        self.assertTrue(Category.objects.filter(pk=self.category.pk).exists())
+
+
+class SubcategoryTests(TestCase):
+    def setUp(self):
+        from apps.tickets.permissions import ROLE_DEV, ROLE_PM
+        from apps.tickets.tests.helpers import make_project, make_user
+
+        self.pm = make_user("pm", ROLE_PM)
+        self.dev = make_user("dev", ROLE_DEV)
+        self.project = make_project()
+        self.mobile = Category.objects.create(name="Mobile")
+        self.web = Category.objects.create(name="Web")
+        self.ios = Subcategory.objects.create(category=self.mobile, name="iOS")
+
+    def _ticket_data(self, category, subcategory=""):
+        return {
+            "title": "t", "ticket_type": "bug", "priority": "medium", "description": "d",
+            "category": category.pk, "subcategory": subcategory, "project": self.project.pk,
+        }
+
+    def test_ticket_with_matching_subcategory(self):
+        from apps.tickets.forms import TicketForm
+
+        form = TicketForm(self._ticket_data(self.mobile, self.ios.pk))
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_subcategory_is_optional(self):
+        from apps.tickets.forms import TicketForm
+
+        self.assertTrue(TicketForm(self._ticket_data(self.web)).is_valid())
+
+    def test_subcategory_of_other_category_is_rejected(self):
+        from apps.tickets.forms import TicketForm
+
+        form = TicketForm(self._ticket_data(self.web, self.ios.pk))
+        self.assertIn("subcategory", form.errors)
+
+    def test_pm_adds_and_deletes_subcategory(self):
+        self.client.force_login(self.pm)
+        self.client.post(reverse("categories:subcategory_create", args=[self.mobile.pk]), {"name": "Android"})
+        self.client.post(reverse("categories:subcategory_create", args=[self.mobile.pk]), {"name": "android"})
+        self.assertEqual(self.mobile.subcategories.filter(name__iexact="android").count(), 1)
+        self.client.post(reverse("categories:subcategory_delete", args=[self.mobile.pk, self.ios.pk]))
+        self.assertFalse(Subcategory.objects.filter(pk=self.ios.pk).exists())
+
+    def test_developer_cannot_add_subcategory(self):
+        self.client.force_login(self.dev)
+        self.client.post(reverse("categories:subcategory_create", args=[self.web.pk]), {"name": "X"})
+        self.assertFalse(self.web.subcategories.exists())

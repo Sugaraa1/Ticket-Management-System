@@ -32,6 +32,7 @@
           {% if forloop.first %}
           <td rowspan="{{ teams|length }}" class="fw-semibold">
             {{ c.name }}
+            {% with subs=c.subcategories.all %}{% if subs %}<div class="d-flex flex-wrap gap-1 mt-1">{% for s in subs %}<span class="badge text-bg-light border fw-normal">{{ s.name }}</span>{% endfor %}</div>{% endif %}{% endwith %}
             {% if teams|length > 1 %}<div class="small text-muted fw-normal">{% blocktrans with n=teams|length %}{{ n }} баг · ачааллаар хуваарилна{% endblocktrans %}</div>{% endif %}
           </td>
           {% endif %}
@@ -39,14 +40,14 @@
           <td>{% if a.team.team_lead %}<span class="d-inline-flex align-items-center gap-2">{% user_avatar a.team.team_lead %}{{ a.team.team_lead.username }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
           <td>{% if a.team.qa_tester %}<span class="d-inline-flex align-items-center gap-2">{% user_avatar a.team.qa_tester %}{{ a.team.qa_tester.username }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
           {% if forloop.first %}
-          <td rowspan="{{ teams|length }}" class="text-end"><a href="{% url 'categories:category_edit' c.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> {% trans "Засах" %}</a></td>
+          <td rowspan="{{ teams|length }}" class="text-end text-nowrap"><a href="{% url 'categories:category_edit' c.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> {% trans "Засах" %}</a> {% include "categories/_category_delete_form.html" %}</td>
           {% endif %}
         </tr>
         {% empty %}
         <tr>
-          <td class="fw-semibold">{{ c.name }}</td>
+          <td class="fw-semibold">{{ c.name }}{% with subs=c.subcategories.all %}{% if subs %}<div class="d-flex flex-wrap gap-1 mt-1">{% for s in subs %}<span class="badge text-bg-light border fw-normal">{{ s.name }}</span>{% endfor %}</div>{% endif %}{% endwith %}</td>
           <td colspan="3"><span class="text-danger small"><i class="bi bi-exclamation-circle"></i> {% trans "Баг тохируулаагүй — ticket routing хийгдэхгүй" %}</span></td>
-          <td class="text-end"><a href="{% url 'categories:category_edit' c.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> {% trans "Засах" %}</a></td>
+          <td class="text-end text-nowrap"><a href="{% url 'categories:category_edit' c.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> {% trans "Засах" %}</a> {% include "categories/_category_delete_form.html" %}</td>
         </tr>
         {% endfor %}
       </tbody>

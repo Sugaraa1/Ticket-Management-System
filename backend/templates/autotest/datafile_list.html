@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Өгөгдлийн файлууд" %}{% endblock %}
+{% block content %}
+<nav class="small mb-2"><a href="{% url 'autotest:home' %}">{% trans "Автомат тест" %}</a> / {% trans "Өгөгдлийн файлууд" %}</nav>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+  <h2 class="mb-0">{% trans "Өгөгдлийн файлууд" %}</h2>
+  <div class="d-flex gap-2">
+    <a href="{% url 'autotest:template_download' %}" class="btn btn-outline-secondary"><i class="bi bi-download"></i> {% trans "Жишээ загвар" %}</a>
+    {% if can_edit %}<a href="{% url 'autotest:datafile_create' %}" class="btn btn-primary">+ {% trans "Файл оруулах" %}</a>{% endif %}
+  </div>
+</div>
+<p class="text-muted">{% trans "Нэг файлыг олон сценарид (бүртгэл, нэвтрэх ...) болон өөр өөр орчинд дахин ашиглаж болно." %}</p>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle tms-table">
+      <thead><tr><th>{% trans "Нэр" %}</th><th>{% trans "Төсөл" %}</th><th>{% trans "Баганууд" %}</th><th>{% trans "Мөр" %}</th><th>{% trans "Ашигласан" %}</th><th>{% trans "Шинэчилсэн" %}</th></tr></thead>
+      <tbody>
+        {% for f in files %}
+        <tr class="clickable-row" data-href="{% url 'autotest:datafile_detail' f.pk %}">
+          <td class="fw-medium"><i class="bi bi-file-earmark-spreadsheet text-success"></i> <a href="{% url 'autotest:datafile_detail' f.pk %}" class="text-body text-decoration-none">{{ f.name }}</a></td>
+          <td>{{ f.project.name }}</td>
+          <td class="small">{% for c in f.columns|slice:":6" %}<span class="badge text-bg-light border me-1">{{ c }}</span>{% endfor %}{% if f.columns|length > 6 %}…{% endif %}</td>
+          <td>{{ f.row_count }}</td>
+          <td class="small text-muted">{% blocktrans count n=f.run_count %}{{ n }} удаа{% plural %}{{ n }} удаа{% endblocktrans %}</td>
+          <td class="small text-muted text-nowrap">{{ f.updated_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-4">{% trans "Файл оруулаагүй байна." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "autotest/_clickable_rows.html" %}
+{% endblock %}

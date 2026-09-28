@@ -1,0 +1,9 @@
+<script>
+// Мөр дээр дарахад холбоос руу орно (товч, линк, input дээр дарахыг алгасна).
+document.querySelectorAll(".clickable-row").forEach(function (row) {
+  row.addEventListener("click", function (e) {
+    if (e.target.closest("a, button, input, label, form")) return;
+    window.location = row.dataset.href;
+  });
+});
+</script>

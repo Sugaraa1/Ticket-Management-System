@@ -38,5 +38,37 @@
       </div>
     </div>
   </div>
+
+  {% if category %}
+  <div class="col-lg-4 col-xxl-5">
+    <div class="card mb-3">
+      <div class="card-header">{% trans "Дэд ангилал" %}</div>
+      <ul class="list-group list-group-flush">
+        {% for s in subcategories %}
+        <li class="list-group-item d-flex align-items-center gap-2">
+          <span class="flex-grow-1">{{ s.name }}
+            {% if s.ticket_count %}<span class="badge text-bg-light border ms-1">{% blocktrans count counter=s.ticket_count %}{{ counter }} ticket{% plural %}{{ counter }} ticket{% endblocktrans %}</span>{% endif %}
+          </span>
+          <form method="post" action="{% url 'categories:subcategory_delete' category.id s.id %}" class="d-inline"
+                data-confirm-danger
+                data-confirm="{% blocktrans with name=s.name %}'{{ name }}' дэд ангиллыг устгахдаа итгэлтэй байна уу? Холбоотой ticket-үүдийн дэд ангилал хоосон болно.{% endblocktrans %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm tms-icon-btn text-danger" title="{% trans "Устгах" %}" aria-label="{% trans "Устгах" %}"><i class="bi bi-trash"></i></button>
+          </form>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted small">{% trans "Дэд ангилал алга. Ticket үүсгэхэд энэ талбар саарал (идэвхгүй) харагдана." %}</li>
+        {% endfor %}
+      </ul>
+      <div class="card-body">
+        <form method="post" action="{% url 'categories:subcategory_create' category.id %}" class="d-flex gap-2">
+          {% csrf_token %}
+          <input type="text" name="name" class="form-control" maxlength="100" required placeholder="{% trans "ж: iOS" %}">
+          <button type="submit" class="btn btn-outline-primary">{% trans "Нэмэх" %}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

@@ -85,6 +85,24 @@ def notify_ticket_assigned(ticket, changed_by=None):
     )
 
 
+def notify_ticket_handed_over(ticket, from_user):
+    """Хариуцагч өөрөө ticket-ээ багийн өөр гишүүн рүү шилжүүлснийг Team Lead-д мэдэгдэнэ."""
+    team = ticket.team if ticket.team_id else None
+    if team is None:
+        return
+    _deliver(
+        [team.team_lead], ticket,
+        title=f"Ticket шилжүүлэгдлээ: {ticket.title}",
+        message=(
+            f"{from_user.username} өөрт оноогдсон '{ticket.title}' ticket-ийг "
+            f"{ticket.assigned_to.username} руу шилжүүллээ.\n\n"
+            f"Төлөв: {ticket.get_status_display()}\n"
+            f"Чухлын зэрэг: {ticket.get_priority_display()}"
+        ),
+        exclude_user=from_user,
+    )
+
+
 # Төлөв бүрт "дараагийн алхмыг хийх хүн"-д мэйл очно (Jira / Zendesk-ийн notification
 # scheme-тэй адил). Мэдээлэгч (reported_by) зөвхөн эцсийн үр дүнг (хаагдсан /
 # татгалзсан) авна. "assigned"-ийн мэйлийг notify_ticket_assigned тусад нь илгээнэ.

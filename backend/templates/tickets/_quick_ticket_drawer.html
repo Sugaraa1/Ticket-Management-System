@@ -12,14 +12,18 @@
         <label class="form-label" for="{{ f.title.id_for_label }}">{{ f.title.label }} *</label>
         {{ f.title }}
       </div>
+      <div class="mb-3">
+        <label class="form-label" for="{{ f.ticket_type.id_for_label }}">{{ f.ticket_type.label }} *</label>
+        {{ f.ticket_type }}
+      </div>
       <div class="row g-3 mb-3">
-        <div class="col-sm-6">
-          <label class="form-label" for="{{ f.ticket_type.id_for_label }}">{{ f.ticket_type.label }} *</label>
-          {{ f.ticket_type }}
-        </div>
         <div class="col-sm-6">
           <label class="form-label" for="{{ f.category.id_for_label }}">{{ f.category.label }} *</label>
           {{ f.category }}
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label" for="{{ f.subcategory.id_for_label }}">{{ f.subcategory.label }}</label>
+          {{ f.subcategory }}
         </div>
       </div>
       <div class="mb-3">
@@ -55,6 +59,7 @@
   </form>
 </div>
 
+{% include "tickets/_subcategory_script.html" with data=quick_subcategories_by_category json_id="qt-subcategories-by-category" prefix="qt" %}
 {{ quick_modules_by_project|json_script:"qt-modules-by-project" }}
 <script>
 document.addEventListener("DOMContentLoaded", function () {

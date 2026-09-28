@@ -1,6 +1,11 @@
 from django.contrib import admin
 
-from .models import Category, CategoryTeamAssignment, Team
+from .models import Category, CategoryTeamAssignment, Subcategory, Team
+
+
+class SubcategoryInline(admin.TabularInline):
+    model = Subcategory
+    extra = 0
 
 
 class CategoryTeamAssignmentInline(admin.StackedInline):
@@ -12,7 +17,7 @@ class CategoryTeamAssignmentInline(admin.StackedInline):
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ("name", "description")
     search_fields = ("name",)
-    inlines = [CategoryTeamAssignmentInline]
+    inlines = [SubcategoryInline, CategoryTeamAssignmentInline]
 
 
 @admin.register(Team)

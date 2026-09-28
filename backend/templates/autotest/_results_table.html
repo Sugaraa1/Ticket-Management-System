@@ -1,0 +1,40 @@
+{% load i18n %}
+<div class="table-responsive">
+  <table class="table mb-0 align-middle tms-table tms-results-table">
+    <thead>
+      <tr>
+        {% if can_edit %}<th style="width:1%"><input type="checkbox" class="form-check-input js-select-all" title="{% trans "Унасан бүгдийг сонгох" %}"></th>{% endif %}
+        <th>{% trans "Мөр" %}</th><th>{% trans "Тест" %}</th><th>{% trans "Хүлээгдэж байсан" %}</th><th>{% trans "Бодит үр дүн" %}</th><th>{% trans "Дүн" %}</th><th class="text-end">ms</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr class="verdict-row-{{ r.verdict }}">
+        {% if can_edit %}<td>{% if r.verdict == "fail" or r.verdict == "error" %}<input type="checkbox" class="form-check-input js-select-result" value="{{ r.pk }}">{% endif %}</td>{% endif %}
+        <td class="text-muted">{{ r.row_number }}</td>
+        <td>
+          <div class="fw-medium">{{ r.description|default:"—" }}</div>
+          <div class="small text-muted tms-result-inputs">{% for k, v in r.input_data.items %}{% if k|lower != "тайлбар" and k|lower != "description" %}<span class="me-2">{{ k }}=<code>{{ v|default:"∅" }}</code></span>{% endif %}{% endfor %}</div>
+        </td>
+        <td class="small">
+          {% if r.expected_outcome %}<b>{{ r.get_expected_outcome_display }}</b>{% endif %}
+          {% if r.expected_message %}<div class="text-muted">“{{ r.expected_message }}”</div>{% endif %}
+          {% if not r.expected_outcome and not r.expected_message %}<span class="text-muted">—</span>{% endif %}
+        </td>
+        <td class="small">
+          {% if r.actual_outcome %}<b>{{ r.get_actual_outcome_display }}</b>{% endif %}
+          {% if r.actual_message %}<div class="text-muted tms-result-message">{{ r.actual_message|truncatechars:240 }}</div>{% endif %}
+        </td>
+        <td><span class="verdict-pill verdict-{{ r.verdict }}">{% if r.verdict == "pass" %}✓{% elif r.verdict == "fail" %}✗{% elif r.verdict == "error" %}!{% endif %} {{ r.get_verdict_display }}</span></td>
+        <td class="text-end small text-muted">{{ r.duration_ms }}</td>
+        <td class="text-nowrap text-end">
+          {% if r.screenshot %}<a href="{% url 'autotest:result_screenshot' r.pk %}" target="_blank" class="btn btn-sm tms-icon-btn" title="{% trans "Дэлгэцийн зураг" %}"><i class="bi bi-image"></i></a>{% endif %}
+          {% if r.ticket %}<a href="{% url 'tickets:ticket_detail' r.ticket.pk %}" class="badge text-bg-light border text-decoration-none" title="{{ r.ticket.title }}">{{ r.ticket.code }}</a>{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="text-center text-muted py-4">{% if run.is_active %}{% trans "Үр дүн удахгүй гарна…" %}{% else %}{% trans "Үр дүн алга." %}{% endif %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

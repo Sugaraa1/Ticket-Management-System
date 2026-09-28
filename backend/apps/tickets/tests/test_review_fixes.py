@@ -68,9 +68,48 @@ class ReviewFixTests(TestCase):
         self.ticket.refresh_from_db()
         self.assertEqual(self.ticket.assigned_to, self.dev)
 
-    def test_developer_cannot_reassign(self):
+    def test_assignee_can_hand_over_to_teammate(self):
+        self._to("assigned", "in_progress")
+        self.client.force_login(self.dev)
+        self.client.post(self.url, {"action": "reassign", "assigned_to": self.dev2.pk})
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.assigned_to, self.dev2)
+        self.assertEqual(self.ticket.status, "in_progress")
+
+    def test_hand_over_notifies_team_lead(self):
+        from django.core import mail
+
+        for u, email in ((self.lead, "lead@x.mn"), (self.dev2, "dev2@x.mn")):
+            u.email = email
+            u.save()
         self._to("assigned")
         self.client.force_login(self.dev)
+        self.client.post(self.url, {"action": "reassign", "assigned_to": self.dev2.pk})
+        recipients = [addr for m in mail.outbox for addr in m.to]
+        self.assertIn("lead@x.mn", recipients)
+        self.assertIn("dev2@x.mn", recipients)
+
+    def test_lead_reassign_does_not_send_hand_over_mail(self):
+        from django.core import mail
+
+        self.lead.email = "lead@x.mn"
+        self.lead.save()
+        self._to("assigned")
+        self.client.force_login(self.lead)
+        self.client.post(self.url, {"action": "reassign", "assigned_to": self.dev2.pk})
+        self.assertNotIn("lead@x.mn", [addr for m in mail.outbox for addr in m.to])
+
+    def test_assignee_cannot_hand_over_to_outsider(self):
+        self._to("assigned")
+        self.client.force_login(self.dev)
+        outsider = make_user("outsider", ROLE_DEV)
+        self.client.post(self.url, {"action": "reassign", "assigned_to": outsider.pk})
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.assigned_to, self.dev)
+
+    def test_non_assignee_developer_cannot_reassign(self):
+        self._to("assigned")
+        self.client.force_login(self.dev2)
         self.client.post(self.url, {"action": "reassign", "assigned_to": self.dev2.pk})
         self.ticket.refresh_from_db()
         self.assertEqual(self.ticket.assigned_to, self.dev)

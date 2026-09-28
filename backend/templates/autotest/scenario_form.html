@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% if scenario %}{{ scenario.name }} — {% trans "Засах" %}{% else %}{% trans "Шинэ сценари" %}{% endif %}{% endblock %}
+{% block content %}
+<nav class="small mb-2"><a href="{% url 'autotest:home' %}">{% trans "Автомат тест" %}</a> / <a href="{% url 'autotest:app_detail' app.pk %}">{{ app.name }}</a>{% if scenario %} / <a href="{% url 'autotest:scenario_detail' scenario.pk %}">{{ scenario.name }}</a>{% endif %}</nav>
+<h2 class="mb-3">{% if scenario %}{% trans "Сценари засах" %}{% else %}{% trans "Шинэ сценари" %}{% endif %}</h2>
+
+{% if form.non_field_errors or form.fields_json.errors %}
+<div class="alert alert-danger">{{ form.non_field_errors }}{{ form.fields_json.errors }}</div>
+{% endif %}
+
+<form method="post" id="scenarioForm">
+  {% csrf_token %}
+  {{ form.fields_json }}{{ form.submit_selector }}{{ form.submit_label }}
+
+  <div class="card mb-3">
+    <div class="card-header"><span class="tms-step">1</span> {% trans "Ямар хуудсыг шалгах вэ" %}</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.name.id_for_label }}">{% trans "Сценарийн нэр" %} *</label>
+          {{ form.name }}
+          {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
+          <div class="form-text">{{ form.name.help_text }}</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.page_path.id_for_label }}">{% trans "Хуудас" %} *</label>
+          <div class="input-group">
+            <select id="scanEnv" class="form-select" style="max-width: 45%">
+              {% for env in environments %}<option value="{{ env.pk }}" data-base="{{ env.base_url }}">{{ env.name }} — {{ env.base_url }}</option>{% endfor %}
+            </select>
+            {{ form.page_path }}
+          </div>
+          {% if form.page_path.errors %}<div class="text-danger small">{{ form.page_path.errors }}</div>{% endif %}
+          <div class="form-text">{{ form.page_path.help_text }}</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="sampleFile">{% trans "Жишээ өгөгдлийн файл" %}</label>
+          <select id="sampleFile" class="form-select">
+            <option value="">{% trans "— сонгохгүй —" %}</option>
+            {% for f in data_files %}<option value="{{ f.pk }}">{{ f.name }} ({{ f.columns|join:", " }})</option>{% endfor %}
+          </select>
+          <div class="form-text">{% trans "Сонговол түүний багануудыг талбаруудтай автоматаар холбоно." %}</div>
+        </div>
+        <div class="col-md-6 d-flex align-items-end">
+          <button type="button" class="btn btn-outline-primary" id="scanBtn"><i class="bi bi-search"></i> {% trans "Хуудсыг шалгах" %}</button>
+          <span id="scanStatus" class="ms-3 small"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><span class="tms-step">2</span> {% trans "Талбар бүрт юу бичих вэ" %}</span>
+      <button type="button" class="btn btn-sm btn-link" id="addFieldBtn">+ {% trans "Талбар гараар нэмэх" %}</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0 tms-table">
+        <thead><tr><th style="width:35%">{% trans "Хуудсан дээрх талбар" %}</th><th style="width:25%">{% trans "Юу бичих" %}</th><th>{% trans "Утга" %}</th></tr></thead>
+        <tbody id="fieldRows"></tbody>
+      </table>
+    </div>
+    <div class="card-body border-top">
+      <div class="row g-3 align-items-center">
+        <div class="col-md-4"><label class="form-label mb-0" for="submitChoice">{% trans "Илгээх товч" %}</label></div>
+        <div class="col-md-8"><select id="submitChoice" class="form-select"></select></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header"><span class="tms-step">3</span> {% trans "Үр дүнг хэрхэн шалгах вэ" %}</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.success_mode.id_for_label }}">{{ form.success_mode.label }}</label>
+          {{ form.success_mode }}
+        </div>
+        <div class="col-md-6" id="successValueWrap">
+          <label class="form-label" for="{{ form.success_value.id_for_label }}">{{ form.success_value.label }}</label>
+          {{ form.success_value }}
+          {% if form.success_value.errors %}<div class="text-danger small">{{ form.success_value.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.expected_column.id_for_label }}">{{ form.expected_column.label }}</label>
+          {{ form.expected_column }}
+          <div class="form-text">{{ form.expected_column.help_text }}</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.expected_message_column.id_for_label }}">{{ form.expected_message_column.label }} <span class="text-muted small">({% trans "заавал биш" %})</span></label>
+          {{ form.expected_message_column }}
+        </div>
+        <div class="col-12">
+          <details>
+            <summary class="small text-muted">{% trans "Нарийвчилсан тохиргоо" %}</summary>
+            <div class="mt-2">
+              <label class="form-label" for="{{ form.error_selector.id_for_label }}">{{ form.error_selector.label }}</label>
+              {{ form.error_selector }}
+              <div class="form-text">{{ form.error_selector.help_text }}</div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <datalist id="column-options">{% for c in known_columns %}<option value="{{ c }}">{% endfor %}</datalist>
+  <button type="submit" class="btn btn-primary">{% trans "Хадгалах" %}</button>
+  <a href="{% if scenario %}{% url 'autotest:scenario_detail' scenario.pk %}{% else %}{% url 'autotest:app_detail' app.pk %}{% endif %}" class="btn btn-link">{% trans "Цуцлах" %}</a>
+</form>
+
+<template id="fieldRowTpl">
+  <tr>
+    <td>
+      <div class="fw-medium js-label"></div>
+      <div class="small text-muted"><span class="badge text-bg-light border js-kind"></span> <code class="js-selector small"></code></div>
+    </td>
+    <td>
+      <select class="form-select form-select-sm js-source">
+        <option value="skip">{% trans "Алгасах" %}</option>
+        <option value="column">{% trans "Файлын баганаас" %}</option>
+        <option value="constant">{% trans "Тогтмол утга" %}</option>
+        <option value="check">{% trans "Үргэлж чагтлах" %}</option>
+      </select>
+    </td>
+    <td><input type="text" class="form-control form-control-sm js-value" list="column-options"></td>
+  </tr>
+</template>
+
+<script>
+(function () {
+  var T = {
+    kinds: {text: "{% trans 'текст' %}", email: "{% trans 'имэйл' %}", password: "{% trans 'нууц үг' %}", checkbox: "{% trans 'чагт' %}", radio: "{% trans 'сонголт' %}", select: "{% trans 'жагсаалт' %}"},
+    autoSubmit: "{% trans 'Автоматаар (type=submit товч)' %}",
+    scanning: "{% trans 'Хуудсыг шалгаж байна…' %}",
+    slow: "{% trans 'Удаж байна — тест ажиллуулагч (worker) асаагүй байж магадгүй: python manage.py run_autotest_worker' %}",
+    found: "{% trans 'талбар оллоо' %}",
+    columnPh: "{% trans 'баганын нэр' %}",
+    constPh: "{% trans 'үргэлж бичих утга' %}",
+    noFields: "{% trans 'Хуудсыг шалгаж талбаруудаа олно уу.' %}",
+    askLabel: "{% trans 'Талбарын нэр (жишээ: Имэйл):' %}",
+    askSelector: "{% trans 'CSS selector (жишээ: #email):' %}",
+    needFields: "{% trans 'Эхлээд хуудсыг шалгаж талбаруудаа тохируулна уу.' %}",
+    needPath: "{% trans 'Хуудасны замыг оруулна уу.' %}"
+  };
+  var form = document.getElementById("scenarioForm");
+  var fieldsInput = form.querySelector("[name=fields_json]");
+  var submitSel = form.querySelector("[name=submit_selector]");
+  var submitLabel = form.querySelector("[name=submit_label]");
+  var rows = document.getElementById("fieldRows");
+  var tpl = document.getElementById("fieldRowTpl");
+  var submitChoice = document.getElementById("submitChoice");
+  var status = document.getElementById("scanStatus");
+  var fields = JSON.parse(fieldsInput.value || "[]");
+  var buttons = [];
+
+  function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; }
+
+  function renderFields() {
+    rows.innerHTML = "";
+    if (!fields.length) {
+      rows.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">' + esc(T.noFields) + "</td></tr>";
+      return;
+    }
+    fields.forEach(function (f, i) {
+      var row = tpl.content.firstElementChild.cloneNode(true);
+      row.querySelector(".js-label").textContent = f.label || f.name || f.selector;
+      row.querySelector(".js-kind").textContent = T.kinds[f.kind] || f.kind;
+      row.querySelector(".js-selector").textContent = f.selector;
+      var source = row.querySelector(".js-source"), value = row.querySelector(".js-value");
+      if (f.kind !== "checkbox" && f.kind !== "radio") source.querySelector("[value=check]").remove();
+      source.value = f.source || "skip";
+      value.value = f.value || "";
+      function sync() {
+        value.hidden = source.value === "skip" || source.value === "check";
+        value.placeholder = source.value === "column" ? T.columnPh : T.constPh;
+        value.setAttribute("list", source.value === "column" ? "column-options" : "");
+      }
+      source.addEventListener("change", function () { f.source = source.value; if (f.source !== "column" && f.source !== "constant") f.value = ""; value.value = f.value; sync(); });
+      value.addEventListener("input", function () { f.value = value.value; });
+      sync();
+      rows.appendChild(row);
+    });
+  }
+
+  function renderButtons() {
+    submitChoice.innerHTML = "";
+    var opts = [{label: T.autoSubmit, selector: ""}].concat(buttons);
+    if (submitSel.value && !buttons.some(function (b) { return b.selector === submitSel.value; })) {
+      opts.push({label: submitLabel.value || submitSel.value, selector: submitSel.value});
+    }
+    opts.forEach(function (b) {
+      var o = document.createElement("option");
+      o.value = b.selector;
+      o.textContent = b.selector ? '"' + (b.label || "?") + '"  ·  ' + b.selector : b.label;
+      o.dataset.label = b.label || "";
+      submitChoice.appendChild(o);
+    });
+    submitChoice.value = submitSel.value;
+    if (submitChoice.selectedIndex < 0) submitChoice.selectedIndex = 0;
+  }
+  submitChoice.addEventListener("change", function () {
+    submitSel.value = submitChoice.value;
+    submitLabel.value = submitChoice.selectedOptions[0].dataset.label;
+  });
+
+  // Хуудсыг шалгах: worker хуудсыг browser-оор нээж талбаруудыг олно, энд хүлээж авна.
+  document.getElementById("scanBtn").addEventListener("click", function () {
+    var path = document.getElementById("{{ form.page_path.id_for_label }}").value.trim();
+    if (!path) { status.textContent = T.needPath; status.className = "ms-3 small text-danger"; return; }
+    var body = new FormData();
+    body.append("csrfmiddlewaretoken", form.querySelector("[name=csrfmiddlewaretoken]").value);
+    body.append("environment", document.getElementById("scanEnv").value);
+    body.append("page_path", path);
+    status.innerHTML = '<span class="spinner-border spinner-border-sm"></span> ' + esc(T.scanning);
+    status.className = "ms-3 small text-muted";
+    fetch("{% url 'autotest:scan_create' app.pk %}", {method: "POST", body: body})
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.error) throw new Error(data.error);
+        poll(data.id, Date.now());
+      })
+      .catch(function (err) { status.textContent = err.message; status.className = "ms-3 small text-danger"; });
+  });
+
+  function poll(id, started) {
+    var sample = document.getElementById("sampleFile").value;
+    fetch("{% url 'autotest:scan_status' 0 %}".replace("/0/", "/" + id + "/") + "?data_file=" + sample)
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.status === "queued") {
+          if (Date.now() - started > 15000) { status.textContent = T.slow; status.className = "ms-3 small text-warning"; }
+          setTimeout(function () { poll(id, started); }, 1000);
+          return;
+        }
+        if (data.status === "failed") { status.textContent = data.error; status.className = "ms-3 small text-danger"; return; }
+        // Өмнө тохируулсан талбарын тохиргоог (ижил selector) хадгална.
+        var previous = {};
+        fields.forEach(function (f) { if (f.source !== "skip") previous[f.selector] = f; });
+        fields = data.fields.map(function (f) {
+          var old = previous[f.selector];
+          if (old) { f.source = old.source; f.value = old.value; }
+          return f;
+        });
+        buttons = data.buttons;
+        if (!submitSel.value && buttons.length && buttons[0].is_submit) {
+          submitSel.value = buttons[0].selector; submitLabel.value = buttons[0].label;
+        }
+        renderFields(); renderButtons();
+        status.textContent = (data.error || ("✓ " + fields.length + " " + T.found)) + (data.title ? " — " + data.title : "");
+        status.className = "ms-3 small " + (data.error ? "text-warning" : "text-success");
+      });
+  }
+
+  document.getElementById("addFieldBtn").addEventListener("click", function () {
+    var label = window.prompt(T.askLabel); if (!label) return;
+    var selector = window.prompt(T.askSelector); if (!selector) return;
+    fields.push({label: label, selector: selector, kind: "text", source: "column", value: ""});
+    renderFields();
+  });
+
+  var mode = document.getElementById("{{ form.success_mode.id_for_label }}");
+  function syncMode() { document.getElementById("successValueWrap").hidden = mode.value === "auto"; }
+  mode.addEventListener("change", syncMode); syncMode();
+
+  form.addEventListener("submit", function (e) {
+    if (!fields.some(function (f) { return f.source !== "skip"; })) {
+      e.preventDefault(); status.textContent = T.needFields; status.className = "ms-3 small text-danger";
+      status.scrollIntoView({behavior: "smooth", block: "center"});
+      return;
+    }
+    fieldsInput.value = JSON.stringify(fields);
+  });
+
+  renderFields(); renderButtons();
+})();
+</script>
+{% endblock %}

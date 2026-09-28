@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Автомат тест" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+  <h2 class="mb-0">{% trans "Автомат тест" %}</h2>
+  <div class="d-flex gap-2">
+    <a href="{% url 'autotest:datafile_list' %}" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-spreadsheet"></i> {% trans "Өгөгдлийн файлууд" %} <span class="badge text-bg-light border">{{ data_file_count }}</span></a>
+    {% if can_manage_apps %}<a href="{% url 'autotest:app_create' %}" class="btn btn-primary">+ {% trans "Апп бүртгэх" %}</a>{% endif %}
+  </div>
+</div>
+<p class="text-muted">{% blocktrans %}Өгөгдлийн файлаа (Excel/CSV) оруулаад, апп-ын хуудсан дээр мөр бүрийг автоматаар бөглүүлж, гарсан хариуг хүлээгдэж буй үр дүнтэй тулгана.{% endblocktrans %}</p>
+
+{% if not apps %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="mb-3">{% trans "Хэрхэн эхлэх вэ" %}</h5>
+    <ol class="mb-0">
+      <li class="mb-2">{% trans "PM/Admin шалгах апп-аа бүртгэж, орчны хаягийг (жишээ: https://staging.shop.mn) нэмнэ." %}</li>
+      <li class="mb-2">{% trans "QA өгөгдлийн файлаа оруулна." %} <a href="{% url 'autotest:template_download' %}">{% trans "Жишээ загвар татах" %}</a></li>
+      <li class="mb-2">{% trans "Сценари үүсгэнэ: хуудасны хаягаа оруулаад 'Шалгах' дарахад талбаруудыг олж, файлын баганатай холбоно." %}</li>
+      <li>{% trans "Ажиллуулаад үр дүнгээ харна. Унасан мөрөөс шууд bug ticket үүсгэнэ." %}</li>
+    </ol>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  {% for app in apps %}
+  <div class="col-md-6 col-xl-4">
+    <a href="{% url 'autotest:app_detail' app.pk %}" class="card h-100 text-decoration-none text-body tms-autotest-app">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <i class="bi bi-window-stack text-primary fs-5"></i>
+          <h5 class="mb-0 text-truncate">{{ app.name }}</h5>
+        </div>
+        <div class="small text-muted mb-2">{{ app.project.name }}</div>
+        <div class="small">
+          <span class="me-3"><i class="bi bi-diagram-3"></i> {% blocktrans count n=app.scenario_count %}{{ n }} сценари{% plural %}{{ n }} сценари{% endblocktrans %}</span>
+          <span><i class="bi bi-hdd-network"></i> {% blocktrans count n=app.env_count %}{{ n }} орчин{% plural %}{{ n }} орчин{% endblocktrans %}</span>
+        </div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-header">{% trans "Сүүлийн ажиллуулалтууд" %}</div>
+  {% include "autotest/_runs_table.html" with show_scenario=True %}
+</div>
+{% include "autotest/_clickable_rows.html" %}
+{% endblock %}

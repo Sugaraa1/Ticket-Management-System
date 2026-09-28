@@ -32,6 +32,14 @@ def attachment_help_text():
     }
 
 
+def _check_subcategory(form, cleaned_data):
+    category, subcategory = cleaned_data.get("category"), cleaned_data.get("subcategory")
+    if subcategory and category and subcategory.category_id != category.id:
+        form.add_error(
+            "subcategory", _("Сонгосон дэд ангилал сонгосон ангилалд харьяалагдахгүй байна.")
+        )
+
+
 class TicketForm(forms.ModelForm):
     attachment = forms.FileField(
         required=False,
@@ -46,6 +54,7 @@ class TicketForm(forms.ModelForm):
             "ticket_type",
             "priority",
             "category",
+            "subcategory",
             "project",
             "module",
             "description",
@@ -55,6 +64,7 @@ class TicketForm(forms.ModelForm):
             "description": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
             "ticket_type": forms.Select(attrs={"class": "form-select"}),
             "category": forms.Select(attrs={"class": "form-select"}),
+            "subcategory": forms.Select(attrs={"class": "form-select"}),
             "project": forms.Select(attrs={"class": "form-select"}),
             "module": forms.Select(attrs={"class": "form-select"}),
             "priority": forms.Select(attrs={"class": "form-select"}),
@@ -64,6 +74,7 @@ class TicketForm(forms.ModelForm):
             "description": _("Тайлбар"),
             "ticket_type": _("Төрөл"),
             "category": _("Ангилал"),
+            "subcategory": _("Дэд ангилал"),
             "project": _("Төсөл"),
             "module": _("Модуль"),
             "priority": _("Чухлын зэрэг"),
@@ -91,6 +102,7 @@ class TicketForm(forms.ModelForm):
                 "module",
                 _("Сонгосон модуль сонгосон төсөлд харьяалагдахгүй байна."),
             )
+        _check_subcategory(self, cleaned_data)
         return cleaned_data
 
 
@@ -100,11 +112,13 @@ class TicketEditForm(forms.ModelForm):
 
     class Meta:
         model = Ticket
-        fields = ["title", "ticket_type", "category", "project", "module", "description"]
+        fields = [
+            "title", "ticket_type", "category", "subcategory", "project", "module", "description",
+        ]
         widgets = {
             key: widget
             for key, widget in TicketForm.Meta.widgets.items()
-            if key in ("title", "ticket_type", "category", "project", "module", "description")
+            if key != "priority"
         }
         labels = TicketForm.Meta.labels
 
@@ -129,6 +143,7 @@ class TicketEditForm(forms.ModelForm):
         project, module = cleaned_data.get("project"), cleaned_data.get("module")
         if module and project and module.project_id != project.id:
             self.add_error("module", _("Сонгосон модуль сонгосон төсөлд харьяалагдахгүй байна."))
+        _check_subcategory(self, cleaned_data)
         return cleaned_data
 
 

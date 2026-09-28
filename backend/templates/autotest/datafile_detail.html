@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ data_file.name }}{% endblock %}
+{% block content %}
+<nav class="small mb-2"><a href="{% url 'autotest:home' %}">{% trans "Автомат тест" %}</a> / <a href="{% url 'autotest:datafile_list' %}">{% trans "Өгөгдлийн файлууд" %}</a> / {{ data_file.name }}</nav>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h2 class="mb-0"><i class="bi bi-file-earmark-spreadsheet text-success"></i> {{ data_file.name }}</h2>
+    <div class="text-muted small">{{ data_file.project.name }} · {% blocktrans with rows=data_file.row_count cols=data_file.columns|length %}{{ rows }} мөр, {{ cols }} багана{% endblocktrans %} · {% blocktrans count n=run_count %}{{ n }} удаа ашигласан{% plural %}{{ n }} удаа ашигласан{% endblocktrans %}</div>
+  </div>
+  <a href="{% url 'autotest:datafile_download' data_file.pk %}" class="btn btn-outline-secondary"><i class="bi bi-download"></i> {% trans "Татах" %}</a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">{% trans "Урьдчилж харах (эхний 10 мөр)" %}</div>
+  {% if preview_error %}
+  <div class="card-body text-danger">{{ preview_error }}</div>
+  {% else %}
+  <div class="table-responsive">
+    <table class="table table-sm mb-0 tms-table">
+      <thead><tr><th class="text-muted">{% trans "Мөр" %}</th>{% for c in data_file.columns %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for line, values in preview %}
+        <tr><td class="text-muted">{{ line }}</td>{% for v in values %}<td>{{ v }}</td>{% endfor %}</tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">{% trans "Энэ файлыг ашиглах сценариуд" %}</div>
+      <ul class="list-group list-group-flush">
+        {% for s, missing in compatible %}
+        <a href="{% url 'autotest:scenario_detail' s.pk %}" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
+          {% if missing %}<i class="bi bi-exclamation-circle text-warning"></i>{% else %}<i class="bi bi-check-circle-fill text-success"></i>{% endif %}
+          <span class="flex-grow-1">{{ s.app.name }} · <b>{{ s.name }}</b></span>
+          {% if missing %}<span class="small text-muted">{% trans "Дутуу багана:" %} {{ missing|join:", " }}</span>{% else %}<span class="small text-success">{% trans "Бэлэн" %}</span>{% endif %}
+        </a>
+        {% empty %}
+        <li class="list-group-item text-muted">{% trans "Энэ төсөлд сценари алга." %}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% if can_edit %}
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header">{% trans "Файлыг шинэчлэх" %}</div>
+      <div class="card-body">
+        <p class="small text-muted">{% trans "Шинэ хувилбараа оруулна. Өмнөх ажиллуулалтуудын үр дүн хэвээр үлдэнэ." %}</p>
+        <form method="post" action="{% url 'autotest:datafile_replace' data_file.pk %}" enctype="multipart/form-data" class="d-flex gap-2">
+          {% csrf_token %}
+          {{ replace_form.file }}
+          <button class="btn btn-outline-primary">{% trans "Шинэчлэх" %}</button>
+        </form>
+        <hr>
+        <form method="post" action="{% url 'autotest:datafile_delete' data_file.pk %}" data-confirm-danger
+              data-confirm="{% blocktrans with name=data_file.name %}'{{ name }}' файлыг устгах уу? Өмнөх үр дүнгүүд үлдэнэ.{% endblocktrans %}">
+          {% csrf_token %}
+          <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> {% trans "Файл устгах" %}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

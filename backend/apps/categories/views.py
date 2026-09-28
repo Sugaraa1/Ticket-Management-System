@@ -2,19 +2,20 @@ from django.contrib import messages
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _
+from django.views.decorators.http import require_POST
 
 from apps.core.decorators import roles_required
 from apps.core.listing import ListConfig, ListFilter, build_listing
 from apps.tickets.permissions import ROLE_ADMIN, ROLE_PM
 
 from .forms import CategoryForm, CategoryTeamsForm, TeamForm, TeamMembersForm
-from .models import Category, CategoryTeamAssignment, Team
+from .models import Category, CategoryTeamAssignment, Subcategory, Team
 
 
 @roles_required(ROLE_PM, ROLE_ADMIN)
 def category_list(request):
     categories = Category.objects.prefetch_related(
-        "team_assignments__team__team_lead", "team_assignments__team__qa_tester",
+        "team_assignments__team__team_lead", "team_assignments__team__qa_tester", "subcategories",
     ).annotate(ticket_count=Count("tickets", distinct=True))
     team_choices = list(Team.objects.order_by("name").values_list("id", "name"))
     config = ListConfig(
@@ -102,8 +103,57 @@ def category_edit(request, pk):
             "teams_form": teams_form,
             "page_title": _("'%(name)s' засах") % {"name": category.name},
             "category": category,
+            "subcategories": category.subcategories.annotate(ticket_count=Count("tickets")),
         },
     )
+
+
+@roles_required(ROLE_PM, ROLE_ADMIN)
+@require_POST
+def subcategory_create(request, pk):
+    category = get_object_or_404(Category, pk=pk)
+    name = request.POST.get("name", "").strip()[:100]
+    if not name:
+        messages.error(request, _("Дэд ангиллын нэрийг оруулна уу."))
+    elif category.subcategories.filter(name__iexact=name).exists():
+        messages.error(request, _("'%(name)s' дэд ангилал аль хэдийн байна.") % {"name": name})
+    else:
+        Subcategory.objects.create(category=category, name=name)
+        messages.success(request, _("'%(name)s' дэд ангилал нэмэгдлээ.") % {"name": name})
+    return redirect("categories:category_edit", pk=pk)
+
+
+@roles_required(ROLE_PM, ROLE_ADMIN)
+@require_POST
+def subcategory_delete(request, pk, sub_pk):
+    """Дэд ангиллыг устгана — холбоотой ticket-үүд устахгүй, дэд ангилал нь хоосорно."""
+    sub = get_object_or_404(Subcategory, pk=sub_pk, category_id=pk)
+    name = sub.name
+    sub.delete()
+    messages.success(request, _("'%(name)s' дэд ангилал устгагдлаа.") % {"name": name})
+    return redirect("categories:category_edit", pk=pk)
+
+
+@roles_required(ROLE_ADMIN)
+@require_POST
+def category_delete(request, pk):
+    """
+    Ticket-гүй ангиллыг багийн холбоосуудтай нь устгана (зөвхөн Admin).
+    Ticket-тэй бол түүх алдагдахгүйн тулд (Ticket.category = PROTECT) устгахгүй.
+    """
+    category = get_object_or_404(Category, pk=pk)
+    name = category.name
+    count = category.tickets.count()
+    if count:
+        messages.error(
+            request,
+            _("'%(name)s' ангилалд %(n)s ticket холбоотой тул устгах боломжгүй.")
+            % {"name": name, "n": count},
+        )
+        return redirect("categories:category_list")
+    category.delete()
+    messages.success(request, _("'%(name)s' ангилал устгагдлаа.") % {"name": name})
+    return redirect("categories:category_list")
 
 
 def _route_orphan_tickets(category):

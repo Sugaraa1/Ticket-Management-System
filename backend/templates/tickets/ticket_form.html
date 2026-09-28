@@ -7,6 +7,12 @@
 {% else %}
 <h2 class="mb-3">{% trans "Шинэ Ticket үүсгэх" %}</h2>
 {% endif %}
+{% if autotest_run %}
+<div class="alert alert-info">
+  <i class="bi bi-robot"></i>
+  {% blocktrans with n=autotest_results|length id=autotest_run.pk %}Автомат тестийн #{{ id }} ажиллуулалтын {{ n }} унасан мөрөөс үүсгэж байна. Дэлгэцийн зургууд хавсралт болж орно.{% endblocktrans %}
+</div>
+{% endif %}
 <div class="card">
   <div class="card-body">
     <form method="post" enctype="multipart/form-data">
@@ -24,12 +30,13 @@
       <a href="{% url 'tickets:ticket_detail' ticket.pk %}" class="btn btn-link">{% trans "Цуцлах" %}</a>
       {% else %}
       <button type="submit" class="btn btn-primary">{% trans "Үүсгэх" %}</button>
-      <a href="{% url 'tickets:ticket_list' %}" class="btn btn-link">{% trans "Цуцлах" %}</a>
+      <a href="{% if autotest_run %}{% url 'autotest:run_detail' autotest_run.pk %}{% else %}{% url 'tickets:ticket_list' %}{% endif %}" class="btn btn-link">{% trans "Цуцлах" %}</a>
       {% endif %}
     </form>
   </div>
 </div>
 
+{% include "tickets/_subcategory_script.html" with data=subcategories_by_category json_id="subcategories-by-category" prefix="id" %}
 {{ modules_by_project|json_script:"modules-by-project" }}
 <script>
 document.addEventListener("DOMContentLoaded", function () {

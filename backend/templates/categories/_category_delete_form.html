@@ -1,0 +1,16 @@
+{% load i18n %}
+{# Ангилал устгах товч (зөвхөн Admin) — ticket-тэй бол идэвхгүй товч харуулна. #}
+{% if is_admin %}
+{% if c.ticket_count %}
+<span class="d-inline-block" tabindex="0" title="{% blocktrans with n=c.ticket_count %}{{ n }} ticket холбоотой тул устгах боломжгүй{% endblocktrans %}">
+  <button type="button" class="btn btn-sm tms-icon-btn text-danger" disabled aria-label="{% trans "Устгах" %}"><i class="bi bi-trash"></i></button>
+</span>
+{% else %}
+<form method="post" action="{% url 'categories:category_delete' c.id %}" class="d-inline"
+      data-confirm-danger
+      data-confirm="{% blocktrans with name=c.name %}'{{ name }}' ангиллыг устгахдаа итгэлтэй байна уу? Багийн холбоосууд нь хамт устана. Энэ үйлдлийг буцаах боломжгүй.{% endblocktrans %}">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-sm tms-icon-btn text-danger" title="{% trans "Устгах" %}" aria-label="{% trans "Устгах" %}"><i class="bi bi-trash"></i></button>
+</form>
+{% endif %}
+{% endif %}

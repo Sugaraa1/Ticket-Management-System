@@ -73,6 +73,10 @@ class Ticket(TimeStampedModel):
     ticket_type = models.CharField(max_length=20, choices=TicketType.choices)
 
     category = models.ForeignKey(Category, related_name="tickets", on_delete=models.PROTECT)
+    subcategory = models.ForeignKey(
+        "categories.Subcategory", related_name="tickets", on_delete=models.SET_NULL,
+        null=True, blank=True,
+    )
     project = models.ForeignKey(Project, related_name="tickets", on_delete=models.PROTECT)
     module = models.ForeignKey(
         Module, related_name="tickets", on_delete=models.SET_NULL, null=True, blank=True

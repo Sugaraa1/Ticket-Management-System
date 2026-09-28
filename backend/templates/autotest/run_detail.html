@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}#{{ run.pk }} {{ run.scenario.name }}{% endblock %}
+{% block content %}
+<nav class="small mb-2"><a href="{% url 'autotest:home' %}">{% trans "Автомат тест" %}</a> / <a href="{% url 'autotest:app_detail' run.scenario.app.pk %}">{{ run.scenario.app.name }}</a> / <a href="{% url 'autotest:scenario_detail' run.scenario.pk %}">{{ run.scenario.name }}</a> / #{{ run.pk }}</nav>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h2 class="mb-0">{{ run.scenario.name }} <span class="text-muted fs-5">#{{ run.pk }}</span> <span id="runStatusBadge" class="fs-6 align-middle">{% include "autotest/_run_status.html" %}</span></h2>
+    <div class="text-muted small">
+      <i class="bi bi-file-earmark-spreadsheet"></i> {{ run.data_file_name }} ·
+      <span class="badge text-bg-light border">{{ run.environment_name }}</span> <span class="font-monospace">{{ run.target_url }}</span> ·
+      {% if run.started_by %}{{ run.started_by.get_full_name|default:run.started_by.username }} · {% endif %}{{ run.created_at|date:"Y-m-d H:i" }}
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    {% if can_edit %}
+      {% if run.is_active %}
+      <form method="post" action="{% url 'autotest:run_cancel' run.pk %}">{% csrf_token %}<button class="btn btn-outline-danger"><i class="bi bi-stop-circle"></i> {% trans "Зогсоох" %}</button></form>
+      {% else %}
+      <form method="post" action="{% url 'autotest:run_rerun' run.pk %}">{% csrf_token %}<button class="btn btn-outline-primary"><i class="bi bi-arrow-repeat"></i> {% trans "Дахин ажиллуулах" %}</button></form>
+      {% endif %}
+    {% endif %}
+    <a href="{% url 'autotest:run_export' run.pk %}" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-excel"></i> {% trans "Excel татах" %}</a>
+  </div>
+</div>
+
+{% if run.error_message %}<div class="alert alert-danger">{{ run.error_message }}</div>{% endif %}
+{% if run.status == "queued" %}<div class="alert alert-info d-none" id="workerHint">{% trans "Дараалалд удаж байна — тест ажиллуулагч (worker) асаагүй байж магадгүй. Админ: python manage.py run_autotest_worker" %}</div>{% endif %}
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body"><div class="stat-tile-label">{% trans "Явц" %}</div><div class="stat-tile-value"><span id="statDone">{{ run.done_count }}</span> / <span id="statTotal">{{ run.total }}</span></div>
+    <div class="progress mt-2" style="height:6px"><div class="progress-bar" id="statBar" style="width: {% widthratio run.done_count run.total|default:1 100 %}%"></div></div></div></div></div>
+  <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body"><div class="stat-tile-label">{% trans "Тэнцсэн" %}</div><div class="stat-tile-value text-success" id="statPassed">{{ run.passed }}</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body"><div class="stat-tile-label">{% trans "Унасан" %}</div><div class="stat-tile-value text-danger" id="statFailed">{{ run.failed }}</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body"><div class="stat-tile-label">{% trans "Ажиллуулж чадаагүй" %}</div><div class="stat-tile-value text-warning" id="statErrored">{{ run.errored }}</div></div></div></div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="btn-group btn-group-sm">
+      <a href="?" class="btn {% if not show %}btn-primary{% else %}btn-outline-secondary{% endif %}">{% trans "Бүгд" %}</a>
+      <a href="?show=failed" class="btn {% if show == 'failed' %}btn-primary{% else %}btn-outline-secondary{% endif %}">{% trans "Зөвхөн унасан" %}</a>
+    </div>
+    {% if can_edit %}
+    <button type="button" class="btn btn-sm btn-danger" id="bugTicketBtn" disabled><i class="bi bi-bug"></i> {% trans "Сонгосноос bug ticket үүсгэх" %} <span class="badge text-bg-light" id="selectedCount">0</span></button>
+    {% endif %}
+  </div>
+  <div id="resultsContainer">{% include "autotest/_results_table.html" %}</div>
+</div>
+
+<script>
+(function () {
+  var container = document.getElementById("resultsContainer");
+  var btn = document.getElementById("bugTicketBtn");
+  function selected() { return [].map.call(container.querySelectorAll(".js-select-result:checked"), function (c) { return c.value; }); }
+  function refreshButton() {
+    if (!btn) return;
+    var ids = selected();
+    btn.disabled = !ids.length;
+    document.getElementById("selectedCount").textContent = ids.length;
+  }
+  container.addEventListener("change", function (e) {
+    if (e.target.classList.contains("js-select-all")) {
+      container.querySelectorAll(".js-select-result").forEach(function (c) { c.checked = e.target.checked; });
+    }
+    refreshButton();
+  });
+  if (btn) btn.addEventListener("click", function () {
+    window.location = "{% url 'autotest:bug_ticket' run.pk %}?ids=" + selected().join(",");
+  });
+
+  {% if run.is_active %}
+  // Ажиллаж байх үед 2 секунд тутам явцыг шинэчилнэ; дуусахад хуудсыг дахин ачаална.
+  var started = Date.now();
+  function poll() {
+    fetch("{% url 'autotest:run_status' run.pk %}" + window.location.search)
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.active) { window.location.reload(); return; }
+        ["done", "total", "passed", "failed", "errored"].forEach(function (k) {
+          document.getElementById("stat" + k.charAt(0).toUpperCase() + k.slice(1)).textContent = d[k];
+        });
+        document.getElementById("statBar").style.width = (d.total ? d.done * 100 / d.total : 0) + "%";
+        if (!selected().length) container.innerHTML = d.html;
+        var hint = document.getElementById("workerHint");
+        if (hint && d.status === "queued" && Date.now() - started > 15000) hint.classList.remove("d-none");
+        setTimeout(poll, 2000);
+      })
+      .catch(function () { setTimeout(poll, 5000); });
+  }
+  setTimeout(poll, 1500);
+  {% endif %}
+})();
+</script>
+{% endblock %}

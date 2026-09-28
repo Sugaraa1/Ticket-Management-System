@@ -4,8 +4,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}TMS Foxt{% endblock %}</title>
-<link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+<title>{% block title %}Foxt TMS{% endblock %}</title>
+<link rel="icon" href="{% static 'img/favicon.ico' %}" sizes="any">
 <link rel="icon" href="{% static 'img/favicon-32.png' %}" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
 <meta name="theme-color" content="#E2711D">
@@ -24,8 +24,8 @@
 {% url 'tickets:dashboard' as profile_url %}{% url 'tickets:ticket_list' as list_url %}{% url 'tickets:reports' as reports_url %}{% url 'tickets:my_team' as team_url %}
 <aside class="tms-sidebar" id="tmsSidebar">
   <a class="tms-sidebar-brand" href="{{ list_url }}">
-    <span class="tms-logo"><i class="bi bi-ticket-perforated"></i></span>
-    <span>TMS Foxt</span>
+    <img class="tms-logo" src="{% static 'img/logo.png' %}" alt="Foxt">
+    <span>Foxt TMS</span>
   </a>
 
   <button type="button" class="btn btn-primary w-100 mb-3 tms-sidebar-new" data-bs-toggle="offcanvas" data-bs-target="#quickTicket">
@@ -49,6 +49,12 @@
     <a class="tms-nav-link {% if request.path == team_url %}active{% endif %}" href="{{ team_url }}">
       <i class="bi bi-people-fill"></i><span>{% trans "Миний баг" %}</span>
     </a>
+
+    {% if can_view_autotest %}
+    <a class="tms-nav-link {% if '/autotest/' in request.path %}active{% endif %}" href="{% url 'autotest:home' %}">
+      <i class="bi bi-robot"></i><span>{% trans "Автомат тест" %}</span>
+    </a>
+    {% endif %}
 
     {% if can_manage_catalog %}
     <div class="tms-nav-label">{% trans "Удирдлага" %}</div>
@@ -104,7 +110,7 @@
   {% if user.is_authenticated %}
   <header class="tms-topbar d-lg-none">
     <button class="btn tms-icon-btn" type="button" onclick="document.getElementById('tmsSidebar').classList.toggle('open')"><i class="bi bi-list fs-4"></i></button>
-    <span class="fw-bold">TMS Foxt</span>
+    <span class="fw-bold d-inline-flex align-items-center gap-2"><img class="tms-logo tms-logo-sm" src="{% static 'img/logo.png' %}" alt="Foxt"> Foxt TMS</span>
     <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#quickTicket"><i class="bi bi-plus-lg"></i></button>
   </header>
   {% endif %}

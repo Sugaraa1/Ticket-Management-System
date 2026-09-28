@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ scenario.name }}{% endblock %}
+{% block content %}
+<nav class="small mb-2"><a href="{% url 'autotest:home' %}">{% trans "Автомат тест" %}</a> / <a href="{% url 'autotest:app_detail' scenario.app.pk %}">{{ scenario.app.name }}</a> / {{ scenario.name }}</nav>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h2 class="mb-0">{{ scenario.name }}</h2>
+    <div class="text-muted small font-monospace">{{ scenario.page_path }}</div>
+  </div>
+  {% if can_edit %}
+  <div class="d-flex gap-2">
+    <a href="{% url 'autotest:scenario_edit' scenario.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> {% trans "Засах" %}</a>
+    <form method="post" action="{% url 'autotest:scenario_delete' scenario.pk %}" data-confirm-danger
+          data-confirm="{% blocktrans with name=scenario.name %}'{{ name }}' сценарийг бүх үр дүнгийн хамт устгах уу?{% endblocktrans %}">
+      {% csrf_token %}
+      <button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3 mb-3">
+  {% if can_edit %}
+  <div class="col-lg-5">
+    <div class="card h-100 tms-run-card">
+      <div class="card-header"><i class="bi bi-play-circle"></i> {% trans "Ажиллуулах" %}</div>
+      <div class="card-body">
+        {% if run_form.fields.data_file.queryset.exists and run_form.fields.environment.queryset.exists %}
+        <form method="post" action="{% url 'autotest:run_create' scenario.pk %}">
+          {% csrf_token %}
+          <div class="mb-3"><label class="form-label" for="{{ run_form.data_file.id_for_label }}">{{ run_form.data_file.label }}</label>{{ run_form.data_file }}</div>
+          <div class="mb-3"><label class="form-label" for="{{ run_form.environment.id_for_label }}">{{ run_form.environment.label }}</label>{{ run_form.environment }}</div>
+          <button class="btn btn-primary w-100"><i class="bi bi-play-fill"></i> {% trans "Ажиллуулах" %}</button>
+        </form>
+        {% else %}
+        <p class="text-muted mb-2">{% trans "Ажиллуулахын тулд энэ төсөлд өгөгдлийн файл, апп-д орчин хэрэгтэй." %}</p>
+        <a href="{% url 'autotest:datafile_create' %}" class="btn btn-outline-primary btn-sm">+ {% trans "Файл оруулах" %}</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  <div class="col-lg-{% if can_edit %}7{% else %}12{% endif %}">
+    <div class="card h-100">
+      <div class="card-header">{% trans "Тохиргоо" %}</div>
+      <div class="card-body small">
+        <table class="table table-sm mb-2">
+          <thead><tr><th>{% trans "Талбар" %}</th><th>{% trans "Утга" %}</th></tr></thead>
+          <tbody>
+            {% for f in used_fields %}
+            <tr>
+              <td>{{ f.label|default:f.selector }}</td>
+              <td>{% if f.source == "column" %}<span class="badge text-bg-primary-subtle text-primary-emphasis">{% trans "багана" %}: {{ f.value }}</span>{% elif f.source == "check" %}✓ {% trans "чагтлана" %}{% else %}"{{ f.value }}"{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div><b>{% trans "Илгээх товч" %}:</b> {{ scenario.submit_label|default:scenario.submit_selector|default:_("автоматаар") }}</div>
+        <div><b>{% trans "Амжилттай гэж үзэх" %}:</b> {{ scenario.get_success_mode_display }}{% if scenario.success_value %} — "{{ scenario.success_value }}"{% endif %}</div>
+        <div><b>{% trans "Хүлээгдэх багана" %}:</b> {{ scenario.expected_column|default:"—" }}{% if scenario.expected_message_column %}, {{ scenario.expected_message_column }}{% endif %}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">{% trans "Ажиллуулсан түүх" %}</div>
+  {% include "autotest/_runs_table.html" %}
+</div>
+{% include "autotest/_clickable_rows.html" %}
+{% endblock %}
