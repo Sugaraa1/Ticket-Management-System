@@ -3,8 +3,9 @@ from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
-from django.db.models import Count
+from django.db.models import Count, OuterRef, Subquery
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -22,7 +23,7 @@ from apps.tickets.views import _modules_by_project, _subcategories_by_category
 from . import exports
 from .datafiles import suggest_mapping
 from .forms import (
-    DataFileForm, DataFileReplaceForm, EnvironmentForm, RunForm, ScenarioForm, TestAppForm,
+    DataFileForm, DataFileReplaceForm, EnvironmentForm, RunForm, ScenarioForm, TestAppForm, clean_page_path,
 )
 from .models import DataFile, Environment, PageScan, RunResult, Scenario, TestApp, TestRun
 
@@ -35,6 +36,17 @@ def _can_edit(user):
     return bool(user_roles(user) & set(EDIT_ROLES))
 
 
+def _attach_last_runs(objects, run_filter):
+    """objects бүрт `last_run` (хамгийн сүүлийн TestRun эсвэл None) онооно — нэг нэмэлт query."""
+    objects = list(objects.annotate(last_run_id=Subquery(
+        TestRun.objects.filter(**{run_filter: OuterRef("pk")}).order_by("-created_at").values("pk")[:1]
+    )))
+    runs = TestRun.objects.in_bulk([o.last_run_id for o in objects if o.last_run_id])
+    for obj in objects:
+        obj.last_run = runs.get(obj.last_run_id)
+    return objects
+
+
 def _flash_form_errors(request, form):
     for errors in form.errors.values():
         for error in errors:
@@ -45,10 +57,10 @@ def _flash_form_errors(request, form):
 
 @roles_required(*VIEW_ROLES)
 def home(request):
-    apps = TestApp.objects.select_related("project").annotate(
+    apps = _attach_last_runs(TestApp.objects.select_related("project").annotate(
         scenario_count=Count("scenarios", distinct=True),
         env_count=Count("environments", distinct=True),
-    )
+    ), "scenario__app")
     runs = TestRun.objects.select_related("scenario__app", "started_by")[:15]
     return render(request, "autotest/home.html", {
         "apps": apps,
@@ -86,11 +98,16 @@ def app_detail(request, pk):
             form.save()
             messages.success(request, _("'%(name)s' шинэчлэгдлээ.") % {"name": app.name})
             return redirect("autotest:app_detail", pk=pk)
-    scenarios = app.scenarios.annotate(run_count=Count("runs"))
+    return _render_app_detail(request, app, form=form)
+
+
+def _render_app_detail(request, app, form=None, env_form=None):
+    scenarios = _attach_last_runs(app.scenarios.annotate(run_count=Count("runs")), "scenario")
+    can_manage = bool(user_roles(request.user) & set(APP_ROLES))
     return render(request, "autotest/app_detail.html", {
         "app": app,
-        "form": form,
-        "env_form": EnvironmentForm(),
+        "form": form or TestAppForm(instance=app),
+        "env_form": env_form or EnvironmentForm(),
         "environments": app.environments.all(),
         "scenarios": scenarios,
         "can_manage": can_manage,
@@ -113,13 +130,13 @@ def app_delete(request, pk):
 def env_create(request, pk):
     app = get_object_or_404(TestApp, pk=pk)
     form = EnvironmentForm(request.POST, app=app)
-    if form.is_valid():
-        env = form.save(commit=False)
-        env.app = app
-        env.save()
-        messages.success(request, _("'%(name)s' орчин нэмэгдлээ.") % {"name": env.name})
-    else:
-        _flash_form_errors(request, form)
+    if not form.is_valid():
+        # Бичсэн утгыг хадгалж, алдааг талбарын дор харуулна.
+        return _render_app_detail(request, app, env_form=form)
+    env = form.save(commit=False)
+    env.app = app
+    env.save()
+    messages.success(request, _("'%(name)s' орчин нэмэгдлээ.") % {"name": env.name})
     return redirect("autotest:app_detail", pk=pk)
 
 
@@ -230,12 +247,16 @@ def template_download(request):
 # --- Сценари --------------------------------------------------------------
 
 def _scenario_form_context(app, form, scenario=None):
+    data_files = DataFile.objects.filter(project=app.project)
     return {
         "app": app,
         "form": form,
         "scenario": scenario,
         "environments": app.environments.all(),
-        "data_files": DataFile.objects.filter(project=app.project),
+        "data_files": data_files,
+        "data_files_meta": [
+            {"id": f.pk, "name": f.name, "columns": f.columns, "rows": f.row_count} for f in data_files
+        ],
         "known_columns": sorted({c for cols in DataFile.objects.filter(project=app.project)
                                  .values_list("columns", flat=True) for c in cols}),
     }
@@ -269,10 +290,15 @@ def scenario_edit(request, pk):
 @roles_required(*VIEW_ROLES)
 def scenario_detail(request, pk):
     scenario = get_object_or_404(Scenario.objects.select_related("app__project"), pk=pk)
+    runs = scenario.runs.select_related("started_by")[:30]
+    last_run = runs[0] if runs else None
+    # Ажиллуулах формыг сүүлд ашигласан файл, орчноор бөглөнө.
+    initial = {"data_file": last_run.data_file_id, "environment": last_run.environment_id} if last_run else {}
     return render(request, "autotest/scenario_detail.html", {
         "scenario": scenario,
-        "run_form": RunForm(scenario=scenario),
-        "runs": scenario.runs.select_related("started_by")[:30],
+        "run_form": RunForm(scenario=scenario, initial=initial),
+        "last_run": last_run,
+        "runs": runs,
         "used_fields": [f for f in scenario.fields if f.get("source") != "skip"],
         "can_edit": _can_edit(request.user),
     })
@@ -295,9 +321,12 @@ def scenario_delete(request, pk):
 def scan_create(request, pk):
     app = get_object_or_404(TestApp, pk=pk)
     env = app.environments.filter(pk=request.POST.get("environment")).first()
-    path = request.POST.get("page_path", "").strip()
-    if env is None or not path:
-        return JsonResponse({"error": _("Орчин болон хуудасны замыг оруулна уу.")}, status=400)
+    if env is None:
+        return JsonResponse({"error": _("Орчноо сонгоно уу.")}, status=400)
+    try:
+        path = clean_page_path(request.POST.get("page_path"))
+    except ValidationError as exc:
+        return JsonResponse({"error": exc.messages[0]}, status=400)
     scan = PageScan.objects.create(url=env.url_for(path)[:600], requested_by=request.user)
     return JsonResponse({"id": scan.pk, "url": scan.url})
 

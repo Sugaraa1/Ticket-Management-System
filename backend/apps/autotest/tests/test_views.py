@@ -108,6 +108,22 @@ class ScenarioViewTests(TempMediaMixin, TestCase):
         response = self._post([{"label": "Имэйл", "selector": "#e", "source": "column", "value": ""}])
         self.assertContains(response, "багана сонгоогүй")
 
+    def test_absolute_url_is_rejected(self):
+        """Бүтэн URL бичвэл орчны хязгаарлалтыг тойрох тул хүлээж авахгүй."""
+        for path in ("https://evil.example.com/x", "//evil.example.com/x"):
+            response = self.client.post(reverse("autotest:scan_create", args=[self.app.pk]),
+                                        {"environment": self.env.pk, "page_path": path})
+            self.assertEqual(response.status_code, 400)
+        response = self._post(REGISTER_FIELDS, page_path="http://169.254.169.254/")
+        self.assertContains(response, "Бүтэн хаяг биш")
+
+    def test_empty_path_uses_environment_url(self):
+        self.env.base_url = "http://web:8000/accounts/login"
+        self.env.save()
+        response = self.client.post(reverse("autotest:scan_create", args=[self.app.pk]),
+                                    {"environment": self.env.pk, "page_path": ""})
+        self.assertEqual(PageScan.objects.get(pk=response.json()["id"]).url, "http://web:8000/accounts/login")
+
     def test_scan_is_queued_and_only_owner_can_read_it(self):
         response = self.client.post(reverse("autotest:scan_create", args=[self.app.pk]),
                                     {"environment": self.env.pk, "page_path": "/register"})
@@ -262,3 +278,54 @@ class PagesRenderTests(TempMediaMixin, TestCase):
         ]:
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 200)
+
+
+class OverviewUxTests(TempMediaMixin, TestCase):
+    def setUp(self):
+        self.app, self.env, self.scenario, self.data_file = make_setup()
+        self.client.force_login(make_user("qa", ROLE_QA))
+
+    def test_home_shows_last_run_per_app(self):
+        response = self.client.get(reverse("autotest:home"))
+        self.assertContains(response, "Одоогоор ажиллуулаагүй")
+
+        TestRun.objects.create(scenario=self.scenario, data_file=self.data_file, environment=self.env,
+                               data_file_name="users", environment_name="staging",
+                               target_url="https://staging.example.com/register",
+                               status=TestRun.Status.DONE, total=4, passed=3, failed=1)
+        response = self.client.get(reverse("autotest:home"))
+        self.assertContains(response, "/4")
+        self.assertEqual(response.context["apps"][0].last_run.passed, 3)
+
+    def test_quick_run_reuses_last_file_and_environment(self):
+        response = self.client.get(reverse("autotest:app_detail", args=[self.app.pk]))
+        self.assertNotIn("<script>", response.content.decode().split("</title>")[0])
+        self.assertNotContains(response, 'name="data_file"')  # өмнө ажиллаагүй — сценари руу оруулна
+
+        last = TestRun.objects.create(scenario=self.scenario, data_file=self.data_file, environment=self.env,
+                                      data_file_name="users", environment_name="staging",
+                                      target_url="https://staging.example.com/register", status=TestRun.Status.DONE)
+        response = self.client.get(reverse("autotest:app_detail", args=[self.app.pk]))
+        self.assertContains(response, f'name="data_file" value="{self.data_file.pk}"')
+        self.assertContains(response, f'name="environment" value="{self.env.pk}"')
+
+        response = self.client.get(reverse("autotest:scenario_detail", args=[self.scenario.pk]))
+        self.assertEqual(response.context["last_run"], last)
+        self.assertEqual(response.context["run_form"].initial,
+                         {"data_file": self.data_file.pk, "environment": self.env.pk})
+        self.assertContains(response, "Тест юу хийх вэ")
+
+
+class EnvironmentCreateTests(TempMediaMixin, TestCase):
+    def test_duplicate_name_keeps_input_and_shows_error(self):
+        app, env, *_ = make_setup()
+        self.client.force_login(make_user("qa", ROLE_QA))
+        url = reverse("autotest:env_create", args=[app.pk])
+        response = self.client.post(url, {"name": env.name, "base_url": "http://web:8000/accounts/login"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f"&#x27;{env.name}&#x27; нэртэй орчин аль хэдийн байна.")
+        self.assertContains(response, 'value="http://web:8000/accounts/login"')
+
+        response = self.client.post(url, {"name": "prod", "base_url": "http://web:8000"})
+        self.assertRedirects(response, reverse("autotest:app_detail", args=[app.pk]))
+        self.assertEqual(app.environments.count(), 2)

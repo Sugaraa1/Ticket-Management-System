@@ -7,12 +7,14 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
 from apps.tickets.exports import XLSX_CONTENT_TYPE
+from apps.tickets.exports import _safe_text as _safe  # томьёо (=, +, -, @, tab) escape
 
 HEADER_FONT = Font(bold=True)
 FILLS = {
     "pass": PatternFill("solid", fgColor="D1F2DC"),
     "fail": PatternFill("solid", fgColor="F8D4D4"),
     "error": PatternFill("solid", fgColor="FCE9C7"),
+    "recorded": PatternFill("solid", fgColor="EEF0F3"),
 }
 
 
@@ -22,13 +24,6 @@ def _response(workbook, filename):
     response = HttpResponse(buffer.getvalue(), content_type=XLSX_CONTENT_TYPE)
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
-
-
-def _safe(value):
-    """Хэрэглэгчийн текстийг Excel томьёо (=, +, -, @) болгож ажиллуулахаас сэргийлнэ."""
-    if isinstance(value, str) and value[:1] in ("=", "+", "-", "@"):
-        return "'" + value
-    return value
 
 
 def _autosize(sheet):

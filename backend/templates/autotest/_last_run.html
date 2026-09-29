@@ -1,0 +1,12 @@
+{% load i18n %}{% if run %}{% with fails=run.failed|add:run.errored %}
+<div class="tms-last-run">
+  <div class="d-flex align-items-center flex-wrap gap-2 small">
+    {% include "autotest/_run_status.html" %}
+    <span class="text-body-secondary"><span class="text-success fw-semibold">{{ run.passed }}</span>/{{ run.total }} {% trans "тэнцсэн" %}</span>
+    <span class="text-body-secondary ms-auto" title="{{ run.created_at|date:'Y-m-d H:i' }}">{% blocktrans with t=run.created_at|timesince %}{{ t }} өмнө{% endblocktrans %}</span>
+  </div>
+  <div class="tms-run-bar mt-1" aria-hidden="true">
+    <span class="is-pass" style="width: {% widthratio run.passed run.total 100 %}%"></span><span class="is-fail" style="width: {% widthratio fails run.total 100 %}%"></span><span class="is-review" style="width: {% widthratio run.recorded run.total 100 %}%"></span>
+  </div>
+</div>
+{% endwith %}{% else %}<span class="small text-body-secondary">{% trans "Одоогоор ажиллуулаагүй" %}</span>{% endif %}

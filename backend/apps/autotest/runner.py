@@ -5,13 +5,16 @@ Playwright (Chromium)-аар хуудас шалгах (PageScan) болон с�
 import queue
 import threading
 import time
+from urllib.parse import urljoin, urlsplit
 
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from .datafiles import DataFileError, description_of, fill_placeholders, judge, parse_expected, read_rows
+from .datafiles import (
+    DataFileError, description_of, fill_placeholders, judge, parse_expected, placeholder_values, read_rows,
+)
 from .models import PageScan, RunResult, TestRun
 from .safety import UnsafeURL, check_url
 
@@ -130,11 +133,22 @@ SCAN_JS = r"""
 }
 """
 
-# Browser-ийн өөрийн (HTML5) шалгалтад унасан талбаруудын мессеж.
+DEFAULT_SUBMIT_SELECTOR = "form [type=submit], button[type=submit], input[type=submit]"
+
+# Browser-ийн өөрийн (HTML5) шалгалтад унасан талбаруудын мессеж — зөвхөн илгээсэн формын
+# дотор (толгой хэсгийн хайлт гэх мэт өөр формын required талбар алдаа болж орохгүй).
 INVALID_JS = """
-() => [...document.querySelectorAll('input, select, textarea')]
-  .filter(el => el.willValidate && !el.checkValidity())
-  .map(el => el.validationMessage).filter(Boolean)
+(submitSelector) => {
+  let scope = document;
+  try {
+    const button = document.querySelector(submitSelector);
+    const form = button && (button.form || button.closest('form'));
+    if (form) scope = form;
+  } catch (e) {}
+  return [...scope.querySelectorAll('input, select, textarea')]
+    .filter(el => el.willValidate && !el.checkValidity())
+    .map(el => el.validationMessage).filter(Boolean);
+}
 """
 
 
@@ -155,7 +169,45 @@ def _new_context(browser):
         locale="mn-MN", ignore_https_errors=True, viewport={"width": 1280, "height": 900}
     )
     context.set_default_timeout(ACTION_TIMEOUT_MS)
+    _guard_requests(context)
     return context
+
+
+def _guard_requests(context):
+    """
+    Хуудас дотроос хийгдэх хүсэлт бүрийг (iframe, fetch ...) safety.check_url-аар шалгана.
+    Хуудас шилжих хүсэлтийн redirect-ийг (Playwright route-д харагддаггүй) хариуг нь өөрөө
+    авч шалгана — эс тэгвэл нийтийн сайт 169.254.x.x (cloud metadata) руу redirect хийж,
+    түүний агуулга дэлгэцийн зурагт үлдэж болно. Хост бүрийг нэг л удаа шалгана.
+    """
+    decisions = {}
+
+    def allowed(url):
+        parts = urlsplit(url)
+        if parts.scheme not in ("http", "https"):
+            return True
+        key = (parts.hostname, parts.port)
+        if key not in decisions:
+            try:
+                check_url(url)
+                decisions[key] = True
+            except UnsafeURL:
+                decisions[key] = False
+        return decisions[key]
+
+    def handle(route):
+        request = route.request
+        if not allowed(request.url):
+            return route.abort("blockedbyclient")
+        if not request.is_navigation_request():
+            return route.continue_()
+        response = route.fetch(max_redirects=0)
+        location = response.headers.get("location")
+        if 300 <= response.status < 400 and location and not allowed(urljoin(request.url, location)):
+            return route.abort("blockedbyclient")
+        route.fulfill(response=response)  # redirect-ийг browser дагаж, шинэ хүсэлт дахин энд шалгагдана
+
+    context.route("**/*", handle)
 
 
 # --- PageScan ---------------------------------------------------------------
@@ -346,6 +398,7 @@ def run_row(browser, scenario, url, row, line_number):
 def _fill_fields(page, scenario, row, line_number, used_values):
     from playwright.sync_api import Error as PlaywrightError
 
+    placeholders = placeholder_values(line_number)
     for field in scenario.fields:
         source = field.get("source")
         if source not in ("column", "constant", "check"):
@@ -357,7 +410,7 @@ def _fill_fields(page, scenario, row, line_number, used_values):
                 _set_checked(locator, True)
                 continue
             value = row.get(field["value"], "") if source == "column" else field.get("value", "")
-            value = fill_placeholders(value, line_number)
+            value = fill_placeholders(value, line_number, placeholders)
             if source == "column":
                 used_values[field["value"]] = value
             _fill(locator, field.get("kind"), value)
@@ -398,7 +451,7 @@ def _set_checked(locator, checked):
 def _submit(page, scenario):
     from playwright.sync_api import Error as PlaywrightError
 
-    selector = scenario.submit_selector or "form [type=submit], button[type=submit], input[type=submit]"
+    selector = scenario.submit_selector or DEFAULT_SUBMIT_SELECTOR
     try:
         page.locator(selector).first.click()
     except PlaywrightError as exc:
@@ -434,7 +487,7 @@ def _read_outcome(page, scenario, start_url):
     errors = _visible_texts(page, scenario.error_selector or DEFAULT_ERROR_SELECTORS)
     if not url_changed:
         # Хуудас шилжээгүй бол browser-ийн өөрийн шалгалт (required, type=email) илгээлтийг зогсоосон байж болно.
-        errors = page.evaluate(INVALID_JS) + errors
+        errors = page.evaluate(INVALID_JS, scenario.submit_selector or DEFAULT_SUBMIT_SELECTOR) + errors
     successes = _visible_texts(page, SUCCESS_SELECTORS)
     try:
         page_text = page.locator("body").inner_text()[:20_000]
@@ -501,6 +554,8 @@ def _short_error(exc):
     """Playwright-ийн олон мөрт алдаанаас эхний утга учиртай мөрийг авна."""
     text = str(exc).strip().splitlines()
     first = text[0] if text else exc.__class__.__name__
+    if "ERR_BLOCKED_BY_CLIENT" in first:
+        return _("хаалттай хаяг руу хандах гэсэн (аюулгүй байдлын хязгаарлалт)")
     if "Timeout" in first:
         return _("хугацаа хэтэрлээ (элемент олдсонгүй эсвэл хуудас хариу өгсөнгүй)")
     return first[:300]

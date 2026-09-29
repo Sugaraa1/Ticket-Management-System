@@ -75,7 +75,19 @@ def _read_xlsx(fileobj):
         raise DataFileError(_("Excel файлыг уншиж чадсангүй. Файл эвдэрсэн эсэхийг шалгана уу."))
     try:
         sheet = workbook.worksheets[0]
-        return [list(row) for row in sheet.iter_rows(values_only=True)]
+        # Жижиг файлд сая сая хоосон/давтагдсан мөр шахаж болно — хязгаараас хэтэрмэгц зогсоно
+        # (гарчиг + max_rows мөрөөс нэгийг илүү уншиж, read_rows "хэт олон мөр" гэж хэлнэ).
+        # Хоосон мөр байрандаа үлдэнэ ([]) — Excel-ийн мөрийн дугаар зөв гарна.
+        raw, filled = [], 0
+        for row in sheet.iter_rows(values_only=True):
+            if any(value not in (None, "") for value in row):
+                raw.append(list(row))
+                filled += 1
+                if filled > max_rows() + 1:
+                    break
+            else:
+                raw.append([])
+        return raw
     finally:
         workbook.close()
 
@@ -156,15 +168,15 @@ def _norm_text(text):
 PLACEHOLDER_RE = re.compile(r"\{\{\s*(random|timestamp|row)\s*\}\}")
 
 
-def fill_placeholders(value, row_number):
+def placeholder_values(row_number):
+    """Нэг мөрийн placeholder-ууд — мөр доторх бүх нүдэд ижил (нууц үг давтах г.м.), мөр бүрт шинэ."""
+    return {"random": secrets.token_hex(3), "timestamp": str(int(time.time())), "row": str(row_number)}
+
+
+def fill_placeholders(value, row_number, values=None):
     """{{random}} — мөр бүрт шинэ 6 тэмдэгт, {{timestamp}} — unix секунд, {{row}} — мөрийн дугаар."""
-    stamp = str(int(time.time()))
-    token = secrets.token_hex(3)
-
-    def replace(match):
-        return {"random": token, "timestamp": stamp, "row": str(row_number)}[match.group(1)]
-
-    return PLACEHOLDER_RE.sub(replace, value or "")
+    values = values or placeholder_values(row_number)
+    return PLACEHOLDER_RE.sub(lambda match: values[match.group(1)], value or "")
 
 
 # --- Талбар ↔ багана автоматаар тааруулах ---------------------------------

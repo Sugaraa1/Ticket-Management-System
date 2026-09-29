@@ -135,6 +135,9 @@ def _warn_open_assignments(request, target):
 @require_POST
 def user_activate(request, pk):
     target = get_object_or_404(User, pk=pk)
+    if target.is_superuser and not request.user.is_superuser:
+        messages.error(request, _("Superuser-ийг зөвхөн superuser идэвхжүүлнэ."))
+        return redirect("accounts:user_list")
     target.is_active = True
     target.save(update_fields=["is_active"])
     messages.success(request, _("'%(name)s' дахин идэвхжлээ.") % {"name": target.username})

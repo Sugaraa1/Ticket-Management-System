@@ -55,7 +55,7 @@ class EnvironmentForm(forms.ModelForm):
     def clean_name(self):
         name = self.cleaned_data["name"].strip()
         if self.app and self.app.environments.filter(name__iexact=name).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError(_("Ийм нэртэй орчин бүртгэлтэй байна."))
+            raise forms.ValidationError(_("'%(name)s' нэртэй орчин аль хэдийн байна.") % {"name": name})
         return name
 
 
@@ -114,6 +114,14 @@ class DataFileReplaceForm(forms.Form):
         return uploaded
 
 
+def clean_page_path(value):
+    """Орчны хаягаас хойших зам л байна — бүтэн URL бичвэл орчны хязгаарлалтыг тойрно."""
+    value = (value or "").strip()
+    if "://" in value or value.startswith("//"):
+        raise forms.ValidationError(_("Бүтэн хаяг биш, орчны хаягаас хойших замыг бичнэ үү (жишээ: /register)."))
+    return value
+
+
 class ScenarioForm(forms.ModelForm):
     fields_json = forms.CharField(widget=forms.HiddenInput, required=False)
 
@@ -125,7 +133,7 @@ class ScenarioForm(forms.ModelForm):
         ]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control"}),
-            "page_path": forms.TextInput(attrs={"class": "form-control", "placeholder": "/register"}),
+            "page_path": forms.TextInput(attrs={"class": "form-control", "placeholder": _("(заавал биш) /register")}),
             "submit_selector": forms.HiddenInput,
             "submit_label": forms.HiddenInput,
             "success_mode": forms.Select(attrs={"class": "form-select"}),
@@ -139,6 +147,9 @@ class ScenarioForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if not self.is_bound:
             self.initial["fields_json"] = json.dumps(self.instance.fields or [], ensure_ascii=False)
+
+    def clean_page_path(self):
+        return clean_page_path(self.cleaned_data.get("page_path"))
 
     def clean_fields_json(self):
         try:

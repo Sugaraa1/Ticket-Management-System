@@ -666,6 +666,35 @@ h1, h2, h3, h4, h5, .tms-page-title, .tms-toolbar-title { color: var(--navy); fo
 .tms-results-table tr.verdict-row-fail td, .tms-results-table tr.verdict-row-error td { background: #FFFAFA; }
 .tms-result-inputs code { color: inherit; background: rgba(0,0,0,.04); padding: 0 .25rem; border-radius: .25rem; }
 .tms-result-message { max-width: 28rem; }
-.tms-step { display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: var(--primary); color: #fff; font-size: .8rem; font-weight: 700; margin-right: .35rem; }
 .tms-autotest-app { transition: box-shadow .15s, transform .15s; }
 .tms-autotest-app:hover { box-shadow: 0 .5rem 1.25rem rgba(0,0,0,.08); transform: translateY(-1px); }
+.tms-app-icon { display: inline-flex; align-items: center; justify-content: center; width: 2.4rem; height: 2.4rem; flex-shrink: 0; border-radius: var(--radius-md); background: var(--primary-tint); color: var(--primary); font-size: 1.2rem; }
+.min-w-0 { min-width: 0; }
+
+/* Сүүлийн ажиллуулалтын жижиг үзүүлэлт: ногоон/улаан/саарал хэсэгтэй зурвас */
+.tms-run-bar { display: flex; height: 6px; border-radius: 999px; overflow: hidden; background: var(--border); }
+.tms-run-bar .is-pass { background: #22A05A; }
+.tms-run-bar .is-fail { background: #DC3F3F; }
+.tms-run-bar .is-review { background: #A9B0BC; }
+.tms-scenario-row { cursor: pointer; }
+.tms-scenario-row:hover { background: var(--bg); }
+.tms-last-run-hero { transition: box-shadow .15s; }
+.tms-last-run-hero:hover { box-shadow: 0 .5rem 1.25rem rgba(0,0,0,.08); }
+
+/* Сценари үүсгэх wizard */
+.tms-step-dot { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; flex-shrink: 0; border-radius: 50%; background: var(--primary); color: #fff; font-weight: 700; }
+.tms-wizard-step.is-done .tms-step-dot { background: #22A05A; }
+.tms-wizard-step.is-locked { opacity: .6; }
+.tms-wizard-step.is-locked .tms-step-dot { background: var(--border); color: var(--text-muted); }
+.tms-wizard-step.is-locked .tms-step-content, .tms-wizard-step.is-locked > .card-body { display: none !important; }
+.tms-choice { border: 1.5px solid var(--border); border-radius: var(--radius-md); padding: 1rem; transition: border-color .15s, background .15s; }
+.tms-choice.is-selected { border-color: #22A05A; background: #F3FBF6; }
+.tms-tech { display: none; }
+.show-tech .tms-tech { display: inline; }
+.show-tech button.tms-tech { display: inline-block; }
+.tms-wizard-actions { position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: .5rem; padding: .75rem 0; background: var(--bg); border-top: 1px solid var(--border); }
+
+/* Сценарийн алхмууд (уншихад ойлгомжтой тохиргоо) */
+.tms-scenario-steps { padding-left: 1.25rem; }
+.tms-scenario-steps > li { padding: .35rem 0 .6rem; }
+.tms-scenario-steps > li::marker { color: var(--primary); font-weight: 700; }

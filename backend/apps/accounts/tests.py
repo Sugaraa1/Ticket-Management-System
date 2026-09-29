@@ -119,6 +119,12 @@ class ActiveStatusTests(TestCase):
         target.refresh_from_db()
         self.assertFalse(target.is_active)
 
+    def test_only_superuser_reactivates_superuser(self):
+        root = User.objects.create_superuser("root", password="x", is_active=False)
+        self.client.post(reverse("accounts:user_activate", args=[root.pk]))
+        root.refresh_from_db()
+        self.assertFalse(root.is_active)
+
     def test_cannot_deactivate_self(self):
         self.client.post(reverse("accounts:user_deactivate", args=[self.admin.pk]))
         self.admin.refresh_from_db()

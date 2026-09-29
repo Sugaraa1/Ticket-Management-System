@@ -45,7 +45,12 @@ class FakeSite(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_GET(self):
-        if self.path.startswith("/register"):
+        if self.path.startswith("/to-metadata"):
+            # Нийтийн сайт cloud metadata руу redirect хийх халдлага.
+            self.send_response(302)
+            self.send_header("Location", "http://169.254.169.254/latest/meta-data/")
+            self.end_headers()
+        elif self.path.startswith("/register"):
             self._html(REGISTER_PAGE.format(error=""))
         elif self.path.startswith("/welcome"):
             self._html("<h1>Амжилттай бүртгэгдлээ</h1>")
@@ -183,6 +188,13 @@ class WorkerBrowserTests(TempMediaMixin, TestCase):
         self.assertEqual(run.results.get(description="Бүх талбар зөв").verdict, "pass")
         self.assertEqual(run.results.get(description="Имэйл хаяг: буруу формат").verdict, "pass")
         self.assertEqual(run.results.get(description="Нөхцөл зөвшөөрөх: чагтлаагүй").verdict, "pass")
+
+    def test_redirect_to_metadata_is_blocked(self):
+        scan = PageScan.objects.create(url=self.base_url + "/to-metadata", requested_by=make_user("qa"))
+        self._work()
+        scan.refresh_from_db()
+        self.assertEqual(scan.status, PageScan.Status.FAILED)
+        self.assertIn("хаалттай хаяг", scan.error_message)
 
     @override_settings(AUTOTEST_ALLOW_PRIVATE_HOSTS=False)
     def test_private_hosts_blocked_by_default(self):

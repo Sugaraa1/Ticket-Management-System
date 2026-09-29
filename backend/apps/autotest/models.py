@@ -78,9 +78,10 @@ class Environment(models.Model):
         return f"{self.app.name} · {self.name}"
 
     def url_for(self, path):
+        """Орчны хаяг + зам. Бүтэн URL-ыг (өөр хост руу) хүлээж авахгүй — тест зөвхөн орчны хаягт хандана."""
         path = (path or "").strip()
-        if path.startswith(("http://", "https://")):
-            return path
+        if not path:  # орчны хаяг өөрөө шалгах хуудас руу заасан
+            return self.base_url
         return self.base_url.rstrip("/") + "/" + path.lstrip("/")
 
 
@@ -110,7 +111,8 @@ class Scenario(TimeStampedModel):
     app = models.ForeignKey(TestApp, related_name="scenarios", on_delete=models.CASCADE)
     name = models.CharField(_("Нэр"), max_length=150, help_text=_("Жишээ: Бүртгүүлэх, Нэвтрэх"))
     page_path = models.CharField(
-        _("Хуудас"), max_length=500, help_text=_("Орчны үндсэн хаягаас хойших зам. Жишээ: /register")
+        _("Хуудас"), max_length=500, blank=True,
+        help_text=_("Орчны хаягаас хойших зам. Хоосон бол орчны хаягийг шууд нээнэ."),
     )
     # [{"label", "selector", "kind", "source": "column|constant|check|skip", "value"}]
     fields = models.JSONField(default=list)

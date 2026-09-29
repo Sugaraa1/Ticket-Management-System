@@ -1,7 +1,7 @@
 from django.test import SimpleTestCase, override_settings
 
 from apps.autotest.datafiles import (
-    DataFileError, fill_placeholders, judge, parse_expected, read_rows, suggest_mapping,
+    DataFileError, fill_placeholders, judge, parse_expected, placeholder_values, read_rows, suggest_mapping,
 )
 
 from .helpers import csv_upload, xlsx_upload
@@ -72,6 +72,11 @@ class ExpectedTests(SimpleTestCase):
         self.assertRegex(first, r"^test[0-9a-f]{6}@mail\.mn$")
         self.assertNotEqual(first, second)
         self.assertEqual(fill_placeholders("row{{row}}", 7), "row7")
+
+    def test_placeholders_are_shared_within_a_row(self):
+        """Нэг мөрийн "нууц үг" ба "нууц үг давтах" нүдэнд {{random}} ижил утгатай байна."""
+        values = placeholder_values(3)
+        self.assertEqual(fill_placeholders("P{{random}}", 3, values), fill_placeholders("P{{random}}", 3, values))
 
 
 class SuggestMappingTests(SimpleTestCase):
