@@ -5,14 +5,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# psycopg2-ийг эх кодоос угсрахад шаардлагатай сангууд
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        libpq-dev \
-        gcc \
-    && rm -rf /var/lib/apt/lists/*
-
+# psycopg2-binary ашигладаг тул gcc/libpq-dev (apt) хэрэггүй.
+# pip-ийн cache mount: requirements.txt өөрчлөгдсөн ч өмнө татсан сангууд дахин татагдахгүй.
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
 
 COPY . .
 
