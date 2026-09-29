@@ -19,13 +19,20 @@ class PermissionTests(TempMediaMixin, TestCase):
     def setUp(self):
         self.app, self.env, self.scenario, self.data_file = make_setup()
 
-    def test_developer_sees_results_but_cannot_run(self):
-        self.client.force_login(make_user("dev", ROLE_DEV))
-        self.assertEqual(self.client.get(reverse("autotest:home")).status_code, 200)
-        self.assertEqual(self.client.get(reverse("autotest:scenario_detail", args=[self.scenario.pk])).status_code, 200)
-        self.client.post(reverse("autotest:run_create", args=[self.scenario.pk]),
-                         {"data_file": self.data_file.pk, "environment": self.env.pk})
-        self.assertFalse(TestRun.objects.exists())
+    def test_pm_and_developer_have_no_access(self):
+        for username, role in (("pm", ROLE_PM), ("dev", ROLE_DEV)):
+            with self.subTest(role=role):
+                self.client.force_login(make_user(username, role))
+                self.assertNotEqual(self.client.get(reverse("autotest:home")).status_code, 200)
+                self.assertNotEqual(
+                    self.client.get(reverse("autotest:scenario_detail", args=[self.scenario.pk])).status_code, 200
+                )
+                self.client.post(reverse("autotest:run_create", args=[self.scenario.pk]),
+                                 {"data_file": self.data_file.pk, "environment": self.env.pk})
+                self.client.post(reverse("autotest:app_create"), {"project": self.app.project_id, "name": role})
+                self.assertFalse(TestRun.objects.exists())
+                self.assertFalse(TestApp.objects.filter(name=role).exists())
+                self.assertNotContains(self.client.get(reverse("tickets:ticket_list")), reverse("autotest:home"))
 
     def test_qa_can_register_apps_and_create_scenarios(self):
         self.client.force_login(make_user("qa", ROLE_QA))
@@ -34,8 +41,8 @@ class PermissionTests(TempMediaMixin, TestCase):
         response = self.client.get(reverse("autotest:scenario_create", args=[self.app.pk]))
         self.assertEqual(response.status_code, 200)
 
-    def test_nav_link_visible_to_roles(self):
-        self.client.force_login(make_user("dev", ROLE_DEV))
+    def test_nav_link_visible_to_qa(self):
+        self.client.force_login(make_user("qa", ROLE_QA))
         self.assertContains(self.client.get(reverse("tickets:ticket_list")), reverse("autotest:home"))
 
 
@@ -162,6 +169,24 @@ class RunViewTests(TempMediaMixin, TestCase):
         self.assertIn("Давхардсан имэйл", data["html"])
         self.assertNotIn("a@mail.mn", data["html"])
 
+    def test_review_rows_are_explained_and_filterable(self):
+        run, _failed = self._finished_run()
+        RunResult.objects.create(run=run, row_number=4, description="XSS", verdict="recorded",
+                                 input_data={"email": "<b>x</b>", "хүлээгдэх": ""},
+                                 actual_outcome="error", actual_message="Буруу имэйл")
+        run.recorded, run.total = 1, 3
+        run.save()
+        response = self.client.get(reverse("autotest:run_detail", args=[run.pk]))
+        self.assertContains(response, "Гараар шалгах (1)")
+        self.assertContains(response, "Дүн юу гэсэн үг вэ?")
+        self.assertContains(response, "заагаагүй")
+        self.assertNotContains(response, "хүлээгдэх=")  # хүлээгдэх багана оролтод давхар харагдахгүй
+
+        data = self.client.get(reverse("autotest:run_status", args=[run.pk]), {"show": "review"}).json()
+        self.assertEqual(data["recorded"], 1)
+        self.assertIn("XSS", data["html"])
+        self.assertNotIn("Давхардсан имэйл", data["html"])
+
     def test_export_escapes_formulas(self):
         run, _failed = self._finished_run()
         response = self.client.get(reverse("autotest:run_export", args=[run.pk]))
@@ -222,7 +247,7 @@ class PagesRenderTests(TempMediaMixin, TestCase):
             scenario=scenario, data_file=data_file, environment=_env, data_file_name="users",
             environment_name="staging", target_url="https://staging.example.com/register", total=1,
         )
-        self.client.force_login(make_user("pm", ROLE_PM))
+        self.client.force_login(make_user("qa", ROLE_QA))
         for url in [
             reverse("autotest:home"),
             reverse("autotest:app_create"),

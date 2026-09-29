@@ -80,19 +80,36 @@ SCAN_JS = r"""
   }
 
   const skipTypes = new Set(['hidden', 'submit', 'button', 'reset', 'image', 'file']);
-  const fields = [];
-  document.querySelectorAll('input, textarea, select').forEach(el => {
+  const fillable = [...document.querySelectorAll('input, textarea, select')].filter(el => {
     const type = (el.getAttribute('type') || 'text').toLowerCase();
-    if (el.tagName === 'INPUT' && skipTypes.has(type)) return;
+    if (el.tagName === 'INPUT' && skipTypes.has(type)) return false;
     const labelVisible = el.labels && [...el.labels].some(visible);
-    if (!visible(el) && !labelVisible) return;
+    return visible(el) || labelVisible;
+  });
+  // Үндсэн форм = хамгийн олон бөглөх талбартай форм. Бусад формын талбарууд (хэл сонгох,
+  // толгой хэсгийн хайлт ...) in_main_form=false — автоматаар алгасагдана.
+  const counts = new Map();
+  fillable.forEach(el => { if (el.form) counts.set(el.form, (counts.get(el.form) || 0) + 1); });
+  let mainForm = null;
+  counts.forEach((n, form) => { if (!mainForm || n > counts.get(mainForm)) mainForm = form; });
+  const fields = [];
+  fillable.forEach(el => {
+    const type = (el.getAttribute('type') || 'text').toLowerCase();
     let kind = 'text';
     if (el.tagName === 'SELECT') kind = 'select';
     else if (['checkbox', 'radio', 'password', 'email'].includes(type)) kind = type;
+    const num = attr => { const v = el.getAttribute(attr); return v !== null && v !== '' && !isNaN(v) ? Number(v) : null; };
     fields.push({
       label: labelFor(el).replace(/\s*\*\s*$/, '').slice(0, 120),
       selector: selectorFor(el),
       kind: kind,
+      type: el.tagName === 'INPUT' ? type : el.tagName.toLowerCase(),
+      maxlength: el.maxLength > 0 && el.maxLength < 100000 ? el.maxLength : null,
+      minlength: el.minLength > 0 ? el.minLength : null,
+      min: num('min'),
+      max: num('max'),
+      pattern: el.getAttribute('pattern') || '',
+      in_main_form: !mainForm || el.form === mainForm,
       name: el.getAttribute('name') || '',
       id: el.id || '',
       placeholder: el.getAttribute('placeholder') || '',
@@ -104,7 +121,7 @@ SCAN_JS = r"""
   const buttons = [];
   document.querySelectorAll('button, input[type=submit], input[type=button], [role=button]').forEach(el => {
     if (!visible(el)) return;
-    const label = (text(el) || el.value || el.getAttribute('aria-label') || '').slice(0, 80);
+    const label = (text(el) || el.value || el.getAttribute('aria-label') || el.getAttribute('title') || '').slice(0, 80);
     const type = (el.getAttribute('type') || (el.tagName === 'BUTTON' && el.form ? 'submit' : '')).toLowerCase();
     buttons.push({ label: label, selector: selectorFor(el), is_submit: type === 'submit' });
   });

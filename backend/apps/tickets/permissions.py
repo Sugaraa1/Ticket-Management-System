@@ -12,6 +12,9 @@ ROLE_PM = "Project Manager"
 ROLE_QA = "QA Tester"
 ROLE_DEV = "Developer"
 
+# Автомат тест хэсгийг ашиглах эрхтэй group-ууд
+AUTOTEST_ROLES = (ROLE_ADMIN, ROLE_QA)
+
 # (current_status, new_status) -> тухайн шилжилтийг хийж болох group-ууд
 TRANSITION_PERMISSIONS = {
     ("new", "assigned"): {ROLE_PM, ROLE_ADMIN},

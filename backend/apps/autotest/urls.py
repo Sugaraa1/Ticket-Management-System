@@ -13,6 +13,7 @@ urlpatterns = [
     path("apps/<int:pk>/environments/<int:env_pk>/delete/", views.env_delete, name="env_delete"),
     path("apps/<int:pk>/scenarios/new/", views.scenario_create, name="scenario_create"),
     path("apps/<int:pk>/scan/", views.scan_create, name="scan_create"),
+    path("apps/<int:pk>/scans/<int:scan_pk>/generate/", views.scan_generate, name="scan_generate"),
     path("scans/<int:pk>/", views.scan_status, name="scan_status"),
     path("files/", views.datafile_list, name="datafile_list"),
     path("files/new/", views.datafile_create, name="datafile_create"),

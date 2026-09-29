@@ -26,6 +26,9 @@ REGISTER_PAGE = """<!doctype html><html><head><meta charset="utf-8"><title>Бү�
   <input type="checkbox" id="terms" name="terms" required><label for="terms">Нөхцөл зөвшөөрөх</label>
   {error}
   <button type="submit">Бүртгүүлэх</button>
+</form>
+<form action="/lang" method="post">
+  <select name="language" onchange="this.form.submit()"><option>Монгол</option><option>English</option></select>
 </form></body></html>"""
 
 
@@ -102,11 +105,13 @@ class WorkerBrowserTests(TempMediaMixin, TestCase):
         scan.refresh_from_db()
         self.assertEqual(scan.status, PageScan.Status.DONE, scan.error_message)
         labels = [f["label"] for f in scan.result["fields"]]
-        self.assertEqual(labels, ["Имэйл хаяг", "Нууц үг", "Гар утас", "Нөхцөл зөвшөөрөх"])
+        self.assertEqual(labels, ["Имэйл хаяг", "Нууц үг", "Гар утас", "Нөхцөл зөвшөөрөх", "language"])
+        # Хэл сонгох нь тусдаа форм — үндсэн формд хамаарахгүй.
+        self.assertEqual([f["in_main_form"] for f in scan.result["fields"]], [True, True, True, True, False])
         self.assertEqual(scan.result["buttons"][0]["label"], "Бүртгүүлэх")
 
-        mapped = suggest_mapping(scan.result["fields"], ["email", "password", "phone"])
-        self.assertEqual([m["source"] for m in mapped], ["column", "column", "column", "check"])
+        mapped = suggest_mapping(scan.result["fields"], ["email", "password", "phone", "language"])
+        self.assertEqual([m["source"] for m in mapped], ["column", "column", "column", "check", "skip"])
 
     def test_run_judges_every_row(self):
         fields = REGISTER_FIELDS + [{"label": "Гар утас", "selector": "input[name=phone]", "kind": "text",
@@ -154,6 +159,30 @@ class WorkerBrowserTests(TempMediaMixin, TestCase):
         result = run.results.get()
         self.assertEqual(result.verdict, "error")
         self.assertIn("'Байхгүй талбар' талбарыг бөглөж чадсангүй", result.actual_message)
+
+    def test_generated_data_runs_without_errors(self):
+        """Scan → өгөгдөл үүсгэх → ажиллуулах: үүсгэсэн утга бүрийг хуудсанд бөглөж чадна."""
+        from apps.autotest import generator
+
+        scan = PageScan.objects.create(url=self.base_url + "/register", requested_by=make_user("qa"))
+        self._work()
+        scan.refresh_from_db()
+        columns, rows, mapping = generator.generate(scan.result["fields"])
+        self.assertNotIn("language", columns)
+        fields = [dict(f, source="column", value=mapping[f["selector"]])
+                  for f in scan.result["fields"] if f["selector"] in mapping]
+        _app, env, scenario, data_file = make_setup(base_url=self.base_url, fields=fields, rows=[columns] + rows)
+        run = TestRun.objects.create(
+            scenario=scenario, data_file=data_file, environment=env, data_file_name="gen",
+            environment_name="staging", target_url=env.url_for(scenario.page_path), total=len(rows),
+        )
+        self._work()
+        run.refresh_from_db()
+        self.assertEqual(run.status, TestRun.Status.DONE, run.error_message)
+        self.assertEqual(run.errored, 0, [r.actual_message for r in run.results.filter(verdict="error")])
+        self.assertEqual(run.results.get(description="Бүх талбар зөв").verdict, "pass")
+        self.assertEqual(run.results.get(description="Имэйл хаяг: буруу формат").verdict, "pass")
+        self.assertEqual(run.results.get(description="Нөхцөл зөвшөөрөх: чагтлаагүй").verdict, "pass")
 
     @override_settings(AUTOTEST_ALLOW_PRIVATE_HOSTS=False)
     def test_private_hosts_blocked_by_default(self):

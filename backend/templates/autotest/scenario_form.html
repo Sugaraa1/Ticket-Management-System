@@ -46,6 +46,13 @@
           <button type="button" class="btn btn-outline-primary" id="scanBtn"><i class="bi bi-search"></i> {% trans "Хуудсыг шалгах" %}</button>
           <span id="scanStatus" class="ms-3 small"></span>
         </div>
+        <div class="col-12" id="generateWrap" hidden>
+          <div class="alert alert-light border mb-0 d-flex flex-wrap align-items-center gap-2">
+            <span class="flex-grow-1 small">{% trans "Өгөгдлийн файл байхгүй юу? Олдсон талбаруудаас тестийн өгөгдөл (зөв утга, хоосон, буруу формат, хэт урт, SQL/XSS ...) автоматаар үүсгэж болно." %}</span>
+            <button type="button" class="btn btn-sm btn-outline-success" id="generateBtn"><i class="bi bi-magic"></i> {% trans "Тест өгөгдөл үүсгэх" %}</button>
+          </div>
+          <div id="generateStatus" class="small mt-1"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -142,7 +149,11 @@
     askLabel: "{% trans 'Талбарын нэр (жишээ: Имэйл):' %}",
     askSelector: "{% trans 'CSS selector (жишээ: #email):' %}",
     needFields: "{% trans 'Эхлээд хуудсыг шалгаж талбаруудаа тохируулна уу.' %}",
-    needPath: "{% trans 'Хуудасны замыг оруулна уу.' %}"
+    needPath: "{% trans 'Хуудасны замыг оруулна уу.' %}",
+    generating: "{% trans 'Үүсгэж байна…' %}",
+    generated: "{% trans 'мөртэй файл үүсгэж, талбаруудтай холболоо' %}",
+    checkValid: "{% trans '«Бүх талбар зөв» мөрийн утгууд таны сайтад тохирох эсэхийг (жишээ нь нэвтрэх хуудсанд жинхэнэ хэрэглэгч) шалгаад, шаардлагатай бол файлаа засаад дахин оруулна уу.' %}",
+    openFile: "{% trans 'Файлыг харах' %}"
   };
   var form = document.getElementById("scenarioForm");
   var fieldsInput = form.querySelector("[name=fields_json]");
@@ -154,6 +165,8 @@
   var status = document.getElementById("scanStatus");
   var fields = JSON.parse(fieldsInput.value || "[]");
   var buttons = [];
+  var lastScanId = null;
+
 
   function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; }
 
@@ -244,6 +257,8 @@
           return f;
         });
         buttons = data.buttons;
+        lastScanId = id;
+        document.getElementById("generateWrap").hidden = !fields.length;
         if (!submitSel.value && buttons.length && buttons[0].is_submit) {
           submitSel.value = buttons[0].selector; submitLabel.value = buttons[0].label;
         }
@@ -252,6 +267,38 @@
         status.className = "ms-3 small " + (data.error ? "text-warning" : "text-success");
       });
   }
+
+  // Тест өгөгдөл үүсгэх: сервер файл үүсгээд багана ↔ талбарын холбоосыг буцаана.
+  document.getElementById("generateBtn").addEventListener("click", function () {
+    var out = document.getElementById("generateStatus");
+    var btn = this;
+    var body = new FormData();
+    body.append("csrfmiddlewaretoken", form.querySelector("[name=csrfmiddlewaretoken]").value);
+    body.append("name", document.getElementById("{{ form.name.id_for_label }}").value.trim()
+                || document.getElementById("{{ form.page_path.id_for_label }}").value.trim());
+    btn.disabled = true;
+    out.innerHTML = '<span class="spinner-border spinner-border-sm"></span> ' + esc(T.generating);
+    out.className = "small mt-1 text-muted";
+    fetch("{% url 'autotest:scan_generate' app.pk 0 %}".replace(/\/0\/generate\/$/, "/" + lastScanId + "/generate/"), {method: "POST", body: body})
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.error) throw new Error(data.error);
+        fields.forEach(function (f) {
+          if (data.mapping[f.selector]) { f.source = "column"; f.value = data.mapping[f.selector]; }
+        });
+        var sample = document.getElementById("sampleFile");
+        var o = document.createElement("option");
+        o.value = data.id; o.textContent = data.name + " (" + data.columns.join(", ") + ")";
+        sample.appendChild(o); sample.value = data.id;
+        var list = document.getElementById("column-options");
+        data.columns.forEach(function (c) { var opt = document.createElement("option"); opt.value = c; list.appendChild(opt); });
+        document.getElementById("{{ form.expected_column.id_for_label }}").value = data.expected_column;
+        renderFields();
+        out.innerHTML = "✓ " + data.rows + " " + esc(T.generated) + ' — <a href="' + data.url + '" target="_blank">' + esc(T.openFile) + "</a><br>" + esc(T.checkValid);
+        out.className = "small mt-1 text-success";
+      })
+      .catch(function (err) { out.textContent = err.message; out.className = "small mt-1 text-danger"; btn.disabled = false; });
+  });
 
   document.getElementById("addFieldBtn").addEventListener("click", function () {
     var label = window.prompt(T.askLabel); if (!label) return;

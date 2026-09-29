@@ -217,6 +217,10 @@ def suggest_mapping(fields, columns):
     used = set()
     for field in fields:
         item = dict(field)
+        if field.get("in_main_form") is False:
+            item.update(source="skip", value="")
+            mapped.append(item)
+            continue
         column = suggest_column(field, [c for c in columns if c not in used])
         if column:
             item.update(source="column", value=column)

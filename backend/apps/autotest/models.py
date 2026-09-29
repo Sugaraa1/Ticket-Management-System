@@ -215,7 +215,8 @@ class RunResult(models.Model):
         PASS = "pass", _("Тэнцсэн")
         FAIL = "fail", _("Унасан")
         ERROR = "error", _("Ажиллуулж чадсангүй")
-        RECORDED = "recorded", _("Тэмдэглэсэн")
+        # Файлд хүлээгдэх үр дүн бичээгүй — систем бодит үр дүнг л бичнэ, QA өөрөө дүгнэнэ.
+        RECORDED = "recorded", _("Гараар шалгах")
 
     class Outcome(models.TextChoices):
         SUCCESS = "success", _("амжилттай")

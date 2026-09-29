@@ -28,11 +28,12 @@
 {% if run.status == "queued" %}<div class="alert alert-info d-none" id="workerHint">{% trans "Дараалалд удаж байна — тест ажиллуулагч (worker) асаагүй байж магадгүй. Админ: python manage.py run_autotest_worker" %}</div>{% endif %}
 
 <div class="row g-3 mb-3">
-  <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body"><div class="stat-tile-label">{% trans "Явц" %}</div><div class="stat-tile-value"><span id="statDone">{{ run.done_count }}</span> / <span id="statTotal">{{ run.total }}</span></div>
+  <div class="col-6 col-md"><div class="card h-100"><div class="card-body"><div class="stat-tile-label">{% trans "Явц" %}</div><div class="stat-tile-value"><span id="statDone">{{ run.done_count }}</span> / <span id="statTotal">{{ run.total }}</span></div>
     <div class="progress mt-2" style="height:6px"><div class="progress-bar" id="statBar" style="width: {% widthratio run.done_count run.total|default:1 100 %}%"></div></div></div></div></div>
-  <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body"><div class="stat-tile-label">{% trans "Тэнцсэн" %}</div><div class="stat-tile-value text-success" id="statPassed">{{ run.passed }}</div></div></div></div>
-  <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body"><div class="stat-tile-label">{% trans "Унасан" %}</div><div class="stat-tile-value text-danger" id="statFailed">{{ run.failed }}</div></div></div></div>
-  <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body"><div class="stat-tile-label">{% trans "Ажиллуулж чадаагүй" %}</div><div class="stat-tile-value text-warning" id="statErrored">{{ run.errored }}</div></div></div></div>
+  <div class="col-6 col-md"><div class="card h-100"><div class="card-body"><div class="stat-tile-label">{% trans "Тэнцсэн" %}</div><div class="stat-tile-value text-success" id="statPassed">{{ run.passed }}</div></div></div></div>
+  <div class="col-6 col-md"><div class="card h-100"><div class="card-body"><div class="stat-tile-label">{% trans "Унасан" %}</div><div class="stat-tile-value text-danger" id="statFailed">{{ run.failed }}</div></div></div></div>
+  <div class="col-6 col-md"><div class="card h-100"><div class="card-body"><div class="stat-tile-label">{% trans "Ажиллуулж чадаагүй" %}</div><div class="stat-tile-value text-warning" id="statErrored">{{ run.errored }}</div></div></div></div>
+  <div class="col-6 col-md"><div class="card h-100"><div class="card-body"><div class="stat-tile-label">{% trans "Гараар шалгах" %}</div><div class="stat-tile-value text-secondary" id="statRecorded">{{ run.recorded }}</div></div></div></div>
 </div>
 
 <div class="card">
@@ -40,12 +41,39 @@
     <div class="btn-group btn-group-sm">
       <a href="?" class="btn {% if not show %}btn-primary{% else %}btn-outline-secondary{% endif %}">{% trans "Бүгд" %}</a>
       <a href="?show=failed" class="btn {% if show == 'failed' %}btn-primary{% else %}btn-outline-secondary{% endif %}">{% trans "Зөвхөн унасан" %}</a>
+      {% if run.recorded %}<a href="?show=review" class="btn {% if show == 'review' %}btn-primary{% else %}btn-outline-secondary{% endif %}">{% trans "Гараар шалгах" %} ({{ run.recorded }})</a>{% endif %}
     </div>
     {% if can_edit %}
     <button type="button" class="btn btn-sm btn-danger" id="bugTicketBtn" disabled><i class="bi bi-bug"></i> {% trans "Сонгосноос bug ticket үүсгэх" %} <span class="badge text-bg-light" id="selectedCount">0</span></button>
     {% endif %}
   </div>
+  <details class="border-bottom px-3 py-2 small tms-verdict-help">
+    <summary class="text-muted"><i class="bi bi-question-circle"></i> {% trans "Дүн юу гэсэн үг вэ?" %}</summary>
+    <dl class="row mb-0 mt-2">
+      <dt class="col-sm-3"><span class="verdict-pill verdict-pass">✓ {% trans "Тэнцсэн" %}</span></dt>
+      <dd class="col-sm-9">{% trans "Сайтын хариу файлд бичсэн хүлээгдэх үр дүнтэй таарсан. Асуудалгүй." %}</dd>
+      <dt class="col-sm-3"><span class="verdict-pill verdict-fail">✗ {% trans "Унасан" %}</span></dt>
+      <dd class="col-sm-9">{% trans "Хүлээгдэх үр дүнтэй таараагүй — bug байж болзошгүй. Дэлгэцийн зургийг хараад bug ticket үүсгэнэ үү." %}</dd>
+      <dt class="col-sm-3"><span class="verdict-pill verdict-error">! {% trans "Ажиллуулж чадсангүй" %}</span></dt>
+      <dd class="col-sm-9">{% trans "Тест өөрөө гүйцэж чадаагүй (талбар, товч олдоогүй, хуудас нээгдээгүй). Сценарийн тохиргоог шалгана уу." %}</dd>
+      <dt class="col-sm-3"><span class="verdict-pill verdict-recorded">{% trans "Гараар шалгах" %}</span></dt>
+      <dd class="col-sm-9">{% trans "Файлын «хүлээгдэх» нүд хоосон тул систем дүгнээгүй, зөвхөн сайт юу хариулсныг бичсэн. «Бодит үр дүн»-г хараад та өөрөө шийднэ: жишээ нь XSS мөрөнд script ажилласан, эсвэл 500 алдаа гарсан бол bug; сайт утгыг татгалзсан бол зөв. Дараагийн удаа автоматаар шалгуулах бол файлдаа хүлээгдэх үр дүнг бичээрэй." %}</dd>
+    </dl>
+  </details>
   <div id="resultsContainer">{% include "autotest/_results_table.html" %}</div>
+</div>
+
+<div class="modal fade" id="screenshotModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title" id="screenshotCaption"></h6>
+        <a id="screenshotOpen" href="#" target="_blank" class="btn btn-sm btn-link ms-auto">{% trans "Шинэ цонхонд нээх" %}</a>
+        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="{% trans "Хаах" %}"></button>
+      </div>
+      <div class="modal-body p-0 text-center"><img id="screenshotImg" class="img-fluid" alt=""></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -65,6 +93,16 @@
     }
     refreshButton();
   });
+  // Дэлгэцийн зургийг хуудсаа орхилгүйгээр цонхонд харуулна.
+  container.addEventListener("click", function (e) {
+    var link = e.target.closest(".js-screenshot");
+    if (!link) return;
+    e.preventDefault();
+    document.getElementById("screenshotImg").src = link.href;
+    document.getElementById("screenshotOpen").href = link.href;
+    document.getElementById("screenshotCaption").textContent = link.dataset.caption;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById("screenshotModal")).show();
+  });
   if (btn) btn.addEventListener("click", function () {
     window.location = "{% url 'autotest:bug_ticket' run.pk %}?ids=" + selected().join(",");
   });
@@ -77,7 +115,7 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d.active) { window.location.reload(); return; }
-        ["done", "total", "passed", "failed", "errored"].forEach(function (k) {
+        ["done", "total", "passed", "failed", "errored", "recorded"].forEach(function (k) {
           document.getElementById("stat" + k.charAt(0).toUpperCase() + k.slice(1)).textContent = d[k];
         });
         document.getElementById("statBar").style.width = (d.total ? d.done * 100 / d.total : 0) + "%";

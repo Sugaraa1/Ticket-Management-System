@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.contrib import messages
@@ -15,7 +16,7 @@ from apps.core.decorators import roles_required
 from apps.tickets.forms import TicketForm
 from apps.tickets.models import Attachment, Ticket
 from apps.tickets.notifications import notify_ticket_routed
-from apps.tickets.permissions import ROLE_ADMIN, ROLE_DEV, ROLE_PM, ROLE_QA, user_roles
+from apps.tickets.permissions import AUTOTEST_ROLES, user_roles
 from apps.tickets.views import _modules_by_project, _subcategories_by_category
 
 from . import exports
@@ -25,9 +26,8 @@ from .forms import (
 )
 from .models import DataFile, Environment, PageScan, RunResult, Scenario, TestApp, TestRun
 
-VIEW_ROLES = (ROLE_ADMIN, ROLE_PM, ROLE_QA, ROLE_DEV)
-EDIT_ROLES = (ROLE_ADMIN, ROLE_PM, ROLE_QA)
-APP_ROLES = (ROLE_ADMIN, ROLE_PM, ROLE_QA)
+# Автомат тестийг зөвхөн QA, Admin ашиглана (Dev bug ticket-ээр үр дүнг, зургийг авна).
+VIEW_ROLES = EDIT_ROLES = APP_ROLES = AUTOTEST_ROLES
 PREVIEW_ROWS = 10
 
 
@@ -317,6 +317,33 @@ def scan_status(request, pk):
     return JsonResponse(data)
 
 
+@roles_required(*EDIT_ROLES)
+@require_POST
+def scan_generate(request, pk, scan_pk):
+    """Шалгасан хуудасны талбаруудаас тестийн өгөгдлийн файл үүсгэж, багана ↔ талбарын холбоосыг буцаана."""
+    from . import generator
+
+    app = get_object_or_404(TestApp, pk=pk)
+    scan = get_object_or_404(PageScan, pk=scan_pk, requested_by=request.user, status=PageScan.Status.DONE)
+    columns, rows, mapping = generator.generate(scan.result.get("fields", []))
+    if not mapping:
+        return JsonResponse({"error": _("Өгөгдөл үүсгэх талбар олдсонгүй.")}, status=400)
+    base = (request.POST.get("name") or "").strip() or urlsplit(scan.url).path or scan.url
+    name = _("%(name)s — автомат өгөгдөл") % {"name": base[:100]}
+    data_file = DataFile(project=app.project, name=name[:150], columns=columns, row_count=len(rows),
+                         uploaded_by=request.user)
+    data_file.file.save("generated.xlsx", ContentFile(generator.to_xlsx(columns, rows)), save=True)
+    return JsonResponse({
+        "id": data_file.pk,
+        "name": data_file.name,
+        "columns": columns,
+        "rows": len(rows),
+        "mapping": mapping,
+        "expected_column": generator.EXPECTED_COLUMN,
+        "url": reverse("autotest:datafile_detail", args=[data_file.pk]),
+    })
+
+
 # --- Ажиллуулалт ----------------------------------------------------------
 
 @roles_required(*EDIT_ROLES)
@@ -349,6 +376,8 @@ def _run_results(request, run):
     show = request.GET.get("show", "")
     if show == "failed":
         results = results.filter(verdict__in=[RunResult.Verdict.FAIL, RunResult.Verdict.ERROR])
+    elif show == "review":
+        results = results.filter(verdict=RunResult.Verdict.RECORDED)
     return results, show
 
 
@@ -377,6 +406,7 @@ def run_status(request, pk):
         "passed": run.passed,
         "failed": run.failed,
         "errored": run.errored,
+        "recorded": run.recorded,
         "html": render_to_string(
             "autotest/_results_table.html",
             {"run": run, "results": results, "can_edit": _can_edit(request.user)},

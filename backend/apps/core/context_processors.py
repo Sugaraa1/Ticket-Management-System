@@ -6,14 +6,14 @@ def user_roles_context(request):
     if not getattr(request, "user", None) or not request.user.is_authenticated:
         return {}
 
-    from apps.tickets.permissions import ROLE_ADMIN, ROLE_DEV, ROLE_PM, ROLE_QA, has_global_reports, user_roles
+    from apps.tickets.permissions import AUTOTEST_ROLES, ROLE_ADMIN, ROLE_PM, has_global_reports, user_roles
 
     roles = user_roles(request.user)
     return {
         "can_manage_catalog": bool(roles & {ROLE_PM, ROLE_ADMIN}),
         "is_admin": ROLE_ADMIN in roles,
         "can_view_dashboard": has_global_reports(request.user),
-        "can_view_autotest": bool(roles & {ROLE_ADMIN, ROLE_PM, ROLE_QA, ROLE_DEV}),
+        "can_view_autotest": bool(roles & set(AUTOTEST_ROLES)),
     }
 
 

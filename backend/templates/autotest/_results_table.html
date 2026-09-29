@@ -14,21 +14,21 @@
         <td class="text-muted">{{ r.row_number }}</td>
         <td>
           <div class="fw-medium">{{ r.description|default:"—" }}</div>
-          <div class="small text-muted tms-result-inputs">{% for k, v in r.input_data.items %}{% if k|lower != "тайлбар" and k|lower != "description" %}<span class="me-2">{{ k }}=<code>{{ v|default:"∅" }}</code></span>{% endif %}{% endfor %}</div>
+          <div class="small text-muted tms-result-inputs">{% for k, v in r.input_data.items %}{% if k|lower != "тайлбар" and k|lower != "description" and k != run.scenario.expected_column and k != run.scenario.expected_message_column %}<span class="me-2">{{ k }}=<code title="{{ v }}">{{ v|default:"∅"|truncatechars:40 }}</code></span>{% endif %}{% endfor %}</div>
         </td>
         <td class="small">
           {% if r.expected_outcome %}<b>{{ r.get_expected_outcome_display }}</b>{% endif %}
           {% if r.expected_message %}<div class="text-muted">“{{ r.expected_message }}”</div>{% endif %}
-          {% if not r.expected_outcome and not r.expected_message %}<span class="text-muted">—</span>{% endif %}
+          {% if not r.expected_outcome and not r.expected_message %}<span class="text-muted fst-italic" title="{% trans "Файлын «хүлээгдэх» нүд хоосон — систем дүгнэхгүй, та өөрөө шалгана." %}">{% trans "заагаагүй" %} <i class="bi bi-info-circle"></i></span>{% endif %}
         </td>
         <td class="small">
           {% if r.actual_outcome %}<b>{{ r.get_actual_outcome_display }}</b>{% endif %}
           {% if r.actual_message %}<div class="text-muted tms-result-message">{{ r.actual_message|truncatechars:240 }}</div>{% endif %}
         </td>
-        <td><span class="verdict-pill verdict-{{ r.verdict }}">{% if r.verdict == "pass" %}✓{% elif r.verdict == "fail" %}✗{% elif r.verdict == "error" %}!{% endif %} {{ r.get_verdict_display }}</span></td>
+        <td><span class="verdict-pill verdict-{{ r.verdict }}">{% if r.verdict == "pass" %}✓{% elif r.verdict == "fail" %}✗{% elif r.verdict == "error" %}!{% else %}<i class="bi bi-eye"></i>{% endif %} {{ r.get_verdict_display }}</span></td>
         <td class="text-end small text-muted">{{ r.duration_ms }}</td>
         <td class="text-nowrap text-end">
-          {% if r.screenshot %}<a href="{% url 'autotest:result_screenshot' r.pk %}" target="_blank" class="btn btn-sm tms-icon-btn" title="{% trans "Дэлгэцийн зураг" %}"><i class="bi bi-image"></i></a>{% endif %}
+          {% if r.screenshot %}<a href="{% url 'autotest:result_screenshot' r.pk %}" class="btn btn-sm tms-icon-btn js-screenshot" data-caption="{{ r.row_number }}. {{ r.description }}" title="{% trans "Дэлгэцийн зураг" %}"><i class="bi bi-image"></i></a>{% endif %}
           {% if r.ticket %}<a href="{% url 'tickets:ticket_detail' r.ticket.pk %}" class="badge text-bg-light border text-decoration-none" title="{{ r.ticket.title }}">{{ r.ticket.code }}</a>{% endif %}
         </td>
       </tr>
