@@ -42,11 +42,11 @@ def template_response():
     sheet = workbook.active
     sheet.title = _("Өгөгдөл")
     rows = [
-        ["Тайлбар", "email", "password", "phone", "хүлээгдэх"],
-        ["Зөв бүртгэл", "test{{random}}@mail.mn", "Pass123!", "99112233", "амжилттай"],
-        ["Буруу имэйл", "bat@@mail", "Pass123!", "99112233", "алдаа"],
-        ["Богино нууц үг", "bold{{random}}@mail.mn", "12", "99112233", "алдаа: нууц үг"],
-        ["Утас хоосон", "dorj{{random}}@mail.mn", "Pass123!", "", "алдаа"],
+        [_("Тайлбар"), "email", "password", "phone", _("хүлээгдэх")],
+        [_("Зөв бүртгэл"), "test{{random}}@mail.mn", "Pass123!", "99112233", _("амжилттай")],
+        [_("Буруу имэйл"), "bat@@mail", "Pass123!", "99112233", _("алдаа")],
+        [_("Богино нууц үг"), "bold{{random}}@mail.mn", "12", "99112233", _("алдаа: нууц үг")],
+        [_("Утас хоосон"), "dorj{{random}}@mail.mn", "Pass123!", "", _("алдаа")],
     ]
     for row in rows:
         sheet.append(row)

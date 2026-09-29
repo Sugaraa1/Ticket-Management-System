@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Ticket Management System\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-25 17:17+0800\n"
+"POT-Creation-Date: 2026-09-29 11:34+0800\n"
 "PO-Revision-Date: 2026-09-23 12:13+0800\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -16,7 +16,9 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: apps/accounts/forms.py:17 apps/accounts/forms.py:68
-#: apps/categories/forms.py:16 apps/projects/forms.py:16
+#: apps/autotest/models.py:25 apps/autotest/models.py:64
+#: apps/autotest/models.py:86 apps/categories/forms.py:16
+#: apps/projects/forms.py:16 templates/autotest/datafile_list.html:17
 #: templates/projects/project_list.html:15
 msgid "Нэр"
 msgstr "Name"
@@ -87,6 +89,49 @@ msgstr "Profile picture"
 msgid "Зургийн хэмжээ %(max)sMB-аас хэтэрсэн байна."
 msgstr "The image is larger than %(max)sMB."
 
+#: apps/accounts/login_throttle.py:32
+#, python-format
+msgid ""
+"Олон удаа буруу оролдсон тул %(minutes)s минутын дараа дахин оролдоно уу."
+msgstr "Too many failed attempts. Please try again in %(minutes)s minutes."
+
+#: apps/accounts/password_validation.py:11
+#, python-format
+msgid "Нууц үг хэт богино байна. Дор хаяж %(min_length)s тэмдэгт байх ёстой."
+msgstr ""
+"The password is too short. It must contain at least %(min_length)s "
+"characters."
+
+#: apps/accounts/password_validation.py:16
+#, python-format
+msgid "Нууц үг дор хаяж %(min_length)s тэмдэгт байна."
+msgstr "The password must contain at least %(min_length)s characters."
+
+#: apps/accounts/password_validation.py:21
+#, python-format
+msgid "Нууц үг таны %(verbose_name)s-тэй хэт төстэй байна."
+msgstr "The password is too similar to your %(verbose_name)s."
+
+#: apps/accounts/password_validation.py:24
+msgid ""
+"Нууц үг таны нэр, и-мэйл зэрэг хувийн мэдээлэлтэй төстэй байж болохгүй."
+msgstr ""
+"Your password can’t be too similar to your personal information, such as "
+"your name or email."
+
+#: apps/accounts/password_validation.py:29
+msgid "Энэ нууц үг хэт түгээмэл байна."
+msgstr "This password is too common."
+
+#: apps/accounts/password_validation.py:32
+msgid "Түгээмэл хэрэглэгддэг нууц үг байж болохгүй."
+msgstr "Your password can’t be a commonly used password."
+
+#: apps/accounts/password_validation.py:37
+#: apps/accounts/password_validation.py:40
+msgid "Нууц үг зөвхөн тооноос бүрдэж болохгүй."
+msgstr "Your password can’t be entirely numeric."
+
 #: apps/accounts/views.py:20
 msgid "Нэр, username эсвэл и-мэйлээр хайх"
 msgstr "Search by name, username or email"
@@ -96,7 +141,8 @@ msgid "Эрх"
 msgstr "Role"
 
 #: apps/accounts/views.py:24 apps/projects/views.py:26
-#: apps/tickets/views.py:206 templates/accounts/user_list.html:15
+#: apps/tickets/views.py:217 templates/accounts/user_list.html:15
+#: templates/autotest/_runs_table.html:9
 #: templates/tickets/_mini_ticket_table.html:6
 #: templates/tickets/ticket_list.html:28 templates/tickets/ticket_list.html:95
 #: templates/tickets/ticket_list.html:184
@@ -117,8 +163,8 @@ msgstr "Active"
 msgid "Идэвхгүй"
 msgstr "Inactive"
 
-#: apps/accounts/views.py:30 apps/categories/views.py:30
-#: apps/categories/views.py:157 apps/projects/views.py:32
+#: apps/accounts/views.py:30 apps/categories/views.py:31
+#: apps/categories/views.py:207 apps/projects/views.py:32
 #: templates/categories/team_detail.html:82
 msgid "Нэрээр (А-Я)"
 msgstr "Name (A–Z)"
@@ -203,10 +249,579 @@ msgstr "Profile picture removed."
 msgid "Профайлын зураг шинэчлэгдлээ."
 msgstr "Profile picture updated."
 
+#: apps/autotest/datafiles.py:34
+msgid "Зөвхөн .xlsx эсвэл .csv файл оруулна уу."
+msgstr "Please upload an .xlsx or .csv file only."
+
+#: apps/autotest/datafiles.py:38
+msgid "Файл хоосон байна."
+msgstr "The file is empty."
+
+#: apps/autotest/datafiles.py:44
+msgid "Эхний мөрөнд баганын нэрс байх ёстой."
+msgstr "The first row must contain the column names."
+
+#: apps/autotest/datafiles.py:47
+#, python-format
+msgid "%(n)s-р баганын нэр хоосон байна."
+msgstr "Column %(n)s has an empty name."
+
+#: apps/autotest/datafiles.py:50
+#, python-format
+msgid "Давхардсан баганын нэр: %(cols)s"
+msgstr "Duplicate column names: %(cols)s"
+
+#: apps/autotest/datafiles.py:60
+msgid "Файлд өгөгдлийн мөр алга (зөвхөн гарчгийн мөр байна)."
+msgstr "The file has no data rows (only the header row)."
+
+#: apps/autotest/datafiles.py:63
+#, python-format
+msgid "Файлд %(n)s мөр байна — нэг файлд хамгийн ихдээ %(max)s мөр байна."
+msgstr "The file has %(n)s rows — a file can have at most %(max)s rows."
+
+#: apps/autotest/datafiles.py:75
+msgid "Excel файлыг уншиж чадсангүй. Файл эвдэрсэн эсэхийг шалгана уу."
+msgstr "Could not read the Excel file. Please check whether it is corrupted."
+
+#: apps/autotest/datafiles.py:93
+msgid "CSV файлын кодчлолыг таньсангүй. UTF-8-аар хадгална уу."
+msgstr "Could not detect the CSV file encoding. Please save it as UTF-8."
+
+#: apps/autotest/exports.py:43
+msgid "Өгөгдөл"
+msgstr "Data"
+
+#: apps/autotest/exports.py:45 apps/autotest/models.py:26
 #: apps/categories/forms.py:16 apps/projects/forms.py:16
-#: apps/tickets/forms.py:64
+#: apps/tickets/forms.py:96 templates/tickets/ticket_detail.html:152
 msgid "Тайлбар"
 msgstr "Description"
+
+#: apps/autotest/exports.py:45
+msgid "хүлээгдэх"
+msgstr "expected"
+
+#: apps/autotest/exports.py:46
+msgid "Зөв бүртгэл"
+msgstr "Valid sign-up"
+
+#: apps/autotest/exports.py:46 apps/autotest/models.py:196
+msgid "амжилттай"
+msgstr "success"
+
+#: apps/autotest/exports.py:47
+msgid "Буруу имэйл"
+msgstr "Invalid email"
+
+#: apps/autotest/exports.py:47 apps/autotest/exports.py:49
+#: apps/autotest/models.py:197
+msgid "алдаа"
+msgstr "error"
+
+#: apps/autotest/exports.py:48
+msgid "Богино нууц үг"
+msgstr "Short password"
+
+#: apps/autotest/exports.py:48
+msgid "алдаа: нууц үг"
+msgstr "error: password"
+
+#: apps/autotest/exports.py:49
+msgid "Утас хоосон"
+msgstr "Empty phone"
+
+#: apps/autotest/exports.py:57
+msgid "Заавар"
+msgstr "Instructions"
+
+#: apps/autotest/exports.py:59
+msgid "Файлыг хэрхэн бөглөх вэ"
+msgstr "How to fill in the file"
+
+#: apps/autotest/exports.py:61
+msgid ""
+"1. Эхний мөрөнд баганын нэрс байна. Нэрийг хүссэнээрээ өгч болно — сценари "
+"тохируулахдаа талбартай холбоно."
+msgstr ""
+"1. The first row holds the column names. Name them as you like — you map "
+"them to fields when setting up a scenario."
+
+#: apps/autotest/exports.py:62
+msgid "2. Мөр бүр нэг тест. Хоосон мөрийг алгасна."
+msgstr "2. Each row is one test. Empty rows are skipped."
+
+#: apps/autotest/exports.py:63
+msgid ""
+"3. 'хүлээгдэх' баганад: амжилттай / алдаа, эсвэл 'алдаа: мессежийн хэсэг' "
+"гэж бичнэ."
+msgstr ""
+"3. In the 'expected' column write: success / error, or 'error: part of the "
+"message'."
+
+#: apps/autotest/exports.py:64
+msgid "   Мессеж бичвэл хуудсан дээр тэр текст гарсан эсэхийг бас шалгана."
+msgstr ""
+"   If you give a message, it also checks that this text appeared on the "
+"page."
+
+#: apps/autotest/exports.py:65
+msgid ""
+"4. {{random}} — мөр бүрт шинэ санамсаргүй тэмдэгт (давхардахгүй имэйл "
+"үүсгэхэд)."
+msgstr ""
+"4. {{random}} — new random characters for each row (to create unique "
+"emails)."
+
+#: apps/autotest/exports.py:66
+msgid "   {{row}} — мөрийн дугаар, {{timestamp}} — одоогийн цаг."
+msgstr "   {{row}} — the row number, {{timestamp}} — the current time."
+
+#: apps/autotest/exports.py:67
+msgid "5. 'Тайлбар' багана байвал үр дүнд тестийн нэр болж харагдана."
+msgstr ""
+"5. If there is a 'Description' column, it is shown as the test name in the "
+"results."
+
+#: apps/autotest/exports.py:68
+msgid ""
+"6. Нэг файлыг олон сценарид (бүртгэл, нэвтрэх ...) дахин ашиглаж болно."
+msgstr "6. One file can be reused across many scenarios (sign-up, login ...)."
+
+#: apps/autotest/exports.py:79 templates/autotest/_runs_table.html:8
+msgid "Үр дүн"
+msgstr "Result"
+
+#: apps/autotest/exports.py:85 templates/autotest/_results_table.html:7
+#: templates/autotest/datafile_detail.html:21
+#: templates/autotest/datafile_list.html:17
+msgid "Мөр"
+msgstr "Row"
+
+#: apps/autotest/exports.py:85 templates/autotest/_results_table.html:7
+msgid "Бодит үр дүн"
+msgstr "Actual result"
+
+#: apps/autotest/exports.py:85
+msgid "Бодит мессеж"
+msgstr "Actual message"
+
+#: apps/autotest/exports.py:85 templates/autotest/_results_table.html:7
+msgid "Дүн"
+msgstr "Verdict"
+
+#: apps/autotest/exports.py:85
+msgid "Хугацаа (ms)"
+msgstr "Duration (ms)"
+
+#: apps/autotest/exports.py:85
+msgid "Эцсийн хаяг"
+msgstr "Final URL"
+
+#: apps/autotest/forms.py:23
+msgid "Жишээ: Дэлгүүрийн вэб"
+msgstr "e.g. Shop website"
+
+#: apps/autotest/forms.py:26 apps/autotest/forms.py:80
+#: apps/tickets/forms.py:100 templates/autotest/datafile_list.html:17
+#: templates/base.html:68
+msgid "Төсөл"
+msgstr "Project"
+
+#: apps/autotest/forms.py:38
+msgid "Энэ төсөлд ийм нэртэй апп бүртгэлтэй байна."
+msgstr "An app with this name already exists in this project."
+
+#: apps/autotest/forms.py:58
+msgid "Ийм нэртэй орчин бүртгэлтэй байна."
+msgstr "An environment with this name already exists."
+
+#: apps/autotest/forms.py:64 apps/tickets/forms.py:17
+#, python-format
+msgid "Файлын хэмжээ %(max)sMB-аас хэтэрсэн байна."
+msgstr "File exceeds the %(max)sMB limit."
+
+#: apps/autotest/forms.py:77
+msgid "Жишээ: Хэрэглэгчид v1"
+msgstr "e.g. Users v1"
+
+#: apps/autotest/forms.py:80
+msgid "Файл (.xlsx / .csv)"
+msgstr "File (.xlsx / .csv)"
+
+#: apps/autotest/forms.py:86
+msgid "Хоосон орхивол файлын нэрийг авна."
+msgstr "If left empty, the file name is used."
+
+#: apps/autotest/forms.py:106
+msgid "Шинэ файл"
+msgstr "New file"
+
+#: apps/autotest/forms.py:132
+msgid "Жишээ: /welcome эсвэл Амжилттай"
+msgstr "e.g. /welcome or Success"
+
+#: apps/autotest/forms.py:147 apps/autotest/forms.py:149
+#: apps/autotest/forms.py:155
+msgid "Талбарын тохиргоо буруу байна. Хуудсыг дахин шалгана уу."
+msgstr "The field configuration is invalid. Please scan the page again."
+
+#: apps/autotest/forms.py:159
+#, python-format
+msgid "'%(label)s' талбарт багана сонгоогүй байна."
+msgstr "No column selected for the '%(label)s' field."
+
+#: apps/autotest/forms.py:174
+msgid "Дор хаяж нэг талбарыг бөглөхөөр тохируулна уу."
+msgstr "Configure at least one field to be filled in."
+
+#: apps/autotest/forms.py:180
+msgid "Нөхцөлийн текстийг бичнэ үү."
+msgstr "Please enter the condition text."
+
+#: apps/autotest/forms.py:193
+msgid "Өгөгдлийн файл"
+msgstr "Data file"
+
+#: apps/autotest/forms.py:197 apps/autotest/models.py:43
+#: templates/autotest/_runs_table.html:8
+msgid "Орчин"
+msgstr "Environment"
+
+#: apps/autotest/forms.py:214 apps/autotest/views.py:408
+#, python-format
+msgid "Энэ файлд сценарид хэрэгтэй багана алга: %(cols)s"
+msgstr "This file is missing columns the scenario needs: %(cols)s"
+
+#: apps/autotest/management/commands/run_autotest_worker.py:78
+msgid "Worker дахин эхэлсэн тул ажиллуулалт тасарсан. Дахин ажиллуулна уу."
+msgstr ""
+"The run was interrupted because the worker restarted. Please run it again."
+
+#: apps/autotest/models.py:43
+msgid "Жишээ: dev, staging"
+msgstr "e.g. dev, staging"
+
+#: apps/autotest/models.py:44
+msgid "Үндсэн хаяг"
+msgstr "Base URL"
+
+#: apps/autotest/models.py:44
+msgid "Жишээ: https://staging.shop.mn"
+msgstr "e.g. https://staging.shop.mn"
+
+#: apps/autotest/models.py:81
+msgid "Автоматаар (хуудас шилжсэн, алдааны мессеж гараагүй)"
+msgstr "Automatic (page changed, no error message shown)"
+
+#: apps/autotest/models.py:82
+msgid "Хаяг (URL) нь дараах текстийг агуулсан"
+msgstr "URL contains the following text"
+
+#: apps/autotest/models.py:83
+msgid "Хуудсанд дараах текст гарсан"
+msgstr "Page shows the following text"
+
+#: apps/autotest/models.py:86
+msgid "Жишээ: Бүртгүүлэх, Нэвтрэх"
+msgstr "e.g. Sign up, Log in"
+
+#: apps/autotest/models.py:88 templates/autotest/scenario_form.html:27
+msgid "Хуудас"
+msgstr "Page"
+
+#: apps/autotest/models.py:88
+msgid "Орчны үндсэн хаягаас хойших зам. Жишээ: /register"
+msgstr "Path after the environment base URL. e.g. /register"
+
+#: apps/autotest/models.py:95
+msgid "Амжилттай гэж үзэх нөхцөл"
+msgstr "Success condition"
+
+#: apps/autotest/models.py:97
+msgid "Нөхцөлийн текст"
+msgstr "Condition text"
+
+#: apps/autotest/models.py:99
+msgid "Алдааны мессежийн элемент"
+msgstr "Error message element"
+
+#: apps/autotest/models.py:100
+msgid ""
+"Хоосон бол түгээмэл алдааны элементүүдийг (.error, [role=alert] ...) "
+"автоматаар хайна."
+msgstr ""
+"If empty, common error elements (.error, [role=alert] ...) are detected "
+"automatically."
+
+#: apps/autotest/models.py:103
+msgid "Хүлээгдэх үр дүнгийн багана"
+msgstr "Expected result column"
+
+#: apps/autotest/models.py:104
+msgid ""
+"'амжилттай' / 'алдаа' эсвэл 'алдаа: мессеж' гэж бичсэн багана. Хоосон бол "
+"зөвхөн тэмдэглэнэ."
+msgstr ""
+"Column containing 'success' / 'error' or 'error: message'. If empty, results"
+" are only recorded."
+
+#: apps/autotest/models.py:107
+msgid "Хүлээгдэх мессежийн багана"
+msgstr "Expected message column"
+
+#: apps/autotest/models.py:139 apps/autotest/models.py:225
+#: templates/autotest/_run_status.html:1
+msgid "Дараалалд"
+msgstr "Queued"
+
+#: apps/autotest/models.py:140 templates/autotest/_run_status.html:1
+msgid "Ажиллаж байна"
+msgstr "Running"
+
+#: apps/autotest/models.py:141 apps/autotest/models.py:226
+msgid "Дууссан"
+msgstr "Finished"
+
+#: apps/autotest/models.py:142
+msgid "Алдаатай зогссон"
+msgstr "Stopped with error"
+
+#: apps/autotest/models.py:143
+msgid "Цуцлагдсан"
+msgstr "Cancelled"
+
+#: apps/autotest/models.py:190 templates/autotest/run_detail.html:33
+msgid "Тэнцсэн"
+msgstr "Passed"
+
+#: apps/autotest/models.py:191 templates/autotest/run_detail.html:34
+msgid "Унасан"
+msgstr "Failed"
+
+#: apps/autotest/models.py:192
+msgid "Ажиллуулж чадсангүй"
+msgstr "Could not run"
+
+#: apps/autotest/models.py:193
+msgid "Тэмдэглэсэн"
+msgstr "Recorded"
+
+#: apps/autotest/models.py:198
+msgid "тодорхойгүй"
+msgstr "unknown"
+
+#: apps/autotest/models.py:227
+msgid "Алдаатай"
+msgstr "Error"
+
+#: apps/autotest/runner.py:154
+msgid "Энэ хуудсанд бөглөх талбар олдсонгүй."
+msgstr "No fillable fields were found on this page."
+
+#: apps/autotest/runner.py:159
+#, python-format
+msgid "Хуудсыг нээж чадсангүй: %(err)s"
+msgstr "Could not open the page: %(err)s"
+
+#: apps/autotest/runner.py:269
+msgid "Өгөгдлийн файл устгагдсан байна."
+msgstr "The data file has been deleted."
+
+#: apps/autotest/runner.py:274
+msgid "Өгөгдлийн файл серверээс олдсонгүй."
+msgstr "The data file was not found on the server."
+
+#: apps/autotest/runner.py:277
+#, python-format
+msgid "Файлд дараах багана алга: %(cols)s"
+msgstr "The file is missing these columns: %(cols)s"
+
+#: apps/autotest/runner.py:349
+#, python-format
+msgid "'%(label)s' талбарыг бөглөж чадсангүй: %(err)s"
+msgstr "Could not fill the '%(label)s' field: %(err)s"
+
+#: apps/autotest/runner.py:388
+msgid "илгээх"
+msgstr "submit"
+
+#: apps/autotest/runner.py:389
+#, python-format
+msgid "'%(label)s' товчийг дарж чадсангүй: %(err)s"
+msgstr "Could not click the '%(label)s' button: %(err)s"
+
+#: apps/autotest/runner.py:488
+msgid "хугацаа хэтэрлээ (элемент олдсонгүй эсвэл хуудас хариу өгсөнгүй)"
+msgstr "timed out (element not found or the page did not respond)"
+
+#: apps/autotest/safety.py:22
+msgid "Зөвхөн http:// эсвэл https:// хаяг зөвшөөрөгдөнө."
+msgstr "Only http:// or https:// URLs are allowed."
+
+#: apps/autotest/safety.py:26
+#, python-format
+msgid "'%(host)s' хаягийг олсонгүй (DNS)."
+msgstr "Could not resolve '%(host)s' (DNS)."
+
+#: apps/autotest/safety.py:32
+msgid "Энэ хаяг руу тест илгээх боломжгүй."
+msgstr "Tests cannot be sent to this address."
+
+#: apps/autotest/safety.py:35
+#, python-format
+msgid ""
+"Дотоод сүлжээний хаяг (%(ip)s) руу тест илгээхийг зөвшөөрөөгүй байна. Админ "
+"AUTOTEST_ALLOW_PRIVATE_HOSTS тохиргоог асааж болно."
+msgstr ""
+"Testing against a private network address (%(ip)s) is not allowed. An admin "
+"can enable the AUTOTEST_ALLOW_PRIVATE_HOSTS setting."
+
+#: apps/autotest/views.py:71
+#, python-format
+msgid "'%(name)s' апп бүртгэгдлээ. Одоо орчны хаягаа нэмнэ үү."
+msgstr "App '%(name)s' was registered. Now add an environment URL."
+
+#: apps/autotest/views.py:83 apps/core/decorators.py:26
+#: apps/tickets/views.py:482
+msgid "Танд энэ хуудсанд хандах эрх байхгүй."
+msgstr "You do not have permission to access this page."
+
+#: apps/autotest/views.py:87
+#, python-format
+msgid "'%(name)s' шинэчлэгдлээ."
+msgstr "'%(name)s' was updated."
+
+#: apps/autotest/views.py:107
+#, python-format
+msgid "'%(name)s' апп тест, үр дүнгийн хамт устгагдлаа."
+msgstr "App '%(name)s' was deleted together with its tests and results."
+
+#: apps/autotest/views.py:120
+#, python-format
+msgid "'%(name)s' орчин нэмэгдлээ."
+msgstr "Environment '%(name)s' was added."
+
+#: apps/autotest/views.py:131
+#, python-format
+msgid "'%(name)s' орчин устгагдлаа."
+msgstr "Environment '%(name)s' was deleted."
+
+#: apps/autotest/views.py:152
+#, python-format
+msgid "'%(name)s' файл орлоо: %(rows)s мөр, %(cols)s багана."
+msgstr "File '%(name)s' uploaded: %(rows)s rows, %(cols)s columns."
+
+#: apps/autotest/views.py:170
+msgid "Файл серверээс олдсонгүй."
+msgstr "File not found on the server."
+
+#: apps/autotest/views.py:198
+#, python-format
+msgid "Файл шинэчлэгдлээ: %(rows)s мөр."
+msgstr "File updated: %(rows)s rows."
+
+#: apps/autotest/views.py:211
+#, python-format
+msgid "'%(name)s' файл устгагдлаа."
+msgstr "File '%(name)s' was deleted."
+
+#: apps/autotest/views.py:221 apps/autotest/views.py:428
+#: apps/tickets/views.py:532
+msgid "Файл олдсонгүй."
+msgstr "File not found."
+
+#: apps/autotest/views.py:253
+#, python-format
+msgid "'%(name)s' сценари хадгалагдлаа. Одоо ажиллуулж болно."
+msgstr "Scenario '%(name)s' was saved. You can run it now."
+
+#: apps/autotest/views.py:264
+#, python-format
+msgid "'%(name)s' сценари шинэчлэгдлээ."
+msgstr "Scenario '%(name)s' was updated."
+
+#: apps/autotest/views.py:287
+#, python-format
+msgid "'%(name)s' сценари устгагдлаа."
+msgstr "Scenario '%(name)s' was deleted."
+
+#: apps/autotest/views.py:300
+msgid "Орчин болон хуудасны замыг оруулна уу."
+msgstr "Please enter the environment and the page path."
+
+#: apps/autotest/views.py:395
+msgid "Ажиллуулалтыг цуцаллаа."
+msgstr "The run was cancelled."
+
+#: apps/autotest/views.py:404
+msgid "Өмнөх файл эсвэл орчин устгагдсан тул сценариас шинээр ажиллуулна уу."
+msgstr ""
+"The previous file or environment was deleted — please start a new run from "
+"the scenario."
+
+#: apps/autotest/views.py:436
+msgid "Автомат тестээр илэрсэн алдаа."
+msgstr "Bug found by automated testing."
+
+#: apps/autotest/views.py:437
+#, python-format
+msgid "Сценари: %(s)s"
+msgstr "Scenario: %(s)s"
+
+#: apps/autotest/views.py:438
+#, python-format
+msgid "Орчин: %(env)s — %(url)s"
+msgstr "Environment: %(env)s — %(url)s"
+
+#: apps/autotest/views.py:439
+#, python-format
+msgid "Ажиллуулалт: #%(id)s — %(url)s"
+msgstr "Run: #%(id)s — %(url)s"
+
+#: apps/autotest/views.py:444
+#, python-format
+msgid "Мөр %(n)s"
+msgstr "Row %(n)s"
+
+#: apps/autotest/views.py:456
+#, python-format
+msgid "Оролт: %(v)s"
+msgstr "Input: %(v)s"
+
+#: apps/autotest/views.py:457
+#, python-format
+msgid "Хүлээгдэж байсан: %(v)s"
+msgstr "Expected: %(v)s"
+
+#: apps/autotest/views.py:458
+#, python-format
+msgid "Бодит үр дүн: %(v)s"
+msgstr "Actual result: %(v)s"
+
+#: apps/autotest/views.py:471
+msgid "Ticket үүсгэх унасан мөрөө сонгоно уу."
+msgstr "Select the failed rows to create a ticket from."
+
+#: apps/autotest/views.py:490 apps/tickets/views.py:275
+#, python-format
+msgid "Ticket %(code)s амжилттай үүслээ."
+msgstr "Ticket %(code)s was created."
+
+#: apps/autotest/views.py:494
+#, python-format
+msgid "[Автомат тест] %(scenario)s: %(case)s"
+msgstr "[Autotest] %(scenario)s: %(case)s"
+
+#: apps/autotest/views.py:496
+#, python-format
+msgid "мөр %(n)s"
+msgstr "row %(n)s"
+
+#: apps/autotest/views.py:499
+#, python-format
+msgid " (+%(n)s мөр)"
+msgstr " (+%(n)s rows)"
 
 #: apps/categories/forms.py:29
 msgid "Багийн нэр"
@@ -250,97 +865,122 @@ msgid ""
 msgstr ""
 "Only users in the 'QA Tester' group (or superusers) appear as options."
 
-#: apps/categories/views.py:22
+#: apps/categories/views.py:23
 msgid "Ангилал эсвэл багийн нэрээр хайх"
 msgstr "Search by category or team name"
 
-#: apps/categories/views.py:25 templates/base.html:59
+#: apps/categories/views.py:26 templates/base.html:65
 #: templates/categories/category_list.html:21
 #: templates/tickets/dashboard.html:33 templates/tickets/ticket_detail.html:40
 msgid "Баг"
 msgstr "Team"
 
-#: apps/categories/views.py:25
+#: apps/categories/views.py:26
 msgid "Баг тохируулаагүй"
 msgstr "No team assigned"
 
-#: apps/categories/views.py:31 apps/projects/views.py:33
+#: apps/categories/views.py:32 apps/projects/views.py:33
 msgid "Шинээр нэмэгдсэн"
 msgstr "Newest first"
 
-#: apps/categories/views.py:32 apps/projects/views.py:34
+#: apps/categories/views.py:33 apps/projects/views.py:34
 msgid "Ticket ихтэй нь эхэнд"
 msgstr "Most tickets first"
 
-#: apps/categories/views.py:56
+#: apps/categories/views.py:57
 #, python-format
 msgid "'%(name)s' ангилал үүслээ. Одоо баг/хариуцагчийг нь тохируулна уу."
 msgstr "Category '%(name)s' was created. Now set up its team and owners."
 
-#: apps/categories/views.py:63 templates/categories/category_list.html:9
+#: apps/categories/views.py:64 templates/categories/category_list.html:9
 msgid "Шинэ ангилал"
 msgstr "New category"
 
-#: apps/categories/views.py:87
+#: apps/categories/views.py:88
 #, python-format
 msgid "Баггүй байсан %(n)s нээлттэй ticket шинэ багт хуваарилагдлаа."
 msgstr "%(n)s open ticket(s) without a team were routed to the new team."
 
-#: apps/categories/views.py:90
+#: apps/categories/views.py:91
 #, python-format
 msgid "'%(name)s' ангилал шинэчлэгдлээ."
 msgstr "Category '%(name)s' was updated."
 
-#: apps/categories/views.py:103 apps/projects/views.py:83
+#: apps/categories/views.py:104 apps/projects/views.py:83
 #, python-format
 msgid "'%(name)s' засах"
 msgstr "Edit '%(name)s'"
 
-#: apps/categories/views.py:135
+#: apps/categories/views.py:117
+msgid "Дэд ангиллын нэрийг оруулна уу."
+msgstr "Please enter a subcategory name."
+
+#: apps/categories/views.py:119
+#, python-format
+msgid "'%(name)s' дэд ангилал аль хэдийн байна."
+msgstr "Subcategory '%(name)s' already exists."
+
+#: apps/categories/views.py:122
+#, python-format
+msgid "'%(name)s' дэд ангилал нэмэгдлээ."
+msgstr "Subcategory '%(name)s' was added."
+
+#: apps/categories/views.py:133
+#, python-format
+msgid "'%(name)s' дэд ангилал устгагдлаа."
+msgstr "Subcategory '%(name)s' was deleted."
+
+#: apps/categories/views.py:150
+#, python-format
+msgid "'%(name)s' ангилалд %(n)s ticket холбоотой тул устгах боломжгүй."
+msgstr "Category '%(name)s' has %(n)s linked tickets and cannot be deleted."
+
+#: apps/categories/views.py:155
+#, python-format
+msgid "'%(name)s' ангилал устгагдлаа."
+msgstr "Category '%(name)s' was deleted."
+
+#: apps/categories/views.py:185
 msgid "Баг амжилттай үүслээ."
 msgstr "Team created successfully."
 
-#: apps/categories/views.py:148
+#: apps/categories/views.py:198
 msgid "Баг, Team Lead эсвэл QA-гаар хайх"
 msgstr "Search by team, Team Lead or QA"
 
-#: apps/categories/views.py:151
+#: apps/categories/views.py:201
 msgid "Дутуу"
 msgstr "Missing"
 
-#: apps/categories/views.py:152
+#: apps/categories/views.py:202
 msgid "Team Lead-гүй"
 msgstr "No Team Lead"
 
-#: apps/categories/views.py:152
+#: apps/categories/views.py:202
 msgid "QA Tester-гүй"
 msgstr "No QA Tester"
 
-#: apps/categories/views.py:152
+#: apps/categories/views.py:202
 msgid "Гишүүнгүй"
 msgstr "No members"
 
-#: apps/categories/views.py:158
+#: apps/categories/views.py:208
 msgid "Гишүүн ихтэй нь эхэнд"
 msgstr "Most members first"
 
-#: apps/categories/views.py:159
+#: apps/categories/views.py:209
 msgid "Нээлттэй ticket ихтэй нь эхэнд"
 msgstr "Most open tickets first"
 
-#: apps/categories/views.py:187
+#: apps/categories/views.py:237
 #, python-format
 msgid "'%(name)s' багийн мэдээлэл шинэчлэгдлээ."
 msgstr "Team '%(name)s' info was updated."
 
-#: apps/categories/views.py:196
+#: apps/categories/views.py:246
 #, python-format
 msgid "'%(name)s' багийн гишүүд шинэчлэгдлээ."
 msgstr "Team '%(name)s' members were updated."
-
-#: apps/core/decorators.py:26 apps/tickets/views.py:462
-msgid "Танд энэ хуудсанд хандах эрх байхгүй."
-msgstr "You do not have permission to access this page."
 
 #: apps/projects/forms.py:24
 msgid "Модулийн нэр"
@@ -387,26 +1027,26 @@ msgstr "Module renamed to '%(name)s'."
 msgid "'%(name)s' модуль устгагдлаа."
 msgstr "Module '%(name)s' was deleted."
 
-#: apps/projects/views.py:146
+#: apps/projects/views.py:147
 #, python-format
 msgid ""
-"'%(name)s' төсөл ticket-тэй тул устгах боломжгүй — оронд нь идэвхгүй "
-"болголоо."
+"'%(name)s' төсөл ticket эсвэл автомат тесттэй тул устгах боломжгүй — оронд "
+"нь идэвхгүй болголоо."
 msgstr ""
-"Project '%(name)s' has tickets and cannot be deleted — it was deactivated "
-"instead."
+"Project '%(name)s' has tickets or autotests and cannot be deleted — it was "
+"deactivated instead."
 
-#: apps/projects/views.py:151
+#: apps/projects/views.py:152
 #, python-format
 msgid "'%(name)s' төсөл устгагдлаа."
 msgstr "Project '%(name)s' was deleted."
 
-#: apps/projects/views.py:169
+#: apps/projects/views.py:170
 #, python-format
 msgid "'%(name)s' төсөл идэвхжлээ."
 msgstr "Project '%(name)s' was activated."
 
-#: apps/projects/views.py:173
+#: apps/projects/views.py:174
 #, python-format
 msgid ""
 "'%(name)s' төсөл идэвхгүй боллоо — шинэ ticket үүсгэх сонголтод гарахгүй."
@@ -414,42 +1054,47 @@ msgstr ""
 "Project '%(name)s' was deactivated — it will no longer be offered for new "
 "tickets."
 
-#: apps/tickets/actions.py:30
+#: apps/tickets/actions.py:38
 msgid "Сонгосон хэрэглэгч энэ ticket-ийн багийн идэвхтэй гишүүн биш байна."
 msgstr "The selected user is not an active member of this ticket's team."
 
-#: apps/tickets/actions.py:41
+#: apps/tickets/actions.py:49
+#, python-format
+msgid "\"%(status)s\" төлөвт шилжүүлэхдээ шалтгаанаа тайлбар хэсэгт бичнэ үү."
+msgstr "When moving to \"%(status)s\", please write the reason in the comment."
+
+#: apps/tickets/actions.py:54
 msgid "Хариуцах хэрэглэгчийг сонгоно уу."
 msgstr "Please select an assignee."
 
-#: apps/tickets/actions.py:43
+#: apps/tickets/actions.py:56
 msgid "Энэ ticket-ийн ангилалд баг тохируулаагүй тул оноох боломжгүй."
 msgstr "This ticket's category has no team, so it cannot be assigned."
 
-#: apps/tickets/actions.py:59
+#: apps/tickets/actions.py:72
 msgid "Танд хариуцагч солих эрх байхгүй."
 msgstr "You do not have permission to change the assignee."
 
-#: apps/tickets/actions.py:63 apps/tickets/views.py:201
+#: apps/tickets/actions.py:76 apps/tickets/views.py:212
 #: templates/tickets/my_team.html:22 templates/tickets/ticket_detail.html:61
 #: templates/tickets/ticket_list.html:52
 msgid "Оноогдоогүй"
 msgstr "Unassigned"
 
-#: apps/tickets/actions.py:69
+#: apps/tickets/actions.py:83
 #, python-format
 msgid "Хариуцагч солигдлоо: %(old)s → %(new)s"
 msgstr "Assignee changed: %(old)s → %(new)s"
 
-#: apps/tickets/actions.py:86
+#: apps/tickets/actions.py:102
 msgid "Чухлын зэргийг зөвхөн PM/Admin эсвэл багийн Team Lead өөрчилнө."
 msgstr "Only a PM/Admin or the team's Team Lead can change the priority."
 
-#: apps/tickets/actions.py:88
+#: apps/tickets/actions.py:104
 msgid "Хаагдсан / татгалзсан ticket-ийн чухлын зэргийг өөрчлөхгүй."
 msgstr "The priority of a closed / rejected ticket cannot be changed."
 
-#: apps/tickets/actions.py:90
+#: apps/tickets/actions.py:106
 msgid "Буруу чухлын зэрэг."
 msgstr "Invalid priority."
 
@@ -457,12 +1102,12 @@ msgstr "Invalid priority."
 msgid "SLA"
 msgstr "SLA"
 
-#: apps/tickets/admin.py:66 apps/tickets/forms.py:150
+#: apps/tickets/admin.py:66 apps/tickets/forms.py:187
 #: templates/tickets/ticket_detail.html:66
 msgid "Сэтгэгдэл"
 msgstr "Comment"
 
-#: apps/tickets/exports.py:76 templates/base.html:137
+#: apps/tickets/exports.py:76 templates/base.html:143
 msgid "Тийм"
 msgstr "Yes"
 
@@ -539,6 +1184,8 @@ msgid "Үзүүлэлт"
 msgstr "Metric"
 
 #: apps/tickets/exports.py:221 apps/tickets/exports.py:242
+#: templates/autotest/scenario_detail.html:49
+#: templates/autotest/scenario_form.html:60
 msgid "Утга"
 msgstr "Value"
 
@@ -566,8 +1213,8 @@ msgstr "Daily trend"
 msgid "Ажилтан"
 msgstr "Agents"
 
-#: apps/tickets/exports.py:247 apps/tickets/forms.py:69
-#: apps/tickets/views.py:207 templates/tickets/_mini_ticket_table.html:6
+#: apps/tickets/exports.py:247 apps/tickets/forms.py:102
+#: apps/tickets/views.py:218 templates/tickets/_mini_ticket_table.html:6
 #: templates/tickets/ticket_detail.html:41
 #: templates/tickets/ticket_list.html:35 templates/tickets/ticket_list.html:98
 #: templates/tickets/ticket_list.html:175
@@ -575,8 +1222,8 @@ msgstr "Agents"
 msgid "Чухлын зэрэг"
 msgstr "Priority"
 
-#: apps/tickets/exports.py:248 apps/tickets/forms.py:66
-#: apps/tickets/views.py:208 templates/base.html:56
+#: apps/tickets/exports.py:248 apps/tickets/forms.py:98
+#: apps/tickets/views.py:219 templates/base.html:62
 #: templates/categories/category_list.html:3
 #: templates/categories/category_list.html:20
 #: templates/tickets/ticket_detail.html:37
@@ -589,44 +1236,48 @@ msgstr "Category"
 msgid "Урсгал"
 msgstr "Trend"
 
-#: apps/tickets/forms.py:17
-#, python-format
-msgid "Файлын хэмжээ %(max)sMB-аас хэтэрсэн байна."
-msgstr "File exceeds the %(max)sMB limit."
-
 #: apps/tickets/forms.py:22
 #, python-format
 msgid "'.%(ext)s' төрлийн файл зөвшөөрөгдөхгүй. Зөвшөөрөгдөх: %(allowed)s"
 msgstr "'.%(ext)s' files are not allowed. Allowed: %(allowed)s"
 
-#: apps/tickets/forms.py:29
+#: apps/tickets/forms.py:27
+#, python-format
+msgid "Файлын агуулга '.%(ext)s' зураг биш байна."
+msgstr "The file content is not a '.%(ext)s' image."
+
+#: apps/tickets/forms.py:51
 #, python-format
 msgid "Хамгийн ихдээ %(max)sMB. Зөвшөөрөгдөх төрөл: %(allowed)s"
 msgstr "Max %(max)sMB. Allowed types: %(allowed)s"
 
-#: apps/tickets/forms.py:38 templates/tickets/ticket_detail.html:99
+#: apps/tickets/forms.py:61
+msgid "Сонгосон дэд ангилал сонгосон ангилалд харьяалагдахгүй байна."
+msgstr "The selected subcategory does not belong to the selected category."
+
+#: apps/tickets/forms.py:68 templates/tickets/ticket_detail.html:99
 msgid "Хавсралт"
 msgstr "Attachments"
 
-#: apps/tickets/forms.py:63 apps/tickets/views.py:205
+#: apps/tickets/forms.py:95 apps/tickets/views.py:216
 #: templates/tickets/_mini_ticket_table.html:6
 #: templates/tickets/ticket_list.html:26 templates/tickets/ticket_list.html:97
 msgid "Гарчиг"
 msgstr "Title"
 
-#: apps/tickets/forms.py:65 templates/tickets/ticket_detail.html:36
+#: apps/tickets/forms.py:97 templates/tickets/ticket_detail.html:36
 msgid "Төрөл"
 msgstr "Type"
 
-#: apps/tickets/forms.py:67 templates/base.html:62
-msgid "Төсөл"
-msgstr "Project"
+#: apps/tickets/forms.py:99 templates/categories/category_form.html:45
+msgid "Дэд ангилал"
+msgstr "Subcategory"
 
-#: apps/tickets/forms.py:68
+#: apps/tickets/forms.py:101
 msgid "Модуль"
 msgstr "Module"
 
-#: apps/tickets/forms.py:79
+#: apps/tickets/forms.py:112
 msgid ""
 "Алдааны хувьд: давтах алхам, хүлээгдэж буй үр дүн, бодит үр дүн, орчин "
 "(browser/төхөөрөмж)."
@@ -634,25 +1285,25 @@ msgstr ""
 "For bugs: steps to reproduce, expected result, actual result, environment "
 "(browser/device)."
 
-#: apps/tickets/forms.py:92 apps/tickets/forms.py:131
+#: apps/tickets/forms.py:125 apps/tickets/forms.py:167
 msgid "Сонгосон модуль сонгосон төсөлд харьяалагдахгүй байна."
 msgstr "The selected module does not belong to the selected project."
 
-#: apps/tickets/forms.py:124
+#: apps/tickets/forms.py:160
 msgid "Ticket оноогдсоны дараа ангиллыг солих боломжгүй (баг нь өөрчлөгдөнө)."
 msgstr ""
 "The category cannot be changed after the ticket is assigned (it would change"
 " the team)."
 
-#: apps/tickets/forms.py:144
+#: apps/tickets/forms.py:181
 msgid "Сэтгэгдэл бичих (сонголтоор)..."
 msgstr "Write a comment (optional)..."
 
-#: apps/tickets/forms.py:151
+#: apps/tickets/forms.py:188
 msgid "Зөвхөн дотоод багт харагдах (Internal note)"
 msgstr "Visible to internal team only (Internal note)"
 
-#: apps/tickets/forms.py:162
+#: apps/tickets/forms.py:199
 msgid "Сэтгэгдэл бичих... (@нэр гэж бичээд хүн дурдана)"
 msgstr "Write a comment... (type @name to mention someone)"
 
@@ -712,11 +1363,11 @@ msgstr "High"
 msgid "Яаралтай"
 msgstr "Critical"
 
-#: apps/tickets/models.py:86
+#: apps/tickets/models.py:90
 msgid "Category-ийн CategoryTeamAssignment-аас автоматаар тохируулагдана."
 msgstr "Set automatically from the category's CategoryTeamAssignment."
 
-#: apps/tickets/models.py:106
+#: apps/tickets/models.py:110
 msgid ""
 "Priority-с хамаарсан хариу үйлдэл хийх дээд хугацаа "
 "(settings.SLA_HOURS_BY_PRIORITY-ээс ticket үүсэх мөчид автоматаар "
@@ -725,7 +1376,7 @@ msgstr ""
 "Maximum response time based on priority (calculated automatically from "
 "settings.SLA_HOURS_BY_PRIORITY when the ticket is created)."
 
-#: apps/tickets/models.py:114
+#: apps/tickets/models.py:118
 msgid ""
 "SLA хугацаа дуусахад ойртсон тухай анхааруулга илгээсэн огноо "
 "(check_sla_deadlines командаар бичигдэнэ, давхар мэдэгдэл илгээхээс "
@@ -734,7 +1385,7 @@ msgstr ""
 "Date the SLA-approaching warning was sent (written by the "
 "check_sla_deadlines command; prevents duplicate notifications)."
 
-#: apps/tickets/models.py:122
+#: apps/tickets/models.py:126
 msgid ""
 "SLA хугацаа хэтэрсэн тухай escalation мэдэгдэл илгээсэн огноо "
 "(check_sla_deadlines командаар бичигдэнэ, давхар мэдэгдэл илгээхээс "
@@ -743,7 +1394,7 @@ msgstr ""
 "Date the SLA breach escalation was sent (written by the check_sla_deadlines "
 "command; prevents duplicate notifications)."
 
-#: apps/tickets/models.py:130
+#: apps/tickets/models.py:134
 msgid ""
 "'Time to First Response' SLA — эхний хариу өгөх дээд хугацаа "
 "(settings.SLA_FIRST_RESPONSE_HOURS_BY_PRIORITY-ээс автоматаар "
@@ -753,7 +1404,7 @@ msgstr ""
 "(calculated automatically from "
 "settings.SLA_FIRST_RESPONSE_HOURS_BY_PRIORITY)."
 
-#: apps/tickets/models.py:138
+#: apps/tickets/models.py:142
 msgid ""
 "Ticket-д анх удаа хариу өгсөн (NEW-аас шилжсэн эсвэл мэдээлэгчээс бусад хүн "
 "comment бичсэн) огноо."
@@ -761,7 +1412,7 @@ msgstr ""
 "Date the ticket first received a response (transitioned away from NEW, or "
 "someone other than the reporter added a comment)."
 
-#: apps/tickets/models.py:148
+#: apps/tickets/models.py:152
 msgid ""
 "Ticket дээр сүүлд ямар нэгэн идэвх (status шилжилт, comment, attachment) "
 "гарсан огноо — 'идэвхгүй ticket' automation-д ашиглагдана."
@@ -769,7 +1420,7 @@ msgstr ""
 "Date of the ticket's most recent activity (status transition, comment, "
 "attachment) — used by the 'stale ticket' automation."
 
-#: apps/tickets/models.py:156
+#: apps/tickets/models.py:160
 msgid ""
 "Идэвхгүй байдлын тухай сүүлд сануулга илгээсэн огноо (check_stale_tickets "
 "командаар бичигдэнэ). Шинэ идэвх гарахад цэвэрлэгдэж, дараагийн удаа дахин "
@@ -779,18 +1430,18 @@ msgstr ""
 "check_stale_tickets command). Cleared when new activity occurs, allowing "
 "another reminder next time."
 
-#: apps/tickets/models.py:188
+#: apps/tickets/models.py:192
 #, python-format
 msgid "%(label)s — хариу: %(first_response)sц, шийдвэрлэлт: %(resolution)sц"
 msgstr ""
 "%(label)s — response: %(first_response)sh, resolution: %(resolution)sh"
 
-#: apps/tickets/models.py:311
+#: apps/tickets/models.py:315
 #, python-format
 msgid "Чухлын зэрэг өөрчлөгдлөө: %(old)s → %(new)s"
 msgstr "Priority changed: %(old)s → %(new)s"
 
-#: apps/tickets/models.py:339
+#: apps/tickets/models.py:343
 #, python-format
 msgid ""
 "'%(from_status)s' -> '%(to_status)s' төлөв шилжилт зөвшөөрөгдөөгүй байна "
@@ -799,12 +1450,12 @@ msgstr ""
 "Transition '%(from_status)s' -> '%(to_status)s' is not allowed (see "
 "docs/workflow.md)."
 
-#: apps/tickets/models.py:382
+#: apps/tickets/models.py:386
 #, python-format
 msgid "'%(from_status)s' -> '%(to_status)s' төлөв шилжилт зөвшөөрөгдөөгүй."
 msgstr "Transition '%(from_status)s' -> '%(to_status)s' is not allowed."
 
-#: apps/tickets/models.py:403
+#: apps/tickets/models.py:407
 msgid ""
 "Тэмдэглэгдсэн бол зөвхөн дотоод багийн гишүүд харна (Zendesk/Freshdesk-ийн "
 "'Internal note' шиг)."
@@ -832,37 +1483,32 @@ msgstr "Only this team's QA Tester can record the test result."
 msgid "Үүссэн"
 msgstr "Created"
 
-#: apps/tickets/views.py:176
+#: apps/tickets/views.py:187
 msgid "Танд ticket жагсаалт татах эрх байхгүй."
 msgstr "You do not have permission to export the ticket list."
 
-#: apps/tickets/views.py:209 templates/tickets/_mini_ticket_table.html:7
+#: apps/tickets/views.py:220 templates/tickets/_mini_ticket_table.html:7
 #: templates/tickets/ticket_detail.html:61
 #: templates/tickets/ticket_list.html:49 templates/tickets/ticket_list.html:99
 #: templates/tickets/ticket_list.html:178
 msgid "Хариуцагч"
 msgstr "Assignee"
 
-#: apps/tickets/views.py:210 templates/tickets/ticket_detail.html:57
+#: apps/tickets/views.py:221 templates/tickets/ticket_detail.html:57
 #: templates/tickets/ticket_list.html:57
 #: templates/tickets/ticket_list.html:102
 msgid "Мэдээлсэн"
 msgstr "Reported by"
 
-#: apps/tickets/views.py:264
-#, python-format
-msgid "Ticket %(code)s амжилттай үүслээ."
-msgstr "Ticket %(code)s was created."
-
-#: apps/tickets/views.py:280
+#: apps/tickets/views.py:295
 msgid "Танд энэ ticket-ийг засах эрх байхгүй."
 msgstr "You do not have permission to edit this ticket."
 
-#: apps/tickets/views.py:298
+#: apps/tickets/views.py:313
 msgid "Ticket шинэчлэгдлээ."
 msgstr "Ticket updated."
 
-#: apps/tickets/views.py:313
+#: apps/tickets/views.py:333
 #, python-format
 msgid ""
 "'%(category)s' ангилалд баг тохируулаагүй тул ticket одоогоор аль ч багт "
@@ -873,41 +1519,41 @@ msgstr ""
 "team yet. It will be routed automatically once a PM/Admin assigns a team to "
 "the category."
 
-#: apps/tickets/views.py:321
+#: apps/tickets/views.py:341
 msgid "Ticket засварлагдлаа:"
 msgstr "Ticket edited:"
 
-#: apps/tickets/views.py:325
+#: apps/tickets/views.py:345
 #, python-format
 msgid "• %(field)s шинэчлэгдсэн"
 msgstr "• %(field)s updated"
 
-#: apps/tickets/views.py:333
+#: apps/tickets/views.py:353
 #, python-format
 msgid "• Баг: %(team)s (автоматаар)"
 msgstr "• Team: %(team)s (automatic)"
 
-#: apps/tickets/views.py:362
+#: apps/tickets/views.py:382
 msgid "Status амжилттай шилжлээ."
 msgstr "Status changed successfully."
 
-#: apps/tickets/views.py:365
+#: apps/tickets/views.py:385
 msgid "Хариуцагч солигдлоо."
 msgstr "Assignee changed."
 
-#: apps/tickets/views.py:367
+#: apps/tickets/views.py:387
 msgid "Чухлын зэрэг шинэчлэгдэж, SLA хугацаа дахин тооцоологдлоо."
 msgstr "Priority updated and SLA deadlines recalculated."
 
-#: apps/tickets/views.py:385
+#: apps/tickets/views.py:405
 msgid "Сэтгэгдэл нэмэгдлээ."
 msgstr "Comment added."
 
-#: apps/tickets/views.py:396
+#: apps/tickets/views.py:416
 msgid "Файл амжилттай хавсаргалаа."
 msgstr "File attached successfully."
 
-#: apps/tickets/views.py:410
+#: apps/tickets/views.py:430
 msgid ""
 "Энэ ticket-ийн Category-д Баг (Team) тохируулаагүй тул assign хийх "
 "боломжгүй. Эхлээд 'Удирдлага → Ангилал' хэсэгт баг тохируулна уу."
@@ -915,7 +1561,7 @@ msgstr ""
 "This ticket's category has no team configured, so it cannot be assigned. "
 "First set up a team under 'Management → Category'."
 
-#: apps/tickets/views.py:417
+#: apps/tickets/views.py:437
 #, python-format
 msgid ""
 "'%(team)s' багт одоогоор гишүүн алга байна. Эхлээд 'Удирдлага → Баг' хэсэгт "
@@ -924,37 +1570,33 @@ msgstr ""
 "Team '%(team)s' currently has no members. First add members under "
 "'Management → Team'."
 
-#: apps/tickets/views.py:474
+#: apps/tickets/views.py:494
 msgid "Танд энэ багийн тайланг харах эрх байхгүй."
 msgstr "You do not have permission to view this team's report."
 
-#: apps/tickets/views.py:512
-msgid "Файл олдсонгүй."
-msgstr "File not found."
-
-#: apps/tickets/views.py:538
+#: apps/tickets/views.py:558
 msgid "Бөөн үйлдлийг зөвхөн PM / Admin хийнэ."
 msgstr "Only a PM / Admin can use bulk actions."
 
-#: apps/tickets/views.py:544
+#: apps/tickets/views.py:564
 msgid "Ticket болон үйлдлээ сонгоно уу."
 msgstr "Select tickets and an action."
 
-#: apps/tickets/views.py:557
+#: apps/tickets/views.py:577
 msgid "Оноохдоо \"Оноох\" үйлдлийг ашиглана уу."
 msgstr "Use the \"Assign\" action to assign."
 
-#: apps/tickets/views.py:568
+#: apps/tickets/views.py:588
 #, python-format
 msgid "%(n)s ticket шинэчлэгдлээ."
 msgstr "%(n)s ticket(s) updated."
 
-#: apps/tickets/views.py:572
+#: apps/tickets/views.py:592
 #, python-format
 msgid "%(n)s ticket алгасагдлаа — %(list)s"
 msgstr "%(n)s ticket(s) skipped — %(list)s"
 
-#: apps/tickets/views.py:575
+#: apps/tickets/views.py:595
 msgid "Өөрчлөгдөх зүйл алга."
 msgstr "Nothing to change."
 
@@ -962,7 +1604,8 @@ msgstr "Nothing to change."
 msgid "Хайх"
 msgstr "Search"
 
-#: templates/_list_toolbar.html:13 templates/categories/team_detail.html:40
+#: templates/_list_toolbar.html:13 templates/autotest/run_detail.html:41
+#: templates/categories/team_detail.html:40
 #: templates/tickets/ticket_list.html:30 templates/tickets/ticket_list.html:37
 #: templates/tickets/ticket_list.html:44 templates/tickets/ticket_list.html:51
 #: templates/tickets/ticket_list.html:59
@@ -1029,14 +1672,16 @@ msgstr "Deactivate this user? They will no longer be able to sign in."
 msgid "Нууц үгийн шаардлага"
 msgstr "Password requirements"
 
-#: templates/accounts/user_form.html:29
+#: templates/accounts/user_form.html:29 templates/autotest/app_detail.html:87
+#: templates/autotest/app_form.html:17
+#: templates/autotest/scenario_form.html:109
 #: templates/categories/category_form.html:35
 #: templates/categories/team_detail.html:22
 #: templates/categories/team_detail.html:67
 #: templates/projects/project_form.html:26
 #: templates/projects/project_form.html:59
 #: templates/tickets/ticket_detail.html:200
-#: templates/tickets/ticket_form.html:23
+#: templates/tickets/ticket_form.html:29
 msgid "Хадгалах"
 msgstr "Save"
 
@@ -1044,19 +1689,21 @@ msgstr "Save"
 msgid "Бүртгэх"
 msgstr "Register"
 
-#: templates/accounts/user_form.html:33 templates/base.html:136
+#: templates/accounts/user_form.html:33 templates/autotest/app_form.html:18
+#: templates/autotest/datafile_form.html:21
+#: templates/autotest/scenario_form.html:110 templates/base.html:142
 #: templates/categories/category_form.html:36
 #: templates/projects/project_form.html:27
 #: templates/projects/project_form.html:60
 #: templates/registration/password_change_form.html:19
-#: templates/tickets/_quick_ticket_drawer.html:52
-#: templates/tickets/ticket_form.html:24 templates/tickets/ticket_form.html:27
+#: templates/tickets/_quick_ticket_drawer.html:56
+#: templates/tickets/ticket_form.html:30 templates/tickets/ticket_form.html:33
 #: templates/tickets/ticket_list.html:189
 msgid "Цуцлах"
 msgstr "Cancel"
 
 #: templates/accounts/user_list.html:3 templates/accounts/user_list.html:6
-#: templates/base.html:67
+#: templates/base.html:73
 msgid "Хэрэглэгчид"
 msgstr "Users"
 
@@ -1074,8 +1721,10 @@ msgid "Superuser-ийг зөвхөн superuser өөрчилнө"
 msgstr "Only a superuser can change a superuser"
 
 #: templates/accounts/user_list.html:50
-#: templates/categories/category_list.html:42
-#: templates/categories/category_list.html:49
+#: templates/autotest/scenario_detail.html:13
+#: templates/autotest/scenario_form.html:3
+#: templates/categories/category_list.html:43
+#: templates/categories/category_list.html:50
 #: templates/projects/project_form.html:48
 #: templates/tickets/ticket_detail.html:11
 #: templates/tickets/ticket_form.html:3
@@ -1090,7 +1739,10 @@ msgstr ""
 "Are you sure you want to delete this user? Users with ticket history are "
 "deactivated instead."
 
-#: templates/accounts/user_list.html:57
+#: templates/accounts/user_list.html:57 templates/autotest/app_detail.html:54
+#: templates/categories/_category_delete_form.html:6
+#: templates/categories/_category_delete_form.html:13
+#: templates/categories/category_form.html:56
 #: templates/projects/_project_delete_form.html:10
 #: templates/projects/project_form.html:53
 msgid "Устгах"
@@ -1099,6 +1751,561 @@ msgstr "Delete"
 #: templates/accounts/user_list.html:60
 msgid "Та"
 msgstr "You"
+
+#: templates/autotest/_results_table.html:6
+msgid "Унасан бүгдийг сонгох"
+msgstr "Select all failed"
+
+#: templates/autotest/_results_table.html:7
+msgid "Тест"
+msgstr "Test"
+
+#: templates/autotest/_results_table.html:7
+msgid "Хүлээгдэж байсан"
+msgstr "Expected"
+
+#: templates/autotest/_results_table.html:31
+msgid "Дэлгэцийн зураг"
+msgstr "Screenshot"
+
+#: templates/autotest/_results_table.html:36
+msgid "Үр дүн удахгүй гарна…"
+msgstr "Results coming soon…"
+
+#: templates/autotest/_results_table.html:36
+msgid "Үр дүн алга."
+msgstr "No results."
+
+#: templates/autotest/_run_status.html:1
+msgid "Унасан байна"
+msgstr "Some failed"
+
+#: templates/autotest/_run_status.html:1
+msgid "Бүгд тэнцсэн"
+msgstr "All passed"
+
+#: templates/autotest/_runs_table.html:7
+msgid "Сценари"
+msgstr "Scenario"
+
+#: templates/autotest/_runs_table.html:8
+msgid "Файл"
+msgstr "File"
+
+#: templates/autotest/_runs_table.html:9
+msgid "Хэн"
+msgstr "Who"
+
+#: templates/autotest/_runs_table.html:9
+msgid "Хэзээ"
+msgstr "When"
+
+#: templates/autotest/_runs_table.html:29
+msgid "Одоогоор ажиллуулаагүй байна."
+msgstr "Not run yet."
+
+#: templates/autotest/app_detail.html:5
+#: templates/autotest/datafile_detail.html:5
+#: templates/autotest/datafile_form.html:5
+#: templates/autotest/datafile_list.html:5 templates/autotest/home.html:3
+#: templates/autotest/home.html:6 templates/autotest/run_detail.html:5
+#: templates/autotest/scenario_detail.html:5
+#: templates/autotest/scenario_form.html:5 templates/base.html:55
+msgid "Автомат тест"
+msgstr "Autotest"
+
+#: templates/autotest/app_detail.html:13
+#: templates/autotest/scenario_form.html:3
+#: templates/autotest/scenario_form.html:6
+msgid "Шинэ сценари"
+msgstr "New scenario"
+
+#: templates/autotest/app_detail.html:15
+msgid "Сценари үүсгэхийн өмнө орчны хаяг нэмнэ үү."
+msgstr "Add an environment URL before creating a scenario."
+
+#: templates/autotest/app_detail.html:23
+msgid "Сценариуд"
+msgstr "Scenarios"
+
+#: templates/autotest/app_detail.html:32
+#, python-format
+msgid "%(n)s удаа ажилласан"
+msgid_plural "%(n)s удаа ажилласан"
+msgstr[0] "Ran %(n)s time"
+msgstr[1] "Ran %(n)s times"
+
+#: templates/autotest/app_detail.html:36
+msgid "Сценари алга. Жишээ нь: Бүртгүүлэх, Нэвтрэх, Хайлт."
+msgstr "No scenarios yet. For example: Sign up, Log in, Search."
+
+#: templates/autotest/app_detail.html:44
+msgid "Орчин (хаяг)"
+msgstr "Environments (URLs)"
+
+#: templates/autotest/app_detail.html:52
+#, python-format
+msgid "'%(name)s' орчныг устгах уу?"
+msgstr "Delete environment '%(name)s'?"
+
+#: templates/autotest/app_detail.html:59
+msgid "Орчин нэмээгүй байна."
+msgstr "No environments yet."
+
+#: templates/autotest/app_detail.html:68
+msgid "Орчин нэмэх"
+msgstr "Add environment"
+
+#: templates/autotest/app_detail.html:76
+msgid "Апп-ын мэдээлэл"
+msgstr "App info"
+
+#: templates/autotest/app_detail.html:91
+#, python-format
+msgid "'%(name)s' апп-ыг бүх сценари, үр дүнгийн хамт устгах уу?"
+msgstr "Delete app '%(name)s' together with all its scenarios and results?"
+
+#: templates/autotest/app_detail.html:93
+msgid "Апп устгах"
+msgstr "Delete app"
+
+#: templates/autotest/app_form.html:3 templates/autotest/home.html:9
+msgid "Апп бүртгэх"
+msgstr "Register app"
+
+#: templates/autotest/app_form.html:5
+msgid "Шалгах апп бүртгэх"
+msgstr "Register an app to test"
+
+#: templates/autotest/datafile_detail.html:5
+#: templates/autotest/datafile_form.html:5
+#: templates/autotest/datafile_list.html:3
+#: templates/autotest/datafile_list.html:5
+#: templates/autotest/datafile_list.html:7 templates/autotest/home.html:8
+msgid "Өгөгдлийн файлууд"
+msgstr "Data files"
+
+#: templates/autotest/datafile_detail.html:9
+#, python-format
+msgid "%(rows)s мөр, %(cols)s багана"
+msgstr "%(rows)s rows, %(cols)s columns"
+
+#: templates/autotest/datafile_detail.html:9
+#, python-format
+msgid "%(n)s удаа ашигласан"
+msgid_plural "%(n)s удаа ашигласан"
+msgstr[0] "Used %(n)s time"
+msgstr[1] "Used %(n)s times"
+
+#: templates/autotest/datafile_detail.html:11
+#: templates/tickets/_export_menu.html:4
+msgid "Татах"
+msgstr "Export"
+
+#: templates/autotest/datafile_detail.html:15
+msgid "Урьдчилж харах (эхний 10 мөр)"
+msgstr "Preview (first 10 rows)"
+
+#: templates/autotest/datafile_detail.html:35
+msgid "Энэ файлыг ашиглах сценариуд"
+msgstr "Scenarios that can use this file"
+
+#: templates/autotest/datafile_detail.html:41
+msgid "Дутуу багана:"
+msgstr "Missing columns:"
+
+#: templates/autotest/datafile_detail.html:41
+msgid "Бэлэн"
+msgstr "Ready"
+
+#: templates/autotest/datafile_detail.html:44
+msgid "Энэ төсөлд сценари алга."
+msgstr "No scenarios in this project."
+
+#: templates/autotest/datafile_detail.html:52
+msgid "Файлыг шинэчлэх"
+msgstr "Replace file"
+
+#: templates/autotest/datafile_detail.html:54
+msgid "Шинэ хувилбараа оруулна. Өмнөх ажиллуулалтуудын үр дүн хэвээр үлдэнэ."
+msgstr "Upload a new version. Results of previous runs are kept."
+
+#: templates/autotest/datafile_detail.html:58
+msgid "Шинэчлэх"
+msgstr "Replace"
+
+#: templates/autotest/datafile_detail.html:62
+#, python-format
+msgid "'%(name)s' файлыг устгах уу? Өмнөх үр дүнгүүд үлдэнэ."
+msgstr "Delete file '%(name)s'? Previous results are kept."
+
+#: templates/autotest/datafile_detail.html:64
+msgid "Файл устгах"
+msgstr "Delete file"
+
+#: templates/autotest/datafile_form.html:3
+#: templates/autotest/datafile_list.html:10
+#: templates/autotest/scenario_detail.html:38
+msgid "Файл оруулах"
+msgstr "Upload file"
+
+#: templates/autotest/datafile_form.html:6
+msgid "Өгөгдлийн файл оруулах"
+msgstr "Upload data file"
+
+#: templates/autotest/datafile_form.html:20
+msgid "Оруулах"
+msgstr "Upload"
+
+#: templates/autotest/datafile_form.html:27
+msgid "Файлыг хэрхэн бэлдэх вэ"
+msgstr "How to prepare the file"
+
+#: templates/autotest/datafile_form.html:29
+msgid "Эхний мөрөнд баганын нэрс (email, password, phone ...)"
+msgstr "Column names in the first row (email, password, phone ...)"
+
+#: templates/autotest/datafile_form.html:30
+msgid "Мөр бүр нэг тест"
+msgstr "Each row is one test"
+
+#: templates/autotest/datafile_form.html:31
+msgid ""
+"<b>хүлээгдэх</b> баганад: <code>амжилттай</code>, <code>алдаа</code> эсвэл "
+"<code>алдаа: мессежийн хэсэг</code>"
+msgstr ""
+"In the <b>expected</b> column: <code>success</code>, <code>error</code> or "
+"<code>error: part of the message</code>"
+
+#: templates/autotest/datafile_form.html:32
+msgid "мөр бүрт шинэ утга (давхардахгүй имэйл үүсгэхэд)"
+msgstr "a new value for each row (to create unique emails)"
+
+#: templates/autotest/datafile_form.html:39 templates/autotest/home.html:20
+msgid "Жишээ загвар татах"
+msgstr "Download sample template"
+
+#: templates/autotest/datafile_list.html:9
+msgid "Жишээ загвар"
+msgstr "Sample template"
+
+#: templates/autotest/datafile_list.html:13
+msgid ""
+"Нэг файлыг олон сценарид (бүртгэл, нэвтрэх ...) болон өөр өөр орчинд дахин "
+"ашиглаж болно."
+msgstr ""
+"One file can be reused across many scenarios (sign-up, login ...) and "
+"different environments."
+
+#: templates/autotest/datafile_list.html:17
+msgid "Баганууд"
+msgstr "Columns"
+
+#: templates/autotest/datafile_list.html:17
+msgid "Ашигласан"
+msgstr "Used"
+
+#: templates/autotest/datafile_list.html:17
+msgid "Шинэчилсэн"
+msgstr "Updated"
+
+#: templates/autotest/datafile_list.html:25
+#, python-format
+msgid "%(n)s удаа"
+msgid_plural "%(n)s удаа"
+msgstr[0] "%(n)s time"
+msgstr[1] "%(n)s times"
+
+#: templates/autotest/datafile_list.html:29
+msgid "Файл оруулаагүй байна."
+msgstr "No files uploaded yet."
+
+#: templates/autotest/home.html:12
+msgid ""
+"Өгөгдлийн файлаа (Excel/CSV) оруулаад, апп-ын хуудсан дээр мөр бүрийг "
+"автоматаар бөглүүлж, гарсан хариуг хүлээгдэж буй үр дүнтэй тулгана."
+msgstr ""
+"Upload a data file (Excel/CSV), have each row filled in automatically on the"
+" app page, and compare the response with the expected result."
+
+#: templates/autotest/home.html:17
+msgid "Хэрхэн эхлэх вэ"
+msgstr "How to get started"
+
+#: templates/autotest/home.html:19
+msgid ""
+"PM/Admin шалгах апп-аа бүртгэж, орчны хаягийг (жишээ: "
+"https://staging.shop.mn) нэмнэ."
+msgstr ""
+"A PM/Admin registers the app to test and adds an environment URL (e.g. "
+"https://staging.shop.mn)."
+
+#: templates/autotest/home.html:20
+msgid "QA өгөгдлийн файлаа оруулна."
+msgstr "QA uploads a data file."
+
+#: templates/autotest/home.html:21
+msgid ""
+"Сценари үүсгэнэ: хуудасны хаягаа оруулаад 'Шалгах' дарахад талбаруудыг олж, "
+"файлын баганатай холбоно."
+msgstr ""
+"Create a scenario: enter the page path and click 'Scan' — fields are "
+"detected and mapped to the file columns."
+
+#: templates/autotest/home.html:22
+msgid "Ажиллуулаад үр дүнгээ харна. Унасан мөрөөс шууд bug ticket үүсгэнэ."
+msgstr ""
+"Run it and review the results. Create bug tickets directly from failed rows."
+
+#: templates/autotest/home.html:39
+#, python-format
+msgid "%(n)s сценари"
+msgid_plural "%(n)s сценари"
+msgstr[0] "%(n)s scenario"
+msgstr[1] "%(n)s scenarios"
+
+#: templates/autotest/home.html:40
+#, python-format
+msgid "%(n)s орчин"
+msgid_plural "%(n)s орчин"
+msgstr[0] "%(n)s environment"
+msgstr[1] "%(n)s environments"
+
+#: templates/autotest/home.html:49
+msgid "Сүүлийн ажиллуулалтууд"
+msgstr "Recent runs"
+
+#: templates/autotest/run_detail.html:18
+msgid "Зогсоох"
+msgstr "Stop"
+
+#: templates/autotest/run_detail.html:20
+msgid "Дахин ажиллуулах"
+msgstr "Run again"
+
+#: templates/autotest/run_detail.html:23
+msgid "Excel татах"
+msgstr "Download Excel"
+
+#: templates/autotest/run_detail.html:28
+msgid ""
+"Дараалалд удаж байна — тест ажиллуулагч (worker) асаагүй байж магадгүй. "
+"Админ: python manage.py run_autotest_worker"
+msgstr ""
+"Queued for a while — the test worker may not be running. Admin: python "
+"manage.py run_autotest_worker"
+
+#: templates/autotest/run_detail.html:31
+msgid "Явц"
+msgstr "Progress"
+
+#: templates/autotest/run_detail.html:35
+msgid "Ажиллуулж чадаагүй"
+msgstr "Could not run"
+
+#: templates/autotest/run_detail.html:42
+msgid "Зөвхөн унасан"
+msgstr "Failed only"
+
+#: templates/autotest/run_detail.html:45
+msgid "Сонгосноос bug ticket үүсгэх"
+msgstr "Create bug ticket from selected"
+
+#: templates/autotest/scenario_detail.html:15
+#, python-format
+msgid "'%(name)s' сценарийг бүх үр дүнгийн хамт устгах уу?"
+msgstr "Delete scenario '%(name)s' together with all its results?"
+
+#: templates/autotest/scenario_detail.html:27
+#: templates/autotest/scenario_detail.html:34
+msgid "Ажиллуулах"
+msgstr "Run"
+
+#: templates/autotest/scenario_detail.html:37
+msgid "Ажиллуулахын тулд энэ төсөлд өгөгдлийн файл, апп-д орчин хэрэгтэй."
+msgstr ""
+"To run, this project needs a data file and the app needs an environment."
+
+#: templates/autotest/scenario_detail.html:46
+msgid "Тохиргоо"
+msgstr "Configuration"
+
+#: templates/autotest/scenario_detail.html:49
+msgid "Талбар"
+msgstr "Field"
+
+#: templates/autotest/scenario_detail.html:54
+msgid "багана"
+msgstr "column"
+
+#: templates/autotest/scenario_detail.html:54
+msgid "чагтлана"
+msgstr "checked"
+
+#: templates/autotest/scenario_detail.html:59
+#: templates/autotest/scenario_form.html:66
+msgid "Илгээх товч"
+msgstr "Submit button"
+
+#: templates/autotest/scenario_detail.html:59
+msgid "автоматаар"
+msgstr "automatic"
+
+#: templates/autotest/scenario_detail.html:60
+msgid "Амжилттай гэж үзэх"
+msgstr "Considered successful"
+
+#: templates/autotest/scenario_detail.html:61
+msgid "Хүлээгдэх багана"
+msgstr "Expected column"
+
+#: templates/autotest/scenario_detail.html:68
+msgid "Ажиллуулсан түүх"
+msgstr "Run history"
+
+#: templates/autotest/scenario_form.html:6
+msgid "Сценари засах"
+msgstr "Edit scenario"
+
+#: templates/autotest/scenario_form.html:17
+msgid "Ямар хуудсыг шалгах вэ"
+msgstr "Which page to test"
+
+#: templates/autotest/scenario_form.html:21
+msgid "Сценарийн нэр"
+msgstr "Scenario name"
+
+#: templates/autotest/scenario_form.html:38
+msgid "Жишээ өгөгдлийн файл"
+msgstr "Sample data file"
+
+#: templates/autotest/scenario_form.html:40
+msgid "— сонгохгүй —"
+msgstr "— none —"
+
+#: templates/autotest/scenario_form.html:43
+msgid "Сонговол түүний багануудыг талбаруудтай автоматаар холбоно."
+msgstr "If selected, its columns are mapped to fields automatically."
+
+#: templates/autotest/scenario_form.html:46
+msgid "Хуудсыг шалгах"
+msgstr "Scan page"
+
+#: templates/autotest/scenario_form.html:55
+msgid "Талбар бүрт юу бичих вэ"
+msgstr "What to enter in each field"
+
+#: templates/autotest/scenario_form.html:56
+msgid "Талбар гараар нэмэх"
+msgstr "Add field manually"
+
+#: templates/autotest/scenario_form.html:60
+msgid "Хуудсан дээрх талбар"
+msgstr "Field on the page"
+
+#: templates/autotest/scenario_form.html:60
+msgid "Юу бичих"
+msgstr "What to enter"
+
+#: templates/autotest/scenario_form.html:73
+msgid "Үр дүнг хэрхэн шалгах вэ"
+msgstr "How to check the result"
+
+#: templates/autotest/scenario_form.html:91
+msgid "заавал биш"
+msgstr "optional"
+
+#: templates/autotest/scenario_form.html:96
+msgid "Нарийвчилсан тохиргоо"
+msgstr "Advanced settings"
+
+#: templates/autotest/scenario_form.html:121
+msgid "Алгасах"
+msgstr "Skip"
+
+#: templates/autotest/scenario_form.html:122
+msgid "Файлын баганаас"
+msgstr "From file column"
+
+#: templates/autotest/scenario_form.html:123
+msgid "Тогтмол утга"
+msgstr "Fixed value"
+
+#: templates/autotest/scenario_form.html:124
+msgid "Үргэлж чагтлах"
+msgstr "Always check"
+
+#: templates/autotest/scenario_form.html:134
+msgid "текст"
+msgstr "text"
+
+#: templates/autotest/scenario_form.html:134
+msgid "имэйл"
+msgstr "email"
+
+#: templates/autotest/scenario_form.html:134
+msgid "нууц үг"
+msgstr "password"
+
+#: templates/autotest/scenario_form.html:134
+msgid "чагт"
+msgstr "checkbox"
+
+#: templates/autotest/scenario_form.html:134
+msgid "сонголт"
+msgstr "option"
+
+#: templates/autotest/scenario_form.html:134
+msgid "жагсаалт"
+msgstr "dropdown"
+
+#: templates/autotest/scenario_form.html:135
+msgid "Автоматаар (type=submit товч)"
+msgstr "Automatic (type=submit button)"
+
+#: templates/autotest/scenario_form.html:136
+msgid "Хуудсыг шалгаж байна…"
+msgstr "Scanning the page…"
+
+#: templates/autotest/scenario_form.html:137
+msgid ""
+"Удаж байна — тест ажиллуулагч (worker) асаагүй байж магадгүй: python "
+"manage.py run_autotest_worker"
+msgstr ""
+"Taking a while — the test worker may not be running: python manage.py "
+"run_autotest_worker"
+
+#: templates/autotest/scenario_form.html:138
+msgid "талбар оллоо"
+msgstr "fields found"
+
+#: templates/autotest/scenario_form.html:139
+msgid "баганын нэр"
+msgstr "column name"
+
+#: templates/autotest/scenario_form.html:140
+msgid "үргэлж бичих утга"
+msgstr "value to always enter"
+
+#: templates/autotest/scenario_form.html:141
+msgid "Хуудсыг шалгаж талбаруудаа олно уу."
+msgstr "Scan the page to find its fields."
+
+#: templates/autotest/scenario_form.html:142
+msgid "Талбарын нэр (жишээ: Имэйл):"
+msgstr "Field name (e.g. Email):"
+
+#: templates/autotest/scenario_form.html:143
+msgid "CSS selector (жишээ: #email):"
+msgstr "CSS selector (e.g. #email):"
+
+#: templates/autotest/scenario_form.html:144
+msgid "Эхлээд хуудсыг шалгаж талбаруудаа тохируулна уу."
+msgstr "First scan the page and configure the fields."
+
+#: templates/autotest/scenario_form.html:145
+msgid "Хуудасны замыг оруулна уу."
+msgstr "Please enter the page path."
 
 #: templates/base.html:32 templates/tickets/ticket_list.html:71
 msgid "Шинэ ticket"
@@ -1122,27 +2329,41 @@ msgstr "My work"
 msgid "Миний баг"
 msgstr "My team"
 
-#: templates/base.html:54
+#: templates/base.html:60
 msgid "Удирдлага"
 msgstr "Management"
 
-#: templates/base.html:88
+#: templates/base.html:94
 msgid "Миний профайл"
 msgstr "My profile"
 
-#: templates/base.html:93 templates/registration/password_change_form.html:3
+#: templates/base.html:99 templates/registration/password_change_form.html:3
 #: templates/registration/password_change_form.html:5
 #: templates/tickets/dashboard.html:47
 msgid "Нууц үг солих"
 msgstr "Change password"
 
-#: templates/base.html:96
+#: templates/base.html:102
 msgid "Гарах"
 msgstr "Log out"
 
-#: templates/base.html:133
+#: templates/base.html:139
 msgid "Итгэлтэй байна уу?"
 msgstr "Are you sure?"
+
+#: templates/categories/_category_delete_form.html:5
+#, python-format
+msgid "%(n)s ticket холбоотой тул устгах боломжгүй"
+msgstr "Cannot delete: %(n)s linked tickets"
+
+#: templates/categories/_category_delete_form.html:11
+#, python-format
+msgid ""
+"'%(name)s' ангиллыг устгахдаа итгэлтэй байна уу? Багийн холбоосууд нь хамт "
+"устана. Энэ үйлдлийг буцаах боломжгүй."
+msgstr ""
+"Are you sure you want to delete category '%(name)s'? Its team links will be "
+"removed too. This cannot be undone."
 
 #: templates/categories/category_form.html:10
 msgid "Ангиллын мэдээлэл"
@@ -1151,6 +2372,39 @@ msgstr "Category info"
 #: templates/categories/category_form.html:30
 msgid "Баг алга байна. Эхлээд баг үүсгэнэ үү."
 msgstr "No teams yet. Create a team first."
+
+#: templates/categories/category_form.html:50
+#: templates/projects/project_form.html:46
+#, python-format
+msgid "%(counter)s ticket"
+msgid_plural "%(counter)s ticket"
+msgstr[0] "%(counter)s ticket"
+msgstr[1] "%(counter)s tickets"
+
+#: templates/categories/category_form.html:54
+#, python-format
+msgid ""
+"'%(name)s' дэд ангиллыг устгахдаа итгэлтэй байна уу? Холбоотой ticket-үүдийн"
+" дэд ангилал хоосон болно."
+msgstr ""
+"Are you sure you want to delete subcategory '%(name)s'? Linked tickets will "
+"lose their subcategory."
+
+#: templates/categories/category_form.html:60
+msgid ""
+"Дэд ангилал алга. Ticket үүсгэхэд энэ талбар саарал (идэвхгүй) харагдана."
+msgstr ""
+"No subcategories. This field will appear greyed out when creating a ticket."
+
+#: templates/categories/category_form.html:66
+msgid "ж: iOS"
+msgstr "e.g. iOS"
+
+#: templates/categories/category_form.html:67
+#: templates/categories/team_list.html:21
+#: templates/projects/project_form.html:71
+msgid "Нэмэх"
+msgstr "Add"
 
 #: templates/categories/category_list.html:6
 msgid "Ангилал (Category)"
@@ -1169,20 +2423,20 @@ msgstr ""
 "When a ticket is created, it is <strong>automatically routed to a "
 "team</strong> based on the category selected here."
 
-#: templates/categories/category_list.html:35
+#: templates/categories/category_list.html:36
 #, python-format
 msgid "%(n)s баг · ачааллаар хуваарилна"
 msgstr "%(n)s teams · load-balanced"
 
-#: templates/categories/category_list.html:48
+#: templates/categories/category_list.html:49
 msgid "Баг тохируулаагүй — ticket routing хийгдэхгүй"
 msgstr "No team set — tickets won't be routed"
 
-#: templates/categories/category_list.html:55
+#: templates/categories/category_list.html:56
 msgid "Хайлтад тохирох ангилал олдсонгүй."
 msgstr "No categories match your search."
 
-#: templates/categories/category_list.html:55
+#: templates/categories/category_list.html:56
 msgid "Ангилал алга байна."
 msgstr "No categories yet."
 
@@ -1275,11 +2529,6 @@ msgstr "Teams"
 msgid "Шинэ баг нэмэх"
 msgstr "Add new team"
 
-#: templates/categories/team_list.html:21
-#: templates/projects/project_form.html:71
-msgid "Нэмэх"
-msgstr "Add"
-
 #: templates/categories/team_list.html:33
 #, python-format
 msgid "%(n)s гишүүн"
@@ -1335,13 +2584,6 @@ msgstr ""
 #: templates/projects/project_list.html:15
 msgid "Модулиуд"
 msgstr "Modules"
-
-#: templates/projects/project_form.html:46
-#, python-format
-msgid "%(counter)s ticket"
-msgid_plural "%(counter)s ticket"
-msgstr[0] "%(counter)s ticket"
-msgstr[1] "%(counter)s tickets"
 
 #: templates/projects/project_form.html:51
 #, python-format
@@ -1402,7 +2644,7 @@ msgid "Developer → QA → хаах хүртэлх тодорхой workflow"
 msgstr "A clear Developer → QA → Closed workflow"
 
 #: templates/registration/login.html:3 templates/registration/login.html:6
-#: templates/registration/login.html:25
+#: templates/registration/login.html:27
 #: templates/registration/password_reset_complete.html:8
 msgid "Нэвтрэх"
 msgstr "Log in"
@@ -1416,20 +2658,20 @@ msgstr "Forgot your password?"
 msgid "Үргэлжлүүлэхийн тулд бүртгэлээрээ нэвтэрнэ үү."
 msgstr "Sign in with your account to continue."
 
-#: templates/registration/login.html:9
+#: templates/registration/login.html:11
 msgid "Хэрэглэгчийн нэр эсвэл нууц үг буруу байна."
 msgstr "Incorrect username or password."
 
-#: templates/registration/login.html:13
+#: templates/registration/login.html:15
 #: templates/registration/password_reset_email.html:7
 msgid "Хэрэглэгчийн нэр"
 msgstr "Username"
 
-#: templates/registration/login.html:18
+#: templates/registration/login.html:20
 msgid "Нууц үг"
 msgstr "Password"
 
-#: templates/registration/login.html:22
+#: templates/registration/login.html:24
 msgid "Нууц үг харах"
 msgstr "Show password"
 
@@ -1554,10 +2796,6 @@ msgstr "If you have no email on file, ask an Admin to reset your password."
 msgid "Foxt TMS — нууц үг шинэчлэх"
 msgstr "Foxt TMS — password reset"
 
-#: templates/tickets/_export_menu.html:4
-msgid "Татах"
-msgstr "Export"
-
 #: templates/tickets/_export_menu.html:11
 msgid "Хэвлэх"
 msgstr "Print"
@@ -1575,7 +2813,7 @@ msgstr "Create new ticket"
 msgid "Хаах"
 msgstr "Close"
 
-#: templates/tickets/_quick_ticket_drawer.html:28
+#: templates/tickets/_quick_ticket_drawer.html:32
 msgid ""
 "Сонгосон зэргээс хамаарч хариу өгөх болон шийдвэрлэх SLA хугацаа автоматаар "
 "тооцоологдоно."
@@ -1583,10 +2821,14 @@ msgstr ""
 "Response and resolution SLA deadlines are calculated automatically from the "
 "selected priority."
 
-#: templates/tickets/_quick_ticket_drawer.html:53
-#: templates/tickets/ticket_form.html:26
+#: templates/tickets/_quick_ticket_drawer.html:57
+#: templates/tickets/ticket_form.html:32
 msgid "Үүсгэх"
 msgstr "Create"
+
+#: templates/tickets/_subcategory_script.html:19
+msgid "Дэд ангилал байхгүй"
+msgstr "No subcategories"
 
 #: templates/tickets/dashboard.html:12
 msgid "Профайлын зураг солих"
@@ -1940,8 +3182,8 @@ msgstr ""
 " listed first."
 
 #: templates/tickets/ticket_detail.html:152
-msgid "Тайлбар (сонголтоор)"
-msgstr "Comment (optional)"
+msgid "\"Татгалзсан\", \"Дахин нээгдсэн\" үед шалтгаан заавал"
+msgstr "A reason is required for \"Rejected\" and \"Reopened\""
 
 #: templates/tickets/ticket_detail.html:154
 msgid "Шилжүүлэх"
@@ -1998,6 +3240,15 @@ msgstr "Edit ticket"
 msgid "Шинэ Ticket үүсгэх"
 msgstr "Create New Ticket"
 
+#: templates/tickets/ticket_form.html:13
+#, python-format
+msgid ""
+"Автомат тестийн #%(id)s ажиллуулалтын %(n)s унасан мөрөөс үүсгэж байна. "
+"Дэлгэцийн зургууд хавсралт болж орно."
+msgstr ""
+"Creating from %(n)s failed rows of autotest run #%(id)s. Screenshots will be"
+" attached."
+
 #: templates/tickets/ticket_list.html:14
 msgid "Гарчиг эсвэл дугаараар хайх (FXT000001)"
 msgstr "Search by title or number (FXT000001)"
@@ -2050,55 +3301,3 @@ msgstr "Change status"
 #: templates/tickets/ticket_list.html:188
 msgid "Хэрэгжүүлэх"
 msgstr "Apply"
-
-msgid "'%(name)s' ангилалд %(n)s ticket холбоотой тул устгах боломжгүй."
-msgstr "Category '%(name)s' has %(n)s linked tickets and cannot be deleted."
-
-msgid "'%(name)s' ангилал устгагдлаа."
-msgstr "Category '%(name)s' was deleted."
-
-msgid "%(n)s ticket холбоотой тул устгах боломжгүй"
-msgstr "Cannot delete: %(n)s linked tickets"
-
-msgid ""
-"'%(name)s' ангиллыг устгахдаа итгэлтэй байна уу? Багийн холбоосууд нь хамт "
-"устана. Энэ үйлдлийг буцаах боломжгүй."
-msgstr ""
-"Are you sure you want to delete category '%(name)s'? Its team links will be "
-"removed too. This cannot be undone."
-
-msgid "Дэд ангилал"
-msgstr "Subcategory"
-
-msgid "Дэд ангилал байхгүй"
-msgstr "No subcategories"
-
-msgid "Сонгосон дэд ангилал сонгосон ангилалд харьяалагдахгүй байна."
-msgstr "The selected subcategory does not belong to the selected category."
-
-msgid "Дэд ангиллын нэрийг оруулна уу."
-msgstr "Please enter a subcategory name."
-
-msgid "'%(name)s' дэд ангилал аль хэдийн байна."
-msgstr "Subcategory '%(name)s' already exists."
-
-msgid "'%(name)s' дэд ангилал нэмэгдлээ."
-msgstr "Subcategory '%(name)s' was added."
-
-msgid "'%(name)s' дэд ангилал устгагдлаа."
-msgstr "Subcategory '%(name)s' was deleted."
-
-msgid ""
-"'%(name)s' дэд ангиллыг устгахдаа итгэлтэй байна уу? Холбоотой ticket-үүдийн "
-"дэд ангилал хоосон болно."
-msgstr ""
-"Are you sure you want to delete subcategory '%(name)s'? Linked tickets will "
-"lose their subcategory."
-
-msgid ""
-"Дэд ангилал алга. Ticket үүсгэхэд энэ талбар саарал (идэвхгүй) харагдана."
-msgstr ""
-"No subcategories. This field will appear greyed out when creating a ticket."
-
-msgid "ж: iOS"
-msgstr "e.g. iOS"

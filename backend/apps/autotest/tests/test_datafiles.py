@@ -96,3 +96,18 @@ class SuggestMappingTests(SimpleTestCase):
         fields = [{"label": "Нууц үг"}, {"label": "password"}]
         mapped = suggest_mapping(fields, ["password"])
         self.assertEqual([f["source"] for f in mapped], ["column", "skip"])
+
+
+class BaseUrlValidatorTests(SimpleTestCase):
+    def test_accepts_single_label_hosts_like_docker_services(self):
+        from apps.autotest.models import validate_base_url
+        for url in ["http://web:8000", "http://web", "https://staging.shop.mn", "http://localhost:8000/x"]:
+            validate_base_url(url)
+
+    def test_rejects_bad_urls(self):
+        from django.core.exceptions import ValidationError
+
+        from apps.autotest.models import validate_base_url
+        for url in ["web:8000", "ftp://web", "http://", "http://web:99999", "http://-web-"]:
+            with self.assertRaises(ValidationError, msg=url):
+                validate_base_url(url)

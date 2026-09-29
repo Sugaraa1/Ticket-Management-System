@@ -11,7 +11,11 @@
 Browser ажиллуулах бүх ажлыг (TestRun, PageScan) `run_autotest_worker` процесс
 DB-ийн дарааллаас авч гүйцэтгэнэ — вэб серверт Chromium шаардлагагүй.
 """
+import re
+from urllib.parse import urlsplit
+
 from django.conf import settings
+from django.core.validators import URLValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -38,10 +42,31 @@ class TestApp(TimeStampedModel):
         return self.name
 
 
+_SINGLE_LABEL_HOST = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?")
+
+
+def validate_base_url(value):
+    """
+    URLValidator + цэггүй хост нэр (http://web:8000 гэх мэт Docker service, дотоод
+    сүлжээний машины нэр). Хост руу хандаж болох эсэхийг runner-т safety.check_url шалгана.
+    """
+    try:
+        parts = urlsplit(value)
+        if parts.hostname and _SINGLE_LABEL_HOST.fullmatch(parts.hostname):
+            port = f":{parts.port}" if parts.port else ""
+            value = parts._replace(netloc="localhost" + port).geturl()
+    except ValueError:
+        pass  # буруу port гэх мэт — URLValidator өөрөө алдаа өгнө
+    URLValidator(schemes=["http", "https"])(value)
+
+
 class Environment(models.Model):
     app = models.ForeignKey(TestApp, related_name="environments", on_delete=models.CASCADE)
     name = models.CharField(_("Орчин"), max_length=50, help_text=_("Жишээ: dev, staging"))
-    base_url = models.URLField(_("Үндсэн хаяг"), help_text=_("Жишээ: https://staging.shop.mn"))
+    base_url = models.CharField(
+        _("Үндсэн хаяг"), max_length=200, validators=[validate_base_url],
+        help_text=_("Жишээ: https://staging.shop.mn"),
+    )
 
     class Meta:
         ordering = ["name"]
