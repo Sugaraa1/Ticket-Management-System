@@ -27,7 +27,7 @@ from .models import DataFile, Environment, PageScan, RunResult, Scenario, TestAp
 
 VIEW_ROLES = (ROLE_ADMIN, ROLE_PM, ROLE_QA, ROLE_DEV)
 EDIT_ROLES = (ROLE_ADMIN, ROLE_PM, ROLE_QA)
-APP_ROLES = (ROLE_ADMIN, ROLE_PM)
+APP_ROLES = (ROLE_ADMIN, ROLE_PM, ROLE_QA)
 PREVIEW_ROWS = 10
 
 

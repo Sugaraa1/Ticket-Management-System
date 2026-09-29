@@ -27,10 +27,10 @@ class PermissionTests(TempMediaMixin, TestCase):
                          {"data_file": self.data_file.pk, "environment": self.env.pk})
         self.assertFalse(TestRun.objects.exists())
 
-    def test_qa_cannot_register_apps_but_can_create_scenarios(self):
+    def test_qa_can_register_apps_and_create_scenarios(self):
         self.client.force_login(make_user("qa", ROLE_QA))
         self.client.post(reverse("autotest:app_create"), {"project": self.app.project_id, "name": "Other"})
-        self.assertFalse(TestApp.objects.filter(name="Other").exists())
+        self.assertTrue(TestApp.objects.filter(name="Other").exists())
         response = self.client.get(reverse("autotest:scenario_create", args=[self.app.pk]))
         self.assertEqual(response.status_code, 200)
 
