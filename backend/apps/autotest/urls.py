@@ -21,6 +21,7 @@ urlpatterns = [
     path("files/<int:pk>/", views.datafile_detail, name="datafile_detail"),
     path("files/<int:pk>/replace/", views.datafile_replace, name="datafile_replace"),
     path("files/<int:pk>/delete/", views.datafile_delete, name="datafile_delete"),
+    path("files/<int:pk>/mapping/", views.datafile_mapping, name="datafile_mapping"),
     path("files/<int:pk>/download/", views.datafile_download, name="datafile_download"),
     path("scenarios/<int:pk>/", views.scenario_detail, name="scenario_detail"),
     path("scenarios/<int:pk>/edit/", views.scenario_edit, name="scenario_edit"),

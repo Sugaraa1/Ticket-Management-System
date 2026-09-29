@@ -329,3 +329,32 @@ class EnvironmentCreateTests(TempMediaMixin, TestCase):
         response = self.client.post(url, {"name": "prod", "base_url": "http://web:8000"})
         self.assertRedirects(response, reverse("autotest:app_detail", args=[app.pk]))
         self.assertEqual(app.environments.count(), 2)
+
+
+class RunnerFailureTests(TempMediaMixin, TestCase):
+    def test_missing_columns_fail_with_clear_message(self):
+        """Файлд сценарийн багана алга бол ойлгомжтой мессежтэй зогсоно (browser нээхгүй)."""
+        from apps.autotest.runner import execute_run
+
+        _app, env, scenario, data_file = make_setup(rows=[["Тайлбар", "email", "хүлээгдэх"], ["a", "a@b.mn", ""]])
+        run = TestRun.objects.create(scenario=scenario, data_file=data_file, environment=env,
+                                     data_file_name="users", environment_name="staging",
+                                     target_url=env.url_for(scenario.page_path), total=1)
+        execute_run(run)
+        run.refresh_from_db()
+        self.assertEqual(run.status, TestRun.Status.FAILED)
+        self.assertIn("Файлд дараах багана алга: password", run.error_message)
+
+
+class DataFileMappingTests(TempMediaMixin, TestCase):
+    def test_fields_are_remapped_to_new_file_columns(self):
+        _app, _env, _scenario, data_file = make_setup(
+            rows=[["Тайлбар", "Имэйл", "Нууц үг", "хүлээгдэх"], ["a", "a@b.mn", "x", ""]]
+        )
+        self.client.force_login(make_user("qa", ROLE_QA))
+        fields = [{"label": "Имэйл", "selector": "#email", "kind": "email", "source": "column", "value": "email"},
+                  {"label": "Нууц үг", "selector": "#pw", "kind": "password", "source": "column", "value": "password"}]
+        data = self.client.post(reverse("autotest:datafile_mapping", args=[data_file.pk]),
+                                {"fields_json": json.dumps(fields)}).json()
+        self.assertEqual([f["value"] for f in data["fields"]], ["Имэйл", "Нууц үг"])
+        self.assertIn("хүлээгдэх", data["columns"])

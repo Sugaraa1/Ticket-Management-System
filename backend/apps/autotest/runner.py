@@ -175,10 +175,12 @@ def _new_context(browser):
 
 def _guard_requests(context):
     """
-    Хуудас дотроос хийгдэх хүсэлт бүрийг (iframe, fetch ...) safety.check_url-аар шалгана.
-    Хуудас шилжих хүсэлтийн redirect-ийг (Playwright route-д харагддаггүй) хариуг нь өөрөө
-    авч шалгана — эс тэгвэл нийтийн сайт 169.254.x.x (cloud metadata) руу redirect хийж,
-    түүний агуулга дэлгэцийн зурагт үлдэж болно. Хост бүрийг нэг л удаа шалгана.
+    Хуудас дотроос хийгдэх бүх хүсэлтийг (хуудас, iframe, fetch, зураг ...) safety.check_url-аар
+    шалгана. Redirect-ийг browser өөрөө дагавал route-д харагддаггүй тул хариуг энд авч
+    (redirect дагахгүйгээр), Location нь аюулгүй бол л browser-т дамжуулна — эс тэгвэл нийтийн
+    сайт 169.254.x.x (cloud metadata) руу redirect хийж, агуулга нь дэлгэцийн зурагт үлдэж болно.
+    (Зөвхөн хуудас шилжилтийг ингэж дамжуулбал Chromium нэг сайтын static файлуудыг ERR_FAILED
+    болгодог тул бүх хүсэлтийг ижил замаар дамжуулна.) Хост бүрийг нэг л удаа шалгана.
     """
     decisions = {}
 
@@ -196,14 +198,19 @@ def _guard_requests(context):
         return decisions[key]
 
     def handle(route):
-        request = route.request
-        if not allowed(request.url):
-            return route.abort("blockedbyclient")
-        if not request.is_navigation_request():
+        from playwright.sync_api import Error as PlaywrightError
+
+        url = route.request.url
+        if urlsplit(url).scheme not in ("http", "https"):
             return route.continue_()
-        response = route.fetch(max_redirects=0)
+        if not allowed(url):
+            return route.abort("blockedbyclient")
+        try:
+            response = route.fetch(max_redirects=0, timeout=NAV_TIMEOUT_MS)
+        except PlaywrightError:
+            return route.abort("failed")
         location = response.headers.get("location")
-        if 300 <= response.status < 400 and location and not allowed(urljoin(request.url, location)):
+        if 300 <= response.status < 400 and location and not allowed(urljoin(url, location)):
             return route.abort("blockedbyclient")
         route.fulfill(response=response)  # redirect-ийг browser дагаж, шинэ хүсэлт дахин энд шалгагдана
 
@@ -338,7 +345,7 @@ def _load_rows(run):
         raise DataFileError(_("Өгөгдлийн файл устгагдсан байна."))
     try:
         with data_file.file.open("rb") as fh:
-            _, rows = read_rows(fh, data_file.file.name)
+            _columns, rows = read_rows(fh, data_file.file.name)
     except FileNotFoundError:
         raise DataFileError(_("Өгөгдлийн файл серверээс олдсонгүй."))
     missing = [c for c in run.scenario.required_columns() if c not in rows[0][1]]
@@ -374,9 +381,12 @@ def run_row(browser, scenario, url, row, line_number):
         _settle(page)
         start_url = page.url
         _fill_fields(page, scenario, row, line_number, result["used_values"])
+        # Browser-ийн өөрийн шалгалтыг (required, type=email) илгээхээс ӨМНӨ уншина — илгээсний
+        # дараа сервер талбарыг хоосолж буцаавал (нууц үг г.м.) түүнийг алдаа гэж андуурахгүй.
+        invalid = page.evaluate(INVALID_JS, scenario.submit_selector or DEFAULT_SUBMIT_SELECTOR)
         _submit(page, scenario)
         _settle(page)
-        outcome, message, page_text = _read_outcome(page, scenario, start_url)
+        outcome, message, page_text = _read_outcome(page, scenario, start_url, invalid)
         result.update(actual_outcome=outcome, actual_message=message, final_url=page.url)
         result["verdict"] = judge(expected_outcome, expected_message, outcome, message + "\n" + page_text)
     except RowError as exc:
@@ -481,13 +491,13 @@ def _visible_texts(page, selector):
     return texts
 
 
-def _read_outcome(page, scenario, start_url):
+def _read_outcome(page, scenario, start_url, invalid=()):
     """(амжилттай/алдаа/тодорхойгүй, мессеж, хуудасны текст)."""
     url_changed = _strip_url(page.url) != _strip_url(start_url)
     errors = _visible_texts(page, scenario.error_selector or DEFAULT_ERROR_SELECTORS)
     if not url_changed:
-        # Хуудас шилжээгүй бол browser-ийн өөрийн шалгалт (required, type=email) илгээлтийг зогсоосон байж болно.
-        errors = page.evaluate(INVALID_JS, scenario.submit_selector or DEFAULT_SUBMIT_SELECTOR) + errors
+        # Хуудас шилжээгүй бол browser-ийн өөрийн шалгалт илгээлтийг зогсоосон байж болно.
+        errors = list(invalid) + errors
     successes = _visible_texts(page, SUCCESS_SELECTORS)
     try:
         page_text = page.locator("body").inner_text()[:20_000]

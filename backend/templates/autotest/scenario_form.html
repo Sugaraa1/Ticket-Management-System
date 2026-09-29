@@ -321,7 +321,7 @@
     columns.forEach(function (c) { if (!known[c]) { var o = document.createElement("option"); o.value = c; list.appendChild(o); } });
   }
   function guessExpected(columns) {
-    if (expectedInput.value) return;
+    if (expectedInput.value && columns.indexOf(expectedInput.value) !== -1) return;
     var hit = columns.filter(function (c) { return /^(хүлээгдэх|expected)/i.test(c.trim()); })[0];
     if (hit) expectedInput.value = hit;
   }
@@ -377,22 +377,28 @@
       });
   }
 
-  // Бэлэн файл: багануудыг талбаруудтай холбоно (хуудсаа шалгасан бол сервер тааруулна).
+  // Файл солиход талбаруудыг шинэ файлын баганатай дахин холбоно. Шинэ файлд байхгүй баганатай
+  // талбар "Бөглөхгүй" болно; "Үргэлж ижил утга" / "Үргэлж чагтлах" хэвээр үлдэнэ.
   sample.addEventListener("change", function () {
     var meta = fileMeta[sample.value];
-    if (meta) { addColumns(meta.columns); guessExpected(meta.columns); }
-    if (meta && lastScanId) {
-      fetch(scanStatusUrl(lastScanId)).then(function (r) { return r.json(); }).then(function (data) {
-        var bySelector = {};
-        (data.fields || []).forEach(function (f) { bySelector[f.selector] = f; });
-        fields.forEach(function (f) {
-          var s = bySelector[f.selector];
-          if (s && s.source === "column" && (f.source === "skip" || f.source === "column")) { f.source = "column"; f.value = s.value; }
+    syncSteps();
+    if (!meta || !fields.length) return;
+    addColumns(meta.columns);
+    guessExpected(meta.columns);
+    var body = new FormData();
+    body.append("csrfmiddlewaretoken", form.querySelector("[name=csrfmiddlewaretoken]").value);
+    body.append("fields_json", JSON.stringify(fields));
+    fetch("{% url 'autotest:datafile_mapping' 0 %}".replace("/0/", "/" + meta.id + "/"), {method: "POST", body: body})
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        fields.forEach(function (f, i) {
+          if (f.source !== "skip" && f.source !== "column") return;
+          var s = data.fields[i];
+          if (s && s.source === "column") { f.source = "column"; f.value = s.value; }
+          else if (f.source === "column" && data.columns.indexOf(f.value) === -1) { f.source = "skip"; f.value = ""; }
         });
         renderFields();
       });
-    }
-    syncSteps();
   });
 
   // Тест өгөгдөл үүсгэх: сервер файл үүсгээд багана ↔ талбарын холбоосыг буцаана.

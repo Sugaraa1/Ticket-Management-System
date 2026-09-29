@@ -1,3 +1,4 @@
+import json
 import os
 from urllib.parse import urlsplit
 
@@ -237,6 +238,19 @@ def datafile_download(request, pk):
     except FileNotFoundError:
         raise Http404(_("Файл олдсонгүй."))
     return FileResponse(handle, as_attachment=True, filename=os.path.basename(data_file.file.name))
+
+
+@roles_required(*EDIT_ROLES)
+@require_POST
+def datafile_mapping(request, pk):
+    """Сценарийн талбаруудыг сонгосон файлын баганатай дахин тааруулна (файл солиход)."""
+    data_file = get_object_or_404(DataFile, pk=pk)
+    try:
+        fields = json.loads(request.POST.get("fields_json") or "[]")
+    except ValueError:
+        fields = []
+    fields = [f for f in fields if isinstance(f, dict)][:100] if isinstance(fields, list) else []
+    return JsonResponse({"columns": data_file.columns, "fields": suggest_mapping(fields, data_file.columns)})
 
 
 @roles_required(*VIEW_ROLES)
