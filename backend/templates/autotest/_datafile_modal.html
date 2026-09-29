@@ -1,0 +1,151 @@
+{% load i18n %}
+{# Өгөгдлийн файлыг харах / хүснэгтээр засах цонх. JS: tmsDataFile.open(id, {edit, onSaved}) #}
+<div class="modal fade" id="dataFileModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header py-2 gap-2">
+        <h6 class="modal-title me-auto" id="dataFileTitle"></h6>
+        {% if can_edit %}<button type="button" class="btn btn-sm btn-outline-primary" id="dataFileEditBtn"><i class="bi bi-pencil"></i> {% trans "Засах" %}</button>{% endif %}
+        <a id="dataFileDownload" href="#" class="btn btn-sm btn-link"><i class="bi bi-download"></i> {% trans "Татах" %}</a>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Хаах" %}"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0 small tms-preview-table" id="dataFileTable"><thead></thead><tbody></tbody></table>
+        </div>
+      </div>
+      <div class="modal-footer py-2 justify-content-between">
+        <span class="small text-body-secondary" id="dataFileStatus"></span>
+        <div class="d-flex gap-2 tms-edit-only">
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="dataFileAddRow"><i class="bi bi-plus-lg"></i> {% trans "Мөр нэмэх" %}</button>
+          <button type="button" class="btn btn-sm btn-light" id="dataFileCancel">{% trans "Цуцлах" %}</button>
+          <button type="button" class="btn btn-sm btn-primary" id="dataFileSave"><i class="bi bi-check-lg"></i> {% trans "Хадгалах" %}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+window.tmsDataFile = (function () {
+  var T = {
+    rows: "{% trans 'мөр' %}",
+    saved: "{% trans 'Хадгалагдлаа' %}",
+    saving: "{% trans 'Хадгалж байна…' %}",
+    discard: "{% trans 'Хадгалаагүй өөрчлөлт алга болно. Хаах уу?' %}",
+    removeRow: "{% trans 'Мөр устгах' %}"
+  };
+  var modalEl = document.getElementById("dataFileModal");
+  var table = document.getElementById("dataFileTable");
+  var status = document.getElementById("dataFileStatus");
+  var editBtn = document.getElementById("dataFileEditBtn");
+  var state = {id: null, columns: [], rows: [], editing: false, dirty: false, onSaved: null};
+
+  function cell(tag, text, cls) {
+    var el = document.createElement(tag);
+    el.textContent = text;
+    if (cls) el.className = cls;
+    return el;
+  }
+
+  function render() {
+    var head = table.tHead, body = table.tBodies[0];
+    head.innerHTML = ""; body.innerHTML = "";
+    modalEl.classList.toggle("is-editing", state.editing);
+    var tr = document.createElement("tr");
+    tr.appendChild(cell("th", "#", "text-body-tertiary"));
+    state.columns.forEach(function (c) { tr.appendChild(cell("th", c)); });
+    if (state.editing) tr.appendChild(cell("th", ""));
+    head.appendChild(tr);
+    state.rows.forEach(function (row, r) {
+      var line = document.createElement("tr");
+      line.appendChild(cell("td", r + 2, "text-body-tertiary"));
+      row.forEach(function (value, c) {
+        var td = document.createElement("td");
+        if (state.editing) {
+          var input = document.createElement("input");
+          input.className = "form-control form-control-sm";
+          input.value = value;
+          input.addEventListener("input", function () { state.rows[r][c] = input.value; state.dirty = true; });
+          td.appendChild(input);
+        } else {
+          td.textContent = value === "" ? "∅" : value;
+          td.title = value;
+          if (value === "") td.className = "text-body-tertiary";
+        }
+        line.appendChild(td);
+      });
+      if (state.editing) {
+        var del = document.createElement("td");
+        var btn = document.createElement("button");
+        btn.type = "button"; btn.className = "btn btn-sm tms-icon-btn text-danger"; btn.title = T.removeRow;
+        btn.innerHTML = '<i class="bi bi-trash"></i>';
+        btn.addEventListener("click", function () { state.rows.splice(r, 1); state.dirty = true; render(); });
+        del.appendChild(btn);
+        line.appendChild(del);
+      }
+      body.appendChild(line);
+    });
+    status.textContent = state.rows.length + " " + T.rows;
+    status.className = "small text-body-secondary";
+  }
+
+  function load(id, edit) {
+    return fetch("{% url 'autotest:datafile_preview' 0 %}".replace("/0/", "/" + id + "/") + "?all=1")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        document.getElementById("dataFileTitle").textContent = data.name || "";
+        if (data.error) { status.textContent = data.error; status.className = "small text-danger"; return; }
+        document.getElementById("dataFileDownload").href = data.download_url;
+        state.columns = data.columns;
+        state.rows = data.rows.map(function (row) { return row[1].slice(); });
+        state.editing = !!edit; state.dirty = false;
+        render();
+      });
+  }
+
+  function open(id, opts) {
+    opts = opts || {};
+    state.id = id; state.onSaved = opts.onSaved || null;
+    load(id, opts.edit).then(function () { bootstrap.Modal.getOrCreateInstance(modalEl).show(); });
+  }
+
+  if (editBtn) editBtn.addEventListener("click", function () { state.editing = true; render(); });
+  document.getElementById("dataFileCancel").addEventListener("click", function () { load(state.id, false); });
+  document.getElementById("dataFileAddRow").addEventListener("click", function () {
+    state.rows.push(state.columns.map(function () { return ""; }));
+    state.dirty = true;
+    render();
+    var inputs = table.tBodies[0].lastElementChild.querySelectorAll("input");
+    if (inputs.length) inputs[0].focus();
+  });
+  document.getElementById("dataFileSave").addEventListener("click", function () {
+    var btn = this;
+    btn.disabled = true;
+    status.textContent = T.saving; status.className = "small text-body-secondary";
+    fetch("{% url 'autotest:datafile_save_rows' 0 %}".replace("/0/", "/" + state.id + "/"), {
+      method: "POST",
+      headers: {"Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}"},
+      body: JSON.stringify({rows: state.rows})
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        btn.disabled = false;
+        if (data.error) { status.textContent = data.error; status.className = "small text-danger"; return; }
+        state.dirty = false;
+        if (state.onSaved) state.onSaved(data);
+        load(state.id, false).then(function () {
+          status.textContent = "✓ " + T.saved + " · " + data.rows + " " + T.rows;
+          status.className = "small text-success";
+        });
+      })
+      .catch(function () { btn.disabled = false; });
+  });
+  // Хадгалаагүй өөрчлөлттэй бол хаахаас өмнө асууна.
+  modalEl.addEventListener("hide.bs.modal", function (e) {
+    if (state.editing && state.dirty && !window.confirm(T.discard)) e.preventDefault();
+  });
+  modalEl.addEventListener("hidden.bs.modal", function () { state.editing = false; state.dirty = false; });
+
+  return {open: open};
+})();
+</script>

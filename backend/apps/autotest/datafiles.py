@@ -92,6 +92,32 @@ def _read_xlsx(fileobj):
         workbook.close()
 
 
+def write_xlsx(columns, rows):
+    """
+    Гарчиг + мөрүүдийг .xlsx болгоно. Бүх утгыг текстээр хадгална — "=..."-ээр эхэлсэн утгыг
+    openpyxl томьёо гэж бичвэл дахин уншихад (data_only) хоосон болдог.
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = _("Өгөгдөл")
+    for row_index, values in enumerate([columns, *rows], start=1):
+        for col_index, value in enumerate(values, start=1):
+            cell = sheet.cell(row=row_index, column=col_index)
+            cell.value = "" if value is None else str(value)
+            cell.data_type = "s"
+            if row_index == 1:
+                cell.font = Font(bold=True)
+    for column in sheet.columns:
+        width = max(len(str(cell.value or "")) for cell in column)
+        sheet.column_dimensions[column[0].column_letter].width = min(max(width + 2, 10), 40)
+    buffer = io.BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
+
+
 def _read_csv(fileobj):
     data = fileobj.read()
     if isinstance(data, bytes):

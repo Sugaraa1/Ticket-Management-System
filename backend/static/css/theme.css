@@ -676,6 +676,9 @@ h1, h2, h3, h4, h5, .tms-page-title, .tms-toolbar-title { color: var(--navy); fo
 .tms-run-bar .is-pass { background: #22A05A; }
 .tms-run-bar .is-fail { background: #DC3F3F; }
 .tms-run-bar .is-review { background: #A9B0BC; }
+#dataFileModal:not(.is-editing) .tms-edit-only, #dataFileModal.is-editing #dataFileEditBtn { display: none !important; }
+#dataFileModal.is-editing .tms-preview-table td { max-width: none; min-width: 9rem; padding: .15rem; }
+.tms-preview-table td { max-width: 18rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tms-scenario-row { cursor: pointer; }
 .tms-scenario-row:hover { background: var(--bg); }
 .tms-last-run-hero { transition: box-shadow .15s; }

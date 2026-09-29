@@ -75,10 +75,13 @@
               <i class="bi bi-file-earmark-spreadsheet text-primary fs-5"></i>
               <span class="fw-semibold">{% trans "Бэлэн файл ашиглах" %}</span>
             </div>
-            <select id="sampleFile" class="form-select form-select-sm">
-              <option value="">{% trans "— файл сонгох —" %}</option>
-              {% for f in data_files %}<option value="{{ f.pk }}">{{ f.name }} ({% blocktrans count n=f.row_count %}{{ n }} мөр{% plural %}{{ n }} мөр{% endblocktrans %})</option>{% endfor %}
-            </select>
+            <div class="input-group input-group-sm">
+              <select id="sampleFile" class="form-select form-select-sm">
+                <option value="">{% trans "— файл сонгох —" %}</option>
+                {% for f in data_files %}<option value="{{ f.pk }}">{{ f.name }} ({% blocktrans count n=f.row_count %}{{ n }} мөр{% plural %}{{ n }} мөр{% endblocktrans %})</option>{% endfor %}
+              </select>
+              <button type="button" class="btn btn-outline-secondary" id="previewFileBtn" title="{% trans "Файлыг харах / засах" %}" disabled><i class="bi bi-eye"></i></button>
+            </div>
             <div class="small mt-2">
               <a href="{% url 'autotest:datafile_create' %}" target="_blank">{% trans "Шинэ файл оруулах" %} <i class="bi bi-box-arrow-up-right"></i></a>
               · <a href="{% url 'autotest:template_download' %}">{% trans "Жишээ загвар" %}</a>
@@ -191,6 +194,7 @@
   </tr>
 </template>
 
+{% include "autotest/_datafile_modal.html" with can_edit=True %}
 {{ data_files_meta|json_script:"dataFilesMeta" }}
 <script>
 (function () {
@@ -423,15 +427,32 @@
         fileMeta[data.id] = {id: data.id, name: data.name, columns: data.columns, rows: data.rows};
         var o = document.createElement("option");
         o.value = data.id; o.textContent = data.name + " (" + data.rows + " " + T.rows + ")";
-        sample.appendChild(o); sample.value = data.id;
+        sample.appendChild(o); sample.value = data.id; previewBtn.disabled = false;
         generatedId = String(data.id);
         addColumns(data.columns);
         expectedInput.value = data.expected_column;
         renderFields();
-        out.innerHTML = "✓ " + data.rows + " " + esc(T.generated) + ' — <a href="' + data.url + '" target="_blank">' + esc(T.openFile) + '</a>';
+        out.innerHTML = "✓ " + data.rows + " " + esc(T.generated) + ' — <a href="#" class="js-preview-file">' + esc(T.openFile) + '</a>';
         out.className = "small mt-2 text-success";
       })
       .catch(function (err) { setStatus(out, err.message, "danger"); btn.disabled = false; });
+  });
+
+  // Файлыг хуудсаа орхилгүй цонхонд харуулна / засна.
+  var previewBtn = document.getElementById("previewFileBtn");
+  function previewFile(id) {
+    tmsDataFile.open(id, {onSaved: function (data) {
+      var option = sample.querySelector('option[value="' + id + '"]');
+      if (option) option.textContent = data.name + " (" + data.rows + " " + T.rows + ")";
+      if (fileMeta[id]) fileMeta[id].rows = data.rows;
+    }});
+  }
+  previewBtn.addEventListener("click", function () { if (sample.value) previewFile(sample.value); });
+  sample.addEventListener("change", function () { previewBtn.disabled = !sample.value; });
+  document.getElementById("generateStatus").addEventListener("click", function (e) {
+    if (!e.target.closest(".js-preview-file")) return;
+    e.preventDefault();
+    previewFile(sample.value);
   });
 
   document.getElementById("addFieldBtn").addEventListener("click", function () {

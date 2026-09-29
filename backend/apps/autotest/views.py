@@ -31,6 +31,7 @@ from .models import DataFile, Environment, PageScan, RunResult, Scenario, TestAp
 # Автомат тестийг зөвхөн QA, Admin ашиглана (Dev bug ticket-ээр үр дүнг, зургийг авна).
 VIEW_ROLES = EDIT_ROLES = APP_ROLES = AUTOTEST_ROLES
 PREVIEW_ROWS = 10
+PREVIEW_MODAL_ROWS = 50
 
 
 def _can_edit(user):
@@ -238,6 +239,61 @@ def datafile_download(request, pk):
     except FileNotFoundError:
         raise Http404(_("Файл олдсонгүй."))
     return FileResponse(handle, as_attachment=True, filename=os.path.basename(data_file.file.name))
+
+
+@roles_required(*VIEW_ROLES)
+def datafile_preview(request, pk):
+    """Сценари тохируулж байх үед файлыг хуудсаа орхилгүй (цонхонд) харуулах JSON."""
+    from .datafiles import DataFileError, read_rows
+
+    data_file = get_object_or_404(DataFile, pk=pk)
+    try:
+        with data_file.file.open("rb") as fh:
+            _cols, rows = read_rows(fh, data_file.file.name)
+    except (DataFileError, FileNotFoundError) as exc:
+        return JsonResponse({"error": str(exc) or _("Файл серверээс олдсонгүй.")}, status=400)
+    limit = None if request.GET.get("all") else PREVIEW_MODAL_ROWS  # засахад бүх мөр хэрэгтэй
+    return JsonResponse({
+        "name": data_file.name,
+        "columns": data_file.columns,
+        "rows": [[line, [row.get(c, "") for c in data_file.columns]] for line, row in rows[:limit]],
+        "total": len(rows),
+        "download_url": reverse("autotest:datafile_download", args=[data_file.pk]),
+    })
+
+
+MAX_CELL_LENGTH = 2000
+
+
+@roles_required(*EDIT_ROLES)
+@require_POST
+def datafile_save_rows(request, pk):
+    """Хүснэгтээр зассан мөрүүдийг хадгална — баганууд өөрчлөгдөхгүй (сценариудын холбоос эвдрэхгүй)."""
+    from .datafiles import max_rows, write_xlsx
+
+    data_file = get_object_or_404(DataFile, pk=pk)
+    try:
+        rows = json.loads(request.body or b"{}").get("rows")
+    except (ValueError, AttributeError):
+        rows = None
+    width = len(data_file.columns)
+    if not isinstance(rows, list) or not all(isinstance(r, list) and len(r) == width for r in rows):
+        return JsonResponse({"error": _("Өгөгдөл буруу байна. Хуудсаа refresh хийгээд дахин оролдоно уу.")}, status=400)
+    rows = [[str(v if v is not None else "")[:MAX_CELL_LENGTH] for v in r] for r in rows]
+    rows = [r for r in rows if any(v.strip() for v in r)]  # хоосон мөрийг хасна
+    if not rows:
+        return JsonResponse({"error": _("Дор хаяж нэг мөр өгөгдөл байх ёстой.")}, status=400)
+    if len(rows) > max_rows():
+        return JsonResponse({"error": _("Хамгийн ихдээ %(max)s мөр байна.") % {"max": max_rows()}}, status=400)
+
+    storage, old_name = data_file.file.storage, data_file.file.name
+    base = os.path.splitext(os.path.basename(old_name))[0]
+    data_file.file.save(f"{base}.xlsx", ContentFile(write_xlsx(data_file.columns, rows)), save=False)
+    data_file.row_count = len(rows)
+    data_file.save()
+    if old_name != data_file.file.name:
+        storage.delete(old_name)
+    return JsonResponse({"rows": data_file.row_count, "name": data_file.name})
 
 
 @roles_required(*EDIT_ROLES)

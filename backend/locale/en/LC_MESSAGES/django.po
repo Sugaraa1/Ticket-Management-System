@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Ticket Management System\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 16:45+0800\n"
+"POT-Creation-Date: 2026-09-29 17:41+0800\n"
 "PO-Revision-Date: 2026-09-23 12:13+0800\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -285,13 +285,13 @@ msgstr "The file has %(n)s rows — a file can have at most %(max)s rows."
 msgid "Excel файлыг уншиж чадсангүй. Файл эвдэрсэн эсэхийг шалгана уу."
 msgstr "Could not read the Excel file. Please check whether it is corrupted."
 
-#: apps/autotest/datafiles.py:105
-msgid "CSV файлын кодчлолыг таньсангүй. UTF-8-аар хадгална уу."
-msgstr "Could not detect the CSV file encoding. Please save it as UTF-8."
-
-#: apps/autotest/exports.py:38 apps/autotest/generator.py:183
+#: apps/autotest/datafiles.py:105 apps/autotest/exports.py:38
 msgid "Өгөгдөл"
 msgstr "Data"
+
+#: apps/autotest/datafiles.py:131
+msgid "CSV файлын кодчлолыг таньсангүй. UTF-8-аар хадгална уу."
+msgstr "Could not detect the CSV file encoding. Please save it as UTF-8."
 
 #: apps/autotest/exports.py:40 apps/autotest/models.py:30
 #: apps/categories/forms.py:16 apps/projects/forms.py:16
@@ -391,7 +391,7 @@ msgid "Үр дүн"
 msgstr "Result"
 
 #: apps/autotest/exports.py:80 templates/autotest/_results_table.html:7
-#: templates/autotest/datafile_detail.html:21
+#: templates/autotest/datafile_detail.html:24
 #: templates/autotest/datafile_list.html:17
 msgid "Мөр"
 msgstr "Row"
@@ -458,7 +458,8 @@ msgstr "New file"
 
 #: apps/autotest/forms.py:121
 msgid "Бүтэн хаяг биш, орчны хаягаас хойших замыг бичнэ үү (жишээ: /register)."
-msgstr "Enter the path after the environment URL, not a full URL (e.g. /register)."
+msgstr ""
+"Enter the path after the environment URL, not a full URL (e.g. /register)."
 
 #: apps/autotest/forms.py:136
 msgid "(заавал биш) /register"
@@ -496,81 +497,81 @@ msgstr "Data file"
 msgid "Орчин"
 msgstr "Environment"
 
-#: apps/autotest/forms.py:225 apps/autotest/views.py:467
+#: apps/autotest/forms.py:225 apps/autotest/views.py:537
 #, python-format
 msgid "Энэ файлд сценарид хэрэгтэй багана алга: %(cols)s"
 msgstr "This file is missing columns the scenario needs: %(cols)s"
 
-#: apps/autotest/generator.py:107
+#: apps/autotest/generator.py:104
 #, python-format
 msgid "%(f)s: чагтлаагүй"
 msgstr "%(f)s: not checked"
 
-#: apps/autotest/generator.py:111
+#: apps/autotest/generator.py:108
 #, python-format
 msgid "%(f)s: сонгоогүй"
 msgstr "%(f)s: not selected"
 
-#: apps/autotest/generator.py:115
+#: apps/autotest/generator.py:112
 #, python-format
 msgid "%(f)s: хоосон"
 msgstr "%(f)s: empty"
 
-#: apps/autotest/generator.py:118
+#: apps/autotest/generator.py:115
 #, python-format
 msgid "%(f)s: буруу формат"
 msgstr "%(f)s: invalid format"
 
-#: apps/autotest/generator.py:121
+#: apps/autotest/generator.py:118
 #, python-format
 msgid "%(f)s: богино (%(n)s-аас бага тэмдэгт)"
 msgstr "%(f)s: too short (fewer than %(n)s characters)"
 
-#: apps/autotest/generator.py:125
+#: apps/autotest/generator.py:122
 #, python-format
 msgid "%(f)s: хамгийн багаас бага"
 msgstr "%(f)s: below minimum"
 
-#: apps/autotest/generator.py:127
+#: apps/autotest/generator.py:124
 #, python-format
 msgid "%(f)s: хамгийн ихээс их"
 msgstr "%(f)s: above maximum"
 
-#: apps/autotest/generator.py:132
+#: apps/autotest/generator.py:129
 #, python-format
 msgid "%(f)s: хэв загварт таарахгүй"
 msgstr "%(f)s: does not match pattern"
 
-#: apps/autotest/generator.py:134
+#: apps/autotest/generator.py:131
 #, python-format
 msgid "%(f)s: үсэгтэй"
 msgstr "%(f)s: contains letters"
 
-#: apps/autotest/generator.py:138
+#: apps/autotest/generator.py:135
 #, python-format
 msgid "%(f)s: хэт урт (%(n)s тэмдэгт)"
 msgstr "%(f)s: too long (%(n)s characters)"
 
-#: apps/autotest/generator.py:140
+#: apps/autotest/generator.py:137
 #, python-format
 msgid "%(f)s: SQL injection"
 msgstr "%(f)s: SQL injection"
 
-#: apps/autotest/generator.py:141
+#: apps/autotest/generator.py:138
 #, python-format
 msgid "%(f)s: XSS"
 msgstr "%(f)s: XSS"
 
-#: apps/autotest/generator.py:143
+#: apps/autotest/generator.py:140
 #, python-format
 msgid "%(f)s: кирилл, emoji"
 msgstr "%(f)s: Cyrillic, emoji"
 
-#: apps/autotest/generator.py:151
+#: apps/autotest/generator.py:148
 msgid "талбар"
 msgstr "field"
 
-#: apps/autotest/generator.py:172
+#: apps/autotest/generator.py:169
 msgid "Бүх талбар зөв"
 msgstr "All fields valid"
 
@@ -702,47 +703,47 @@ msgstr "unknown"
 msgid "Алдаатай"
 msgstr "Error"
 
-#: apps/autotest/runner.py:223
+#: apps/autotest/runner.py:230
 msgid "Энэ хуудсанд бөглөх талбар олдсонгүй."
 msgstr "No fillable fields were found on this page."
 
-#: apps/autotest/runner.py:228
+#: apps/autotest/runner.py:235
 #, python-format
 msgid "Хуудсыг нээж чадсангүй: %(err)s"
 msgstr "Could not open the page: %(err)s"
 
-#: apps/autotest/runner.py:338
+#: apps/autotest/runner.py:345
 msgid "Өгөгдлийн файл устгагдсан байна."
 msgstr "The data file has been deleted."
 
-#: apps/autotest/runner.py:343
+#: apps/autotest/runner.py:350
 msgid "Өгөгдлийн файл серверээс олдсонгүй."
 msgstr "The data file was not found on the server."
 
-#: apps/autotest/runner.py:346
+#: apps/autotest/runner.py:353
 #, python-format
 msgid "Файлд дараах багана алга: %(cols)s"
 msgstr "The file is missing these columns: %(cols)s"
 
-#: apps/autotest/runner.py:419
+#: apps/autotest/runner.py:429
 #, python-format
 msgid "'%(label)s' талбарыг бөглөж чадсангүй: %(err)s"
 msgstr "Could not fill the '%(label)s' field: %(err)s"
 
-#: apps/autotest/runner.py:458 templates/autotest/scenario_detail.html:101
+#: apps/autotest/runner.py:468 templates/autotest/scenario_detail.html:101
 msgid "илгээх"
 msgstr "submit"
 
-#: apps/autotest/runner.py:459
+#: apps/autotest/runner.py:469
 #, python-format
 msgid "'%(label)s' товчийг дарж чадсангүй: %(err)s"
 msgstr "Could not click the '%(label)s' button: %(err)s"
 
-#: apps/autotest/runner.py:558
+#: apps/autotest/runner.py:568
 msgid "хаалттай хаяг руу хандах гэсэн (аюулгүй байдлын хязгаарлалт)"
 msgstr "tried to reach a blocked address (security restriction)"
 
-#: apps/autotest/runner.py:560
+#: apps/autotest/runner.py:570
 msgid "хугацаа хэтэрлээ (элемент олдсонгүй эсвэл хуудас хариу өгсөнгүй)"
 msgstr "timed out (element not found or the page did not respond)"
 
@@ -768,157 +769,170 @@ msgstr ""
 "Testing against a private network address (%(ip)s) is not allowed. An admin "
 "can enable the AUTOTEST_ALLOW_PRIVATE_HOSTS setting."
 
-#: apps/autotest/views.py:83
+#: apps/autotest/views.py:85
 #, python-format
 msgid "'%(name)s' апп бүртгэгдлээ. Одоо орчны хаягаа нэмнэ үү."
 msgstr "App '%(name)s' was registered. Now add an environment URL."
 
-#: apps/autotest/views.py:95 apps/core/decorators.py:26
+#: apps/autotest/views.py:97 apps/core/decorators.py:26
 #: apps/tickets/views.py:482
 msgid "Танд энэ хуудсанд хандах эрх байхгүй."
 msgstr "You do not have permission to access this page."
 
-#: apps/autotest/views.py:99
+#: apps/autotest/views.py:101
 #, python-format
 msgid "'%(name)s' шинэчлэгдлээ."
 msgstr "'%(name)s' was updated."
 
-#: apps/autotest/views.py:124
+#: apps/autotest/views.py:126
 #, python-format
 msgid "'%(name)s' апп тест, үр дүнгийн хамт устгагдлаа."
 msgstr "App '%(name)s' was deleted together with its tests and results."
 
-#: apps/autotest/views.py:139
+#: apps/autotest/views.py:141
 #, python-format
 msgid "'%(name)s' орчин нэмэгдлээ."
 msgstr "Environment '%(name)s' was added."
 
-#: apps/autotest/views.py:148
+#: apps/autotest/views.py:150
 #, python-format
 msgid "'%(name)s' орчин устгагдлаа."
 msgstr "Environment '%(name)s' was deleted."
 
-#: apps/autotest/views.py:169
+#: apps/autotest/views.py:171
 #, python-format
 msgid "'%(name)s' файл орлоо: %(rows)s мөр, %(cols)s багана."
 msgstr "File '%(name)s' uploaded: %(rows)s rows, %(cols)s columns."
 
-#: apps/autotest/views.py:187
+#: apps/autotest/views.py:189 apps/autotest/views.py:254
 msgid "Файл серверээс олдсонгүй."
 msgstr "File not found on the server."
 
-#: apps/autotest/views.py:215
+#: apps/autotest/views.py:217
 #, python-format
 msgid "Файл шинэчлэгдлээ: %(rows)s мөр."
 msgstr "File updated: %(rows)s rows."
 
-#: apps/autotest/views.py:228
+#: apps/autotest/views.py:230
 #, python-format
 msgid "'%(name)s' файл устгагдлаа."
 msgstr "File '%(name)s' was deleted."
 
-#: apps/autotest/views.py:238 apps/autotest/views.py:487
+#: apps/autotest/views.py:240 apps/autotest/views.py:557
 #: apps/tickets/views.py:532
 msgid "Файл олдсонгүй."
 msgstr "File not found."
 
-#: apps/autotest/views.py:274
+#: apps/autotest/views.py:281
+msgid "Өгөгдөл буруу байна. Хуудсаа refresh хийгээд дахин оролдоно уу."
+msgstr "Invalid data. Refresh the page and try again."
+
+#: apps/autotest/views.py:285
+msgid "Дор хаяж нэг мөр өгөгдөл байх ёстой."
+msgstr "At least one data row is required."
+
+#: apps/autotest/views.py:287
+#, python-format
+msgid "Хамгийн ихдээ %(max)s мөр байна."
+msgstr "At most %(max)s rows are allowed."
+
+#: apps/autotest/views.py:344
 #, python-format
 msgid "'%(name)s' сценари хадгалагдлаа. Одоо ажиллуулж болно."
 msgstr "Scenario '%(name)s' was saved. You can run it now."
 
-#: apps/autotest/views.py:285
+#: apps/autotest/views.py:355
 #, python-format
 msgid "'%(name)s' сценари шинэчлэгдлээ."
 msgstr "Scenario '%(name)s' was updated."
 
-#: apps/autotest/views.py:313
+#: apps/autotest/views.py:383
 #, python-format
 msgid "'%(name)s' сценари устгагдлаа."
 msgstr "Scenario '%(name)s' was deleted."
 
-#: apps/autotest/views.py:325
+#: apps/autotest/views.py:395
 msgid "Орчноо сонгоно уу."
 msgstr "Please choose an environment."
 
-#: apps/autotest/views.py:359
+#: apps/autotest/views.py:429
 msgid "Өгөгдөл үүсгэх талбар олдсонгүй."
 msgstr "No fields to generate data for."
 
-#: apps/autotest/views.py:361
+#: apps/autotest/views.py:431
 #, python-format
 msgid "%(name)s — автомат өгөгдөл"
 msgstr "%(name)s — generated data"
 
-#: apps/autotest/views.py:454
+#: apps/autotest/views.py:524
 msgid "Ажиллуулалтыг цуцаллаа."
 msgstr "The run was cancelled."
 
-#: apps/autotest/views.py:463
+#: apps/autotest/views.py:533
 msgid "Өмнөх файл эсвэл орчин устгагдсан тул сценариас шинээр ажиллуулна уу."
 msgstr ""
 "The previous file or environment was deleted — please start a new run from "
 "the scenario."
 
-#: apps/autotest/views.py:495
+#: apps/autotest/views.py:565
 msgid "Автомат тестээр илэрсэн алдаа."
 msgstr "Bug found by automated testing."
 
-#: apps/autotest/views.py:496
+#: apps/autotest/views.py:566
 #, python-format
 msgid "Сценари: %(s)s"
 msgstr "Scenario: %(s)s"
 
-#: apps/autotest/views.py:497
+#: apps/autotest/views.py:567
 #, python-format
 msgid "Орчин: %(env)s — %(url)s"
 msgstr "Environment: %(env)s — %(url)s"
 
-#: apps/autotest/views.py:498
+#: apps/autotest/views.py:568
 #, python-format
 msgid "Ажиллуулалт: #%(id)s — %(url)s"
 msgstr "Run: #%(id)s — %(url)s"
 
-#: apps/autotest/views.py:503
+#: apps/autotest/views.py:573
 #, python-format
 msgid "Мөр %(n)s"
 msgstr "Row %(n)s"
 
-#: apps/autotest/views.py:515
+#: apps/autotest/views.py:585
 #, python-format
 msgid "Оролт: %(v)s"
 msgstr "Input: %(v)s"
 
-#: apps/autotest/views.py:516
+#: apps/autotest/views.py:586
 #, python-format
 msgid "Хүлээгдэж байсан: %(v)s"
 msgstr "Expected: %(v)s"
 
-#: apps/autotest/views.py:517
+#: apps/autotest/views.py:587
 #, python-format
 msgid "Бодит үр дүн: %(v)s"
 msgstr "Actual result: %(v)s"
 
-#: apps/autotest/views.py:530
+#: apps/autotest/views.py:600
 msgid "Ticket үүсгэх унасан мөрөө сонгоно уу."
 msgstr "Select the failed rows to create a ticket from."
 
-#: apps/autotest/views.py:549 apps/tickets/views.py:275
+#: apps/autotest/views.py:619 apps/tickets/views.py:275
 #, python-format
 msgid "Ticket %(code)s амжилттай үүслээ."
 msgstr "Ticket %(code)s was created."
 
-#: apps/autotest/views.py:553
+#: apps/autotest/views.py:623
 #, python-format
 msgid "[Автомат тест] %(scenario)s: %(case)s"
 msgstr "[Autotest] %(scenario)s: %(case)s"
 
-#: apps/autotest/views.py:555
+#: apps/autotest/views.py:625
 #, python-format
 msgid "мөр %(n)s"
 msgstr "row %(n)s"
 
-#: apps/autotest/views.py:558
+#: apps/autotest/views.py:628
 #, python-format
 msgid " (+%(n)s мөр)"
 msgstr " (+%(n)s rows)"
@@ -1282,7 +1296,7 @@ msgid "Үзүүлэлт"
 msgstr "Metric"
 
 #: apps/tickets/exports.py:221 apps/tickets/exports.py:242
-#: templates/autotest/scenario_form.html:107
+#: templates/autotest/scenario_form.html:110
 msgid "Утга"
 msgstr "Value"
 
@@ -1764,9 +1778,10 @@ msgstr "Deactivate this user? They will no longer be able to sign in."
 msgid "Нууц үгийн шаардлага"
 msgstr "Password requirements"
 
-#: templates/accounts/user_form.html:29 templates/autotest/app_detail.html:105
-#: templates/autotest/app_form.html:17
-#: templates/autotest/scenario_form.html:165
+#: templates/accounts/user_form.html:29
+#: templates/autotest/_datafile_modal.html:22
+#: templates/autotest/app_detail.html:105 templates/autotest/app_form.html:17
+#: templates/autotest/scenario_form.html:168
 #: templates/categories/category_form.html:35
 #: templates/categories/team_detail.html:22
 #: templates/categories/team_detail.html:67
@@ -1781,9 +1796,10 @@ msgstr "Save"
 msgid "Бүртгэх"
 msgstr "Register"
 
-#: templates/accounts/user_form.html:33 templates/autotest/app_form.html:18
-#: templates/autotest/datafile_form.html:21
-#: templates/autotest/scenario_form.html:166 templates/base.html:142
+#: templates/accounts/user_form.html:33
+#: templates/autotest/_datafile_modal.html:21
+#: templates/autotest/app_form.html:18 templates/autotest/datafile_form.html:21
+#: templates/autotest/scenario_form.html:169 templates/base.html:142
 #: templates/categories/category_form.html:36
 #: templates/projects/project_form.html:27
 #: templates/projects/project_form.html:60
@@ -1813,6 +1829,8 @@ msgid "Superuser-ийг зөвхөн superuser өөрчилнө"
 msgstr "Only a superuser can change a superuser"
 
 #: templates/accounts/user_list.html:50
+#: templates/autotest/_datafile_modal.html:8
+#: templates/autotest/datafile_detail.html:12
 #: templates/autotest/scenario_detail.html:13
 #: templates/autotest/scenario_form.html:3
 #: templates/categories/category_list.html:43
@@ -1842,6 +1860,43 @@ msgstr "Delete"
 #: templates/accounts/user_list.html:60
 msgid "Та"
 msgstr "You"
+
+#: templates/autotest/_datafile_modal.html:9
+#: templates/autotest/datafile_detail.html:13
+#: templates/tickets/_export_menu.html:4
+msgid "Татах"
+msgstr "Export"
+
+#: templates/autotest/_datafile_modal.html:10
+#: templates/autotest/run_detail.html:72
+#: templates/tickets/_quick_ticket_drawer.html:5
+msgid "Хаах"
+msgstr "Close"
+
+#: templates/autotest/_datafile_modal.html:20
+msgid "Мөр нэмэх"
+msgstr "Add row"
+
+#: templates/autotest/_datafile_modal.html:31
+#: templates/autotest/scenario_form.html:216
+msgid "мөр"
+msgstr "rows"
+
+#: templates/autotest/_datafile_modal.html:32
+msgid "Хадгалагдлаа"
+msgstr "Saved"
+
+#: templates/autotest/_datafile_modal.html:33
+msgid "Хадгалж байна…"
+msgstr "Saving…"
+
+#: templates/autotest/_datafile_modal.html:34
+msgid "Хадгалаагүй өөрчлөлт алга болно. Хаах уу?"
+msgstr "Unsaved changes will be lost. Close?"
+
+#: templates/autotest/_datafile_modal.html:35
+msgid "Мөр устгах"
+msgstr "Delete row"
 
 #: templates/autotest/_last_run.html:5
 #: templates/autotest/scenario_detail.html:30
@@ -2017,49 +2072,44 @@ msgid_plural "%(n)s удаа ашигласан"
 msgstr[0] "Used %(n)s time"
 msgstr[1] "Used %(n)s times"
 
-#: templates/autotest/datafile_detail.html:11
-#: templates/tickets/_export_menu.html:4
-msgid "Татах"
-msgstr "Export"
-
-#: templates/autotest/datafile_detail.html:15
+#: templates/autotest/datafile_detail.html:18
 msgid "Урьдчилж харах (эхний 10 мөр)"
 msgstr "Preview (first 10 rows)"
 
-#: templates/autotest/datafile_detail.html:35
+#: templates/autotest/datafile_detail.html:38
 msgid "Энэ файлыг ашиглах сценариуд"
 msgstr "Scenarios that can use this file"
 
-#: templates/autotest/datafile_detail.html:41
+#: templates/autotest/datafile_detail.html:44
 msgid "Дутуу багана:"
 msgstr "Missing columns:"
 
-#: templates/autotest/datafile_detail.html:41
+#: templates/autotest/datafile_detail.html:44
 msgid "Бэлэн"
 msgstr "Ready"
 
-#: templates/autotest/datafile_detail.html:44
+#: templates/autotest/datafile_detail.html:47
 msgid "Энэ төсөлд сценари алга."
 msgstr "No scenarios in this project."
 
-#: templates/autotest/datafile_detail.html:52
+#: templates/autotest/datafile_detail.html:55
 msgid "Файлыг шинэчлэх"
 msgstr "Replace file"
 
-#: templates/autotest/datafile_detail.html:54
+#: templates/autotest/datafile_detail.html:57
 msgid "Шинэ хувилбараа оруулна. Өмнөх ажиллуулалтуудын үр дүн хэвээр үлдэнэ."
 msgstr "Upload a new version. Results of previous runs are kept."
 
-#: templates/autotest/datafile_detail.html:58
+#: templates/autotest/datafile_detail.html:61
 msgid "Шинэчлэх"
 msgstr "Replace"
 
-#: templates/autotest/datafile_detail.html:62
+#: templates/autotest/datafile_detail.html:65
 #, python-format
 msgid "'%(name)s' файлыг устгах уу? Өмнөх үр дүнгүүд үлдэнэ."
 msgstr "Delete file '%(name)s'? Previous results are kept."
 
-#: templates/autotest/datafile_detail.html:64
+#: templates/autotest/datafile_detail.html:67
 msgid "Файл устгах"
 msgstr "Delete file"
 
@@ -2106,7 +2156,7 @@ msgid "Жишээ загвар татах"
 msgstr "Download sample template"
 
 #: templates/autotest/datafile_list.html:9
-#: templates/autotest/scenario_form.html:84
+#: templates/autotest/scenario_form.html:87
 msgid "Жишээ загвар"
 msgstr "Sample template"
 
@@ -2241,11 +2291,6 @@ msgstr ""
 msgid "Шинэ цонхонд нээх"
 msgstr "Open in new tab"
 
-#: templates/autotest/run_detail.html:72
-#: templates/tickets/_quick_ticket_drawer.html:5
-msgid "Хаах"
-msgstr "Close"
-
 #: templates/autotest/scenario_detail.html:15
 #, python-format
 msgid "'%(name)s' сценарийг бүх үр дүнгийн хамт устгах уу?"
@@ -2349,11 +2394,11 @@ msgstr "Generate test data"
 msgid "Бэлэн файл ашиглах"
 msgstr "Use an existing file"
 
-#: templates/autotest/scenario_form.html:79
+#: templates/autotest/scenario_form.html:80
 msgid "— файл сонгох —"
 msgstr "— choose a file —"
 
-#: templates/autotest/scenario_form.html:80
+#: templates/autotest/scenario_form.html:81
 #, python-format
 msgid "%(n)s мөр"
 msgid_plural "%(n)s мөр"
@@ -2361,107 +2406,111 @@ msgstr[0] "%(n)s row"
 msgstr[1] "%(n)s rows"
 
 #: templates/autotest/scenario_form.html:83
+msgid "Файлыг харах / засах"
+msgstr "View / edit file"
+
+#: templates/autotest/scenario_form.html:86
 msgid "Шинэ файл оруулах"
 msgstr "Upload a new file"
 
-#: templates/autotest/scenario_form.html:97
+#: templates/autotest/scenario_form.html:100
 msgid "Талбар бүрт юу бичих вэ"
 msgstr "What to enter in each field"
 
-#: templates/autotest/scenario_form.html:101
+#: templates/autotest/scenario_form.html:104
 msgid "Техникийн дэлгэрэнгүй"
 msgstr "Technical details"
 
-#: templates/autotest/scenario_form.html:107
+#: templates/autotest/scenario_form.html:110
 msgid "Хуудсан дээрх талбар"
 msgstr "Field on the page"
 
-#: templates/autotest/scenario_form.html:107
+#: templates/autotest/scenario_form.html:110
 msgid "Юу бичих"
 msgstr "What to enter"
 
-#: templates/autotest/scenario_form.html:113
+#: templates/autotest/scenario_form.html:116
 msgid "Эцэст нь дарах товч"
 msgstr "Button to click at the end"
 
-#: templates/autotest/scenario_form.html:116
+#: templates/autotest/scenario_form.html:119
 msgid "Талбар гараар нэмэх (CSS selector)"
 msgstr "Add a field manually (CSS selector)"
 
-#: templates/autotest/scenario_form.html:126
+#: templates/autotest/scenario_form.html:129
 msgid "Үр дүнг хэрхэн шалгах вэ"
 msgstr "How to check the result"
 
-#: templates/autotest/scenario_form.html:146
+#: templates/autotest/scenario_form.html:149
 msgid "заавал биш"
 msgstr "optional"
 
-#: templates/autotest/scenario_form.html:151
+#: templates/autotest/scenario_form.html:154
 msgid "Нарийвчилсан тохиргоо"
 msgstr "Advanced settings"
 
-#: templates/autotest/scenario_form.html:177
+#: templates/autotest/scenario_form.html:180
 msgid "заавал"
 msgstr "required"
 
-#: templates/autotest/scenario_form.html:178
+#: templates/autotest/scenario_form.html:181
 msgid "Үндсэн формоос гадуур (хэл сонгох, хайлт г.м.) — ихэвчлэн алгасна."
 msgstr ""
 "Outside the main form (language switcher, search, etc.) — usually skipped."
 
-#: templates/autotest/scenario_form.html:178
+#: templates/autotest/scenario_form.html:181
 msgid "өөр форм"
 msgstr "other form"
 
-#: templates/autotest/scenario_form.html:184
+#: templates/autotest/scenario_form.html:187
 msgid "Бөглөхгүй"
 msgstr "Leave empty"
 
-#: templates/autotest/scenario_form.html:185
+#: templates/autotest/scenario_form.html:188
 msgid "Файлын баганаас"
 msgstr "From file column"
 
-#: templates/autotest/scenario_form.html:186
+#: templates/autotest/scenario_form.html:189
 msgid "Үргэлж ижил утга"
 msgstr "Always the same value"
 
-#: templates/autotest/scenario_form.html:187
+#: templates/autotest/scenario_form.html:190
 msgid "Үргэлж чагтлах"
 msgstr "Always check"
 
-#: templates/autotest/scenario_form.html:198
+#: templates/autotest/scenario_form.html:202
 msgid "текст"
 msgstr "text"
 
-#: templates/autotest/scenario_form.html:198
+#: templates/autotest/scenario_form.html:202
 msgid "имэйл"
 msgstr "email"
 
-#: templates/autotest/scenario_form.html:198
+#: templates/autotest/scenario_form.html:202
 msgid "нууц үг"
 msgstr "password"
 
-#: templates/autotest/scenario_form.html:198
+#: templates/autotest/scenario_form.html:202
 msgid "чагт"
 msgstr "checkbox"
 
-#: templates/autotest/scenario_form.html:198
+#: templates/autotest/scenario_form.html:202
 msgid "сонголт"
 msgstr "option"
 
-#: templates/autotest/scenario_form.html:198
+#: templates/autotest/scenario_form.html:202
 msgid "жагсаалт"
 msgstr "dropdown"
 
-#: templates/autotest/scenario_form.html:199
+#: templates/autotest/scenario_form.html:203
 msgid "Автоматаар (type=submit товч)"
 msgstr "Automatic (type=submit button)"
 
-#: templates/autotest/scenario_form.html:200
+#: templates/autotest/scenario_form.html:204
 msgid "Хуудсыг шалгаж байна…"
 msgstr "Scanning the page…"
 
-#: templates/autotest/scenario_form.html:201
+#: templates/autotest/scenario_form.html:205
 msgid ""
 "Удаж байна — тест ажиллуулагч (worker) асаагүй байж магадгүй: python manage."
 "py run_autotest_worker"
@@ -2469,49 +2518,45 @@ msgstr ""
 "Taking a while — the test worker may not be running: python manage.py "
 "run_autotest_worker"
 
-#: templates/autotest/scenario_form.html:202
+#: templates/autotest/scenario_form.html:206
 msgid "талбар оллоо"
 msgstr "fields found"
 
-#: templates/autotest/scenario_form.html:203
+#: templates/autotest/scenario_form.html:207
 msgid "баганын нэр"
 msgstr "column name"
 
-#: templates/autotest/scenario_form.html:204
+#: templates/autotest/scenario_form.html:208
 msgid "үргэлж бичих утга"
 msgstr "value to always enter"
 
-#: templates/autotest/scenario_form.html:205
+#: templates/autotest/scenario_form.html:209
 msgid "Хуудсыг шалгаж талбаруудаа олно уу."
 msgstr "Scan the page to find its fields."
 
-#: templates/autotest/scenario_form.html:206
+#: templates/autotest/scenario_form.html:210
 msgid "Талбарын нэр (жишээ: Имэйл):"
 msgstr "Field name (e.g. Email):"
 
-#: templates/autotest/scenario_form.html:207
+#: templates/autotest/scenario_form.html:211
 msgid "CSS selector (жишээ: #email):"
 msgstr "CSS selector (e.g. #email):"
 
-#: templates/autotest/scenario_form.html:208
+#: templates/autotest/scenario_form.html:212
 msgid "Эхлээд хуудсыг шалгаж талбаруудаа тохируулна уу."
 msgstr "First scan the page and configure the fields."
 
-#: templates/autotest/scenario_form.html:209
+#: templates/autotest/scenario_form.html:213
 msgid "Үүсгэж байна…"
 msgstr "Generating…"
 
-#: templates/autotest/scenario_form.html:210
+#: templates/autotest/scenario_form.html:214
 msgid "мөртэй файл үүсгэж, талбаруудтай холболоо"
 msgstr "rows generated and linked to the fields"
 
-#: templates/autotest/scenario_form.html:211
+#: templates/autotest/scenario_form.html:215
 msgid "Файлыг харах"
 msgstr "View file"
-
-#: templates/autotest/scenario_form.html:212
-msgid "мөр"
-msgstr "rows"
 
 #: templates/base.html:32 templates/tickets/ticket_list.html:71
 msgid "Шинэ ticket"

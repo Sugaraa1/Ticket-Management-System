@@ -5,13 +5,10 @@
 боломжгүй (хэт урт, SQL/XSS, emoji ...) мөрийн "хүлээгдэх" нүдийг хоосон үлдээнэ — ажиллуулахад
 "Гараар шалгах" гарч, QA үр дүнг хараад шийднэ.
 """
-from io import BytesIO
-
 from django.utils.translation import gettext as _
-from openpyxl import Workbook
-from openpyxl.styles import Font
+from .datafiles import _key, _synonym_group, write_xlsx
 
-from .datafiles import _key, _synonym_group
+to_xlsx = write_xlsx
 
 DESCRIPTION_COLUMN = "Тайлбар"
 EXPECTED_COLUMN = "хүлээгдэх"
@@ -175,20 +172,3 @@ def generate(scan_fields):
             values = dict(valid, **{field["column"]: value})
             rows.append([description] + [values[f["column"]] for f in fields] + [expected])
     return columns, rows, {f["selector"]: f["column"] for f in fields}
-
-
-def to_xlsx(columns, rows):
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = _("Өгөгдөл")
-    sheet.append(columns)
-    for cell in sheet[1]:
-        cell.font = Font(bold=True)
-    for row in rows:
-        sheet.append(row)
-    for column in sheet.columns:
-        width = max(len(str(cell.value or "")) for cell in column)
-        sheet.column_dimensions[column[0].column_letter].width = min(max(width + 2, 10), 40)
-    buffer = BytesIO()
-    workbook.save(buffer)
-    return buffer.getvalue()

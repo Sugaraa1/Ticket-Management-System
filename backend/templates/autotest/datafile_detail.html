@@ -8,7 +8,10 @@
     <h2 class="mb-0"><i class="bi bi-file-earmark-spreadsheet text-success"></i> {{ data_file.name }}</h2>
     <div class="text-muted small">{{ data_file.project.name }} · {% blocktrans with rows=data_file.row_count cols=data_file.columns|length %}{{ rows }} мөр, {{ cols }} багана{% endblocktrans %} · {% blocktrans count n=run_count %}{{ n }} удаа ашигласан{% plural %}{{ n }} удаа ашигласан{% endblocktrans %}</div>
   </div>
-  <a href="{% url 'autotest:datafile_download' data_file.pk %}" class="btn btn-outline-secondary"><i class="bi bi-download"></i> {% trans "Татах" %}</a>
+  <div class="d-flex gap-2">
+    {% if can_edit and not preview_error %}<button type="button" class="btn btn-primary" id="editDataBtn"><i class="bi bi-pencil"></i> {% trans "Засах" %}</button>{% endif %}
+    <a href="{% url 'autotest:datafile_download' data_file.pk %}" class="btn btn-outline-secondary"><i class="bi bi-download"></i> {% trans "Татах" %}</a>
+  </div>
 </div>
 
 <div class="card mb-3">
@@ -68,4 +71,13 @@
   </div>
   {% endif %}
 </div>
+{% include "autotest/_datafile_modal.html" %}
+<script>
+(function () {
+  var btn = document.getElementById("editDataBtn");
+  if (btn) btn.addEventListener("click", function () {
+    tmsDataFile.open({{ data_file.pk }}, {edit: true, onSaved: function () { window.location.reload(); }});
+  });
+})();
+</script>
 {% endblock %}

@@ -6,6 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from openpyxl import load_workbook
 
+from apps.autotest.datafiles import read_rows
 from apps.autotest.models import DataFile, PageScan, RunResult, Scenario, TestApp, TestRun
 from apps.projects.models import Project
 from apps.tickets.models import Ticket
@@ -358,3 +359,49 @@ class DataFileMappingTests(TempMediaMixin, TestCase):
                                 {"fields_json": json.dumps(fields)}).json()
         self.assertEqual([f["value"] for f in data["fields"]], ["Имэйл", "Нууц үг"])
         self.assertIn("хүлээгдэх", data["columns"])
+
+
+class DataFilePreviewTests(TempMediaMixin, TestCase):
+    def test_preview_returns_rows_as_json(self):
+        _app, _env, _scenario, data_file = make_setup()
+        self.client.force_login(make_user("qa", ROLE_QA))
+        data = self.client.get(reverse("autotest:datafile_preview", args=[data_file.pk])).json()
+        self.assertEqual(data["columns"], ["Тайлбар", "email", "password", "хүлээгдэх"])
+        self.assertEqual(data["rows"][0], [2, ["Зөв", "a@mail.mn", "Pass1234", "амжилттай"]])
+        self.assertEqual(data["total"], 1)
+
+
+class DataFileEditTests(TempMediaMixin, TestCase):
+    def setUp(self):
+        _app, _env, _scenario, self.data_file = make_setup()
+        self.client.force_login(make_user("qa", ROLE_QA))
+        self.url = reverse("autotest:datafile_save_rows", args=[self.data_file.pk])
+
+    def _save(self, rows):
+        return self.client.post(self.url, json.dumps({"rows": rows}), content_type="application/json")
+
+    def test_rows_are_saved_and_read_back(self):
+        response = self._save([
+            ["Зөв", "real@mail.mn", "Real#Pass1", "амжилттай"],
+            ["", "", "", ""],  # хоосон мөр хасагдана
+            ["Томьёо биш", "=1+1", "x", "алдаа"],
+        ])
+        self.assertEqual(response.json()["rows"], 2)
+        self.data_file.refresh_from_db()
+        self.assertEqual(self.data_file.row_count, 2)
+        with self.data_file.file.open("rb") as fh:
+            columns, rows = read_rows(fh, self.data_file.file.name)
+        self.assertEqual(columns, ["Тайлбар", "email", "password", "хүлээгдэх"])
+        self.assertEqual(rows[0][1]["email"], "real@mail.mn")
+        self.assertEqual(rows[1][1]["email"], "=1+1")  # томьёо болж алга болохгүй
+
+    def test_invalid_rows_rejected(self):
+        self.assertEqual(self._save([["only", "two"]]).status_code, 400)
+        self.assertEqual(self._save([]).status_code, 400)
+        self.assertEqual(self._save("nope").status_code, 400)
+
+    def test_developer_cannot_edit(self):
+        self.client.force_login(make_user("dev", ROLE_DEV))
+        self._save([["a", "b", "c", "d"]])
+        self.data_file.refresh_from_db()
+        self.assertEqual(self.data_file.row_count, 1)
