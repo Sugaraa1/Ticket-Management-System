@@ -6,7 +6,8 @@
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
   <h2 class="mb-0">{% trans "Өгөгдлийн файлууд" %}</h2>
   <div class="d-flex gap-2">
-    <a href="{% url 'autotest:template_download' %}" class="btn btn-outline-secondary"><i class="bi bi-download"></i> {% trans "Жишээ загвар" %}</a>
+    {% url 'autotest:template_download' as template_url %}{% trans "Жишээ загвар" as template_label %}
+    {% include "autotest/_download_menu.html" with url=template_url label=template_label %}
     {% if can_edit %}<a href="{% url 'autotest:datafile_create' %}" class="btn btn-primary">+ {% trans "Файл оруулах" %}</a>{% endif %}
   </div>
 </div>
@@ -14,12 +15,12 @@
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover mb-0 align-middle tms-table">
-      <thead><tr><th>{% trans "Нэр" %}</th><th>{% trans "Төсөл" %}</th><th>{% trans "Баганууд" %}</th><th>{% trans "Мөр" %}</th><th>{% trans "Ашигласан" %}</th><th>{% trans "Шинэчилсэн" %}</th></tr></thead>
+      <thead><tr><th>{% trans "Нэр" %}</th><th>{% trans "Ангилал" %}</th><th>{% trans "Баганууд" %}</th><th>{% trans "Мөр" %}</th><th>{% trans "Ашигласан" %}</th><th>{% trans "Шинэчилсэн" %}</th></tr></thead>
       <tbody>
         {% for f in files %}
         <tr class="clickable-row" data-href="{% url 'autotest:datafile_detail' f.pk %}">
           <td class="fw-medium"><i class="bi bi-file-earmark-spreadsheet text-success"></i> <a href="{% url 'autotest:datafile_detail' f.pk %}" class="text-body text-decoration-none">{{ f.name }}</a></td>
-          <td>{{ f.project.name }}</td>
+          <td>{{ f.category.name }}</td>
           <td class="small">{% for c in f.columns|slice:":6" %}<span class="badge text-bg-light border me-1">{{ c }}</span>{% endfor %}{% if f.columns|length > 6 %}…{% endif %}</td>
           <td>{{ f.row_count }}</td>
           <td class="small text-muted">{% blocktrans count n=f.run_count %}{{ n }} удаа{% plural %}{{ n }} удаа{% endblocktrans %}</td>

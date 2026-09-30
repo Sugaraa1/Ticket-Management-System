@@ -6,7 +6,8 @@
       <div class="modal-header py-2 gap-2">
         <h6 class="modal-title me-auto" id="dataFileTitle"></h6>
         {% if can_edit %}<button type="button" class="btn btn-sm btn-outline-primary" id="dataFileEditBtn"><i class="bi bi-pencil"></i> {% trans "Засах" %}</button>{% endif %}
-        <a id="dataFileDownload" href="#" class="btn btn-sm btn-link"><i class="bi bi-download"></i> {% trans "Татах" %}</a>
+        {% trans "Татах" as download_label %}
+        {% include "autotest/_download_menu.html" with url="#" label=download_label btn="btn-sm btn-link" id="dataFileDownload" %}
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Хаах" %}"></button>
       </div>
       <div class="modal-body p-0">
@@ -95,7 +96,9 @@ window.tmsDataFile = (function () {
       .then(function (data) {
         document.getElementById("dataFileTitle").textContent = data.name || "";
         if (data.error) { status.textContent = data.error; status.className = "small text-danger"; return; }
-        document.getElementById("dataFileDownload").href = data.download_url;
+        document.querySelectorAll("#dataFileDownload [data-format]").forEach(function (a) {
+          a.href = data.download_url + "?format=" + a.dataset.format;
+        });
         state.columns = data.columns;
         state.rows = data.rows.map(function (row) { return row[1].slice(); });
         state.editing = !!edit; state.dirty = false;

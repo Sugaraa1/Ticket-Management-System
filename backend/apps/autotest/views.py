@@ -4,7 +4,6 @@ from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.db.models import Count, OuterRef, Subquery
 from django.http import FileResponse, Http404, JsonResponse
@@ -21,12 +20,13 @@ from apps.tickets.notifications import notify_ticket_routed
 from apps.tickets.permissions import AUTOTEST_ROLES, user_roles
 from apps.tickets.views import _modules_by_project, _subcategories_by_category
 
-from . import exports
+from . import exports, generator
 from .datafiles import suggest_mapping
 from .forms import (
-    DataFileForm, DataFileReplaceForm, EnvironmentForm, RunForm, ScenarioForm, TestAppForm, clean_page_path,
+    DataFileForm, DataFileReplaceForm, EnvironmentForm, PageForm, RunForm, ScenarioForm, TestAccountForm,
+    TestAppForm,
 )
-from .models import DataFile, Environment, PageScan, RunResult, Scenario, TestApp, TestRun
+from .models import DataFile, Environment, Page, PageScan, RunResult, Scenario, TestAccount, TestApp, TestRun
 
 # Автомат тестийг зөвхөн QA, Admin ашиглана (Dev bug ticket-ээр үр дүнг, зургийг авна).
 VIEW_ROLES = EDIT_ROLES = APP_ROLES = AUTOTEST_ROLES
@@ -59,7 +59,7 @@ def _flash_form_errors(request, form):
 
 @roles_required(*VIEW_ROLES)
 def home(request):
-    apps = _attach_last_runs(TestApp.objects.select_related("project").annotate(
+    apps = _attach_last_runs(TestApp.objects.select_related("category", "subcategory").annotate(
         scenario_count=Count("scenarios", distinct=True),
         env_count=Count("environments", distinct=True),
     ), "scenario__app")
@@ -84,12 +84,14 @@ def app_create(request):
         app.save()
         messages.success(request, _("'%(name)s' апп бүртгэгдлээ. Одоо орчны хаягаа нэмнэ үү.") % {"name": app.name})
         return redirect("autotest:app_detail", pk=app.pk)
-    return render(request, "autotest/app_form.html", {"form": form})
+    return render(request, "autotest/app_form.html", {
+        "form": form, "subcategories_by_category": _subcategories_by_category(),
+    })
 
 
 @roles_required(*VIEW_ROLES)
 def app_detail(request, pk):
-    app = get_object_or_404(TestApp.objects.select_related("project"), pk=pk)
+    app = get_object_or_404(TestApp.objects.select_related("category", "subcategory"), pk=pk)
     can_manage = bool(user_roles(request.user) & set(APP_ROLES))
     form = TestAppForm(request.POST or None, instance=app)
     if request.method == "POST":
@@ -103,15 +105,22 @@ def app_detail(request, pk):
     return _render_app_detail(request, app, form=form)
 
 
-def _render_app_detail(request, app, form=None, env_form=None):
-    scenarios = _attach_last_runs(app.scenarios.annotate(run_count=Count("runs")), "scenario")
+def _render_app_detail(request, app, form=None, env_form=None, page_form=None, account_form=None):
+    scenarios = _attach_last_runs(
+        app.scenarios.select_related("page", "account").annotate(run_count=Count("runs")), "scenario"
+    )
     can_manage = bool(user_roles(request.user) & set(APP_ROLES))
     return render(request, "autotest/app_detail.html", {
         "app": app,
         "form": form or TestAppForm(instance=app),
-        "env_form": env_form or EnvironmentForm(),
+        "env_form": env_form or EnvironmentForm(prefix="env"),
         "environments": app.environments.all(),
+        "page_form": page_form or PageForm(prefix="page"),
+        "pages": app.pages.annotate(scenario_count=Count("scenarios")),
+        "account_form": account_form or TestAccountForm(prefix="account"),
+        "accounts": app.accounts.annotate(scenario_count=Count("scenarios")),
         "scenarios": scenarios,
+        "subcategories_by_category": _subcategories_by_category(),
         "can_manage": can_manage,
         "can_edit": _can_edit(request.user),
     })
@@ -131,7 +140,7 @@ def app_delete(request, pk):
 @require_POST
 def env_create(request, pk):
     app = get_object_or_404(TestApp, pk=pk)
-    form = EnvironmentForm(request.POST, app=app)
+    form = EnvironmentForm(request.POST, app=app, prefix="env")
     if not form.is_valid():
         # Бичсэн утгыг хадгалж, алдааг талбарын дор харуулна.
         return _render_app_detail(request, app, env_form=form)
@@ -151,11 +160,75 @@ def env_delete(request, pk, env_pk):
     return redirect("autotest:app_detail", pk=pk)
 
 
+@roles_required(*EDIT_ROLES)
+@require_POST
+def page_create(request, pk):
+    app = get_object_or_404(TestApp, pk=pk)
+    form = PageForm(request.POST, app=app, prefix="page")
+    if not form.is_valid():
+        return _render_app_detail(request, app, page_form=form)
+    page = form.save(commit=False)
+    page.app = app
+    page.save()
+    messages.success(request, _("'%(name)s' хуудас нэмэгдлээ.") % {"name": page.name})
+    return redirect("autotest:app_detail", pk=pk)
+
+
+@roles_required(*EDIT_ROLES)
+@require_POST
+def page_delete(request, pk, page_pk):
+    page = get_object_or_404(Page.objects.select_related("app"), pk=page_pk, app_id=pk)
+    if page.scenarios.exists():
+        messages.error(request, _("'%(name)s' хуудсыг сценари ашиглаж байгаа тул устгах боломжгүй.") % {"name": page.name})
+    elif page.app.login_page_id == page.pk and page.app.accounts.exists():
+        messages.error(request, _("'%(name)s' нь нэвтрэх хуудас тул устгах боломжгүй.") % {"name": page.name})
+    else:
+        page.delete()
+        messages.success(request, _("'%(name)s' хуудас устгагдлаа.") % {"name": page.name})
+    return redirect("autotest:app_detail", pk=pk)
+
+
+@roles_required(*EDIT_ROLES)
+@require_POST
+def account_save(request, pk):
+    app = get_object_or_404(TestApp, pk=pk)
+    form = TestAccountForm(request.POST, prefix="account")
+    if not form.is_valid():
+        return _render_app_detail(request, app, account_form=form)
+    account, created = form.save(app)
+    if created:
+        messages.success(request, _("'%(name)s' тестийн хэрэглэгч нэмэгдлээ.") % {"name": account.label})
+    else:
+        messages.success(request, _("'%(name)s' тестийн хэрэглэгч шинэчлэгдлээ.") % {"name": account.label})
+    return redirect("autotest:app_detail", pk=pk)
+
+
+@roles_required(*EDIT_ROLES)
+@require_POST
+def account_delete(request, pk, account_pk):
+    account = get_object_or_404(TestAccount, pk=account_pk, app_id=pk)
+    if account.scenarios.exists():
+        messages.error(request, _("'%(name)s' хэрэглэгчийг сценари ашиглаж байгаа тул устгах боломжгүй.") % {"name": account.label})
+    else:
+        account.delete()
+        messages.success(request, _("'%(name)s' тестийн хэрэглэгч устгагдлаа.") % {"name": account.label})
+    return redirect("autotest:app_detail", pk=pk)
+
+
+def _login_url(app, environment, account):
+    """Нэвтрэх хуудасны бүтэн хаяг; нэвтрэхгүй бол ''. Нэвтрэх хуудас сонгоогүй бол ValueError."""
+    if account is None:
+        return ""
+    if app.login_page is None:
+        raise ValueError(_("Апп-ын мэдээлэлд нэвтрэх хуудсаа сонгоно уу."))
+    return environment.url_for(app.login_page.path)[:600]
+
+
 # --- Өгөгдлийн файл -------------------------------------------------------
 
 @roles_required(*VIEW_ROLES)
 def datafile_list(request):
-    files = DataFile.objects.select_related("project", "uploaded_by").annotate(run_count=Count("runs"))
+    files = DataFile.objects.select_related("category", "uploaded_by").annotate(run_count=Count("runs"))
     return render(request, "autotest/datafile_list.html", {"files": files, "can_edit": _can_edit(request.user)})
 
 
@@ -179,7 +252,7 @@ def datafile_create(request):
 def datafile_detail(request, pk):
     from .datafiles import DataFileError, read_rows
 
-    data_file = get_object_or_404(DataFile.objects.select_related("project"), pk=pk)
+    data_file = get_object_or_404(DataFile.objects.select_related("category"), pk=pk)
     preview, preview_error = [], ""
     try:
         with data_file.file.open("rb") as fh:
@@ -188,7 +261,7 @@ def datafile_detail(request, pk):
     except (DataFileError, FileNotFoundError) as exc:
         preview_error = str(exc) or _("Файл серверээс олдсонгүй.")
 
-    scenarios = Scenario.objects.filter(app__project=data_file.project).select_related("app")
+    scenarios = Scenario.objects.filter(app__category=data_file.category).select_related("app")
     compatible = [(s, s.missing_columns(data_file)) for s in scenarios]
     return render(request, "autotest/datafile_detail.html", {
         "data_file": data_file,
@@ -233,12 +306,25 @@ def datafile_delete(request, pk):
 
 @roles_required(*VIEW_ROLES)
 def datafile_download(request, pk):
+    """Хадгалсан форматаас үл хамааран ?format=xlsx|csv-ээр татна."""
+    from .datafiles import DataFileError, read_rows, write_table
+
     data_file = get_object_or_404(DataFile, pk=pk)
+    fmt = exports.requested_format(request)
+    filename = data_file.name.replace("/", "_").replace("\\", "_") or "data"
     try:
-        handle = data_file.file.open("rb")
-    except FileNotFoundError:
+        if _file_format(data_file.file.name) == fmt:
+            return FileResponse(data_file.file.open("rb"), as_attachment=True, filename=f"{filename}.{fmt}")
+        with data_file.file.open("rb") as fh:
+            columns, rows = read_rows(fh, data_file.file.name)
+    except (FileNotFoundError, DataFileError):
         raise Http404(_("Файл олдсонгүй."))
-    return FileResponse(handle, as_attachment=True, filename=os.path.basename(data_file.file.name))
+    content = write_table(columns, [[row.get(c, "") for c in columns] for _line, row in rows], fmt)
+    return exports.file_response(content, filename, fmt)
+
+
+def _file_format(name):
+    return "csv" if name.lower().endswith(".csv") else "xlsx"
 
 
 @roles_required(*VIEW_ROLES)
@@ -269,7 +355,7 @@ MAX_CELL_LENGTH = 2000
 @require_POST
 def datafile_save_rows(request, pk):
     """Хүснэгтээр зассан мөрүүдийг хадгална — баганууд өөрчлөгдөхгүй (сценариудын холбоос эвдрэхгүй)."""
-    from .datafiles import max_rows, write_xlsx
+    from .datafiles import max_rows, write_table
 
     data_file = get_object_or_404(DataFile, pk=pk)
     try:
@@ -287,8 +373,8 @@ def datafile_save_rows(request, pk):
         return JsonResponse({"error": _("Хамгийн ихдээ %(max)s мөр байна.") % {"max": max_rows()}}, status=400)
 
     storage, old_name = data_file.file.storage, data_file.file.name
-    base = os.path.splitext(os.path.basename(old_name))[0]
-    data_file.file.save(f"{base}.xlsx", ContentFile(write_xlsx(data_file.columns, rows)), save=False)
+    base, fmt = os.path.splitext(os.path.basename(old_name))[0], _file_format(old_name)  # форматаа хадгална
+    data_file.file.save(f"{base}.{fmt}", ContentFile(write_table(data_file.columns, rows, fmt)), save=False)
     data_file.row_count = len(rows)
     data_file.save()
     if old_name != data_file.file.name:
@@ -311,31 +397,35 @@ def datafile_mapping(request, pk):
 
 @roles_required(*VIEW_ROLES)
 def template_download(request):
-    return exports.template_response()
+    return exports.template_response(exports.requested_format(request))
 
 
 # --- Сценари --------------------------------------------------------------
 
 def _scenario_form_context(app, form, scenario=None):
-    data_files = DataFile.objects.filter(project=app.project)
+    data_files = DataFile.objects.filter(category=app.category)
     return {
         "app": app,
         "form": form,
         "scenario": scenario,
         "environments": app.environments.all(),
+        "pages": app.pages.all(),
         "data_files": data_files,
         "data_files_meta": [
             {"id": f.pk, "name": f.name, "columns": f.columns, "rows": f.row_count} for f in data_files
         ],
-        "known_columns": sorted({c for cols in DataFile.objects.filter(project=app.project)
+        "known_columns": sorted({c for cols in DataFile.objects.filter(category=app.category)
                                  .values_list("columns", flat=True) for c in cols}),
     }
 
 
 @roles_required(*EDIT_ROLES)
 def scenario_create(request, pk):
-    app = get_object_or_404(TestApp.objects.select_related("project"), pk=pk)
-    form = ScenarioForm(request.POST or None)
+    app = get_object_or_404(TestApp.objects.select_related("category"), pk=pk)
+    if not app.pages.exists():
+        messages.error(request, _("Эхлээд апп-даа шалгах хуудсаа нэмнэ үү."))
+        return redirect("autotest:app_detail", pk=pk)
+    form = ScenarioForm(request.POST or None, app=app)
     if request.method == "POST" and form.is_valid():
         scenario = form.save(commit=False)
         scenario.app = app
@@ -348,8 +438,8 @@ def scenario_create(request, pk):
 
 @roles_required(*EDIT_ROLES)
 def scenario_edit(request, pk):
-    scenario = get_object_or_404(Scenario.objects.select_related("app__project"), pk=pk)
-    form = ScenarioForm(request.POST or None, instance=scenario)
+    scenario = get_object_or_404(Scenario.objects.select_related("app__category"), pk=pk)
+    form = ScenarioForm(request.POST or None, instance=scenario, app=scenario.app)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, _("'%(name)s' сценари шинэчлэгдлээ.") % {"name": scenario.name})
@@ -359,19 +449,87 @@ def scenario_edit(request, pk):
 
 @roles_required(*VIEW_ROLES)
 def scenario_detail(request, pk):
-    scenario = get_object_or_404(Scenario.objects.select_related("app__project"), pk=pk)
+    scenario = get_object_or_404(Scenario.objects.select_related("app__category", "page", "account"), pk=pk)
     runs = scenario.runs.select_related("started_by")[:30]
     last_run = runs[0] if runs else None
     # Ажиллуулах формыг сүүлд ашигласан файл, орчноор бөглөнө.
-    initial = {"data_file": last_run.data_file_id, "environment": last_run.environment_id} if last_run else {}
+    last_data_run = next((r for r in runs if r.kind == TestRun.Kind.DATA), None)
+    initial = {"data_file": last_data_run.data_file_id, "environment": last_data_run.environment_id} if last_data_run else {}
+    # Сценарийн хэрэглэгч формыг бөглөдөг тул түүнд хуудас нээлттэй байх ёстой — анхны сонголт.
+    rules = scenario.access_rules or ({str(scenario.account_id): "open"} if scenario.account_id else {})
+    access_rows = [("anon", _("Нэвтрэхгүй"), "", rules.get("anon", ""))] + [
+        (str(a.pk), a.label, a.username, rules.get(str(a.pk), "")) for a in scenario.app.accounts.all()
+    ]
     return render(request, "autotest/scenario_detail.html", {
         "scenario": scenario,
         "run_form": RunForm(scenario=scenario, initial=initial),
         "last_run": last_run,
         "runs": runs,
         "used_fields": [f for f in scenario.fields if f.get("source") != "skip"],
+        "access_rows": access_rows,
+        "environments": scenario.app.environments.all(),
+        "access_environment": last_run.environment_id if last_run else None,
         "can_edit": _can_edit(request.user),
     })
+
+
+ACCESS_EXPECTS = ("open", "denied")
+
+
+@roles_required(*EDIT_ROLES)
+@require_POST
+def access_run_create(request, pk):
+    """Сонгосон хэрэглэгч бүрээр хуудас нээлттэй/хаалттай эсэхийг шалгах ажиллуулалт."""
+    scenario = get_object_or_404(Scenario.objects.select_related("app__login_page"), pk=pk)
+    environment = scenario.app.environments.filter(pk=request.POST.get("environment") or None).first()
+    if environment is None:
+        messages.error(request, _("Орчноо сонгоно уу."))
+        return redirect("autotest:scenario_detail", pk=pk)
+    saved = {}
+    for key in ["anon"] + [str(a) for a in scenario.app.accounts.values_list("pk", flat=True)]:
+        value = request.POST.get(f"expect_{key}", "")
+        if value in ACCESS_EXPECTS:
+            saved[key] = value
+    if not saved:
+        messages.error(request, _("Дор хаяж нэг хэрэглэгчид нээлттэй эсвэл хаалттай гэж сонгоно уу."))
+        return redirect("autotest:scenario_detail", pk=pk)
+    scenario.access_rules = saved
+    scenario.save(update_fields=["access_rules", "updated_at"])
+    try:
+        run = _queue_access_run(scenario, environment, request.user)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect("autotest:scenario_detail", pk=pk)
+    return redirect("autotest:run_detail", pk=run.pk)
+
+
+def _queue_access_run(scenario, environment, user):
+    accounts = scenario.app.accounts.in_bulk()
+    rules = []
+    for key, expect in scenario.access_rules.items():
+        if key == "anon":
+            rules.append({"account": None, "label": _("Нэвтрэхгүй"), "expect": expect})
+        elif int(key) in accounts:
+            rules.append({"account": int(key), "label": accounts[int(key)].label, "expect": expect})
+    if not rules:
+        raise ValueError(_("Дор хаяж нэг хэрэглэгчид нээлттэй эсвэл хаалттай гэж сонгоно уу."))
+    needs_login = any(r["account"] for r in rules)
+    login_page = scenario.app.login_page
+    if needs_login and login_page is None:
+        raise ValueError(_("Апп-ын мэдээлэлд нэвтрэх хуудсаа сонгоно уу."))
+    return TestRun.objects.create(
+        scenario=scenario,
+        kind=TestRun.Kind.ACCESS,
+        access_rules=rules,
+        environment=environment,
+        data_file_name=_("Эрх шалгах"),
+        environment_name=environment.name,
+        target_url=environment.url_for(scenario.page.path)[:600],
+        # Нэвтрэхгүй хэрэглэгчийг нэвтрэх хуудас руу шилжүүлснийг таних ч хэрэгтэй.
+        login_url=environment.url_for(login_page.path)[:600] if login_page else "",
+        total=len(rules),
+        started_by=user,
+    )
 
 
 @roles_required(*EDIT_ROLES)
@@ -393,11 +551,17 @@ def scan_create(request, pk):
     env = app.environments.filter(pk=request.POST.get("environment")).first()
     if env is None:
         return JsonResponse({"error": _("Орчноо сонгоно уу.")}, status=400)
+    page = app.pages.filter(pk=request.POST.get("page") or None).first()
+    if page is None:
+        return JsonResponse({"error": _("Хуудсаа сонгоно уу.")}, status=400)
+    account = app.accounts.filter(pk=request.POST.get("account") or None).first()
     try:
-        path = clean_page_path(request.POST.get("page_path"))
-    except ValidationError as exc:
-        return JsonResponse({"error": exc.messages[0]}, status=400)
-    scan = PageScan.objects.create(url=env.url_for(path)[:600], requested_by=request.user)
+        login_url = _login_url(app, env, account)
+    except ValueError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    scan = PageScan.objects.create(
+        url=env.url_for(page.path)[:600], account=account, login_url=login_url, requested_by=request.user,
+    )
     return JsonResponse({"id": scan.pk, "url": scan.url})
 
 
@@ -412,6 +576,7 @@ def scan_status(request, pk):
             title=scan.result.get("title", ""),
             fields=suggest_mapping(scan.result.get("fields", []), columns),
             buttons=scan.result.get("buttons", []),
+            generate=generator.generate_form(scan.result.get("fields", [])),
         )
     return JsonResponse(data)
 
@@ -419,17 +584,28 @@ def scan_status(request, pk):
 @roles_required(*EDIT_ROLES)
 @require_POST
 def scan_generate(request, pk, scan_pk):
-    """Шалгасан хуудасны талбаруудаас тестийн өгөгдлийн файл үүсгэж, багана ↔ талбарын холбоосыг буцаана."""
-    from . import generator
-
+    """
+    Шалгасан хуудасны талбаруудаас тестийн өгөгдлийн файл үүсгэж, багана ↔ талбарын холбоосыг буцаана.
+    values — {selector: QA-н оруулсан зөв утга}, login — нэвтрэх форм эсэх.
+    """
     app = get_object_or_404(TestApp, pk=pk)
     scan = get_object_or_404(PageScan, pk=scan_pk, requested_by=request.user, status=PageScan.Status.DONE)
-    columns, rows, mapping = generator.generate(scan.result.get("fields", []))
+    try:
+        values = json.loads(request.POST.get("values") or "{}")
+    except ValueError:
+        values = None
+    if not isinstance(values, dict):
+        return JsonResponse({"error": _("Утгууд буруу байна.")}, status=400)
+    login = request.POST["login"] == "1" if "login" in request.POST else None
+    try:
+        columns, rows, mapping = generator.generate(scan.result.get("fields", []), values, login)
+    except generator.GenerateError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
     if not mapping:
         return JsonResponse({"error": _("Өгөгдөл үүсгэх талбар олдсонгүй.")}, status=400)
     base = (request.POST.get("name") or "").strip() or urlsplit(scan.url).path or scan.url
     name = _("%(name)s — автомат өгөгдөл") % {"name": base[:100]}
-    data_file = DataFile(project=app.project, name=name[:150], columns=columns, row_count=len(rows),
+    data_file = DataFile(category=app.category, name=name[:150], columns=columns, row_count=len(rows),
                          uploaded_by=request.user)
     data_file.file.save("generated.xlsx", ContentFile(generator.to_xlsx(columns, rows)), save=True)
     return JsonResponse({
@@ -453,18 +629,26 @@ def run_create(request, pk):
     if not form.is_valid():
         _flash_form_errors(request, form)
         return redirect("autotest:scenario_detail", pk=pk)
-    run = _queue_run(scenario, form.cleaned_data["data_file"], form.cleaned_data["environment"], request.user)
+    try:
+        run = _queue_run(scenario, form.cleaned_data["data_file"], form.cleaned_data["environment"], request.user)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect("autotest:scenario_detail", pk=pk)
     return redirect("autotest:run_detail", pk=run.pk)
 
 
 def _queue_run(scenario, data_file, environment, user):
+    account = scenario.account
     return TestRun.objects.create(
         scenario=scenario,
         data_file=data_file,
         environment=environment,
         data_file_name=data_file.name,
         environment_name=environment.name,
-        target_url=environment.url_for(scenario.page_path)[:600],
+        target_url=environment.url_for(scenario.page.path)[:600],
+        account=account,
+        account_label=account.label if account else "",
+        login_url=_login_url(scenario.app, environment, account),
         total=data_file.row_count,
         started_by=user,
     )
@@ -482,7 +666,7 @@ def _run_results(request, run):
 
 @roles_required(*VIEW_ROLES)
 def run_detail(request, pk):
-    run = get_object_or_404(TestRun.objects.select_related("scenario__app__project", "started_by"), pk=pk)
+    run = get_object_or_404(TestRun.objects.select_related("scenario__app", "started_by"), pk=pk)
     results, show = _run_results(request, run)
     return render(request, "autotest/run_detail.html", {
         "run": run,
@@ -529,6 +713,16 @@ def run_cancel(request, pk):
 @require_POST
 def run_rerun(request, pk):
     old = get_object_or_404(TestRun.objects.select_related("scenario"), pk=pk)
+    if old.kind == TestRun.Kind.ACCESS:
+        if old.environment is None:
+            messages.error(request, _("Өмнөх файл эсвэл орчин устгагдсан тул сценариас шинээр ажиллуулна уу."))
+            return redirect("autotest:scenario_detail", pk=old.scenario_id)
+        try:
+            run = _queue_access_run(old.scenario, old.environment, request.user)
+        except ValueError as exc:
+            messages.error(request, str(exc))
+            return redirect("autotest:run_detail", pk=pk)
+        return redirect("autotest:run_detail", pk=run.pk)
     if old.data_file is None or old.environment is None:
         messages.error(request, _("Өмнөх файл эсвэл орчин устгагдсан тул сценариас шинээр ажиллуулна уу."))
         return redirect("autotest:scenario_detail", pk=old.scenario_id)
@@ -536,14 +730,18 @@ def run_rerun(request, pk):
     if missing:
         messages.error(request, _("Энэ файлд сценарид хэрэгтэй багана алга: %(cols)s") % {"cols": ", ".join(missing)})
         return redirect("autotest:run_detail", pk=pk)
-    run = _queue_run(old.scenario, old.data_file, old.environment, request.user)
+    try:
+        run = _queue_run(old.scenario, old.data_file, old.environment, request.user)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect("autotest:run_detail", pk=pk)
     return redirect("autotest:run_detail", pk=run.pk)
 
 
 @roles_required(*VIEW_ROLES)
 def run_export(request, pk):
     run = get_object_or_404(TestRun, pk=pk)
-    return exports.run_response(run, list(run.results.all()))
+    return exports.run_response(run, list(run.results.all()), exports.requested_format(request))
 
 
 @roles_required(*VIEW_ROLES)
@@ -593,7 +791,7 @@ def _bug_description(run, results):
 @roles_required(*EDIT_ROLES)
 def bug_ticket(request, pk):
     """Унасан мөрүүдээс ticket үүсгэнэ — ticket-ийн ердийн маягт урьдчилж бөглөгдсөн байна."""
-    run = get_object_or_404(TestRun.objects.select_related("scenario__app__project"), pk=pk)
+    run = get_object_or_404(TestRun.objects.select_related("scenario__app"), pk=pk)
     ids = [int(i) for i in request.GET.get("ids", "").split(",") if i.strip().isdigit()]
     results = list(run.results.filter(pk__in=ids, verdict__in=[RunResult.Verdict.FAIL, RunResult.Verdict.ERROR]))
     if not results:
@@ -629,7 +827,9 @@ def bug_ticket(request, pk):
         form = TicketForm(initial={
             "title": title[:255],
             "ticket_type": Ticket.TicketType.BUG,
-            "project": run.scenario.app.project_id,
+            # Апп-ын ангиллаар ticket зөв баг руу чиглэнэ; төслийг QA маягт дээр сонгоно.
+            "category": run.scenario.app.category_id,
+            "subcategory": run.scenario.app.subcategory_id,
             "description": _bug_description(run, results),
         })
     return render(request, "tickets/ticket_form.html", {

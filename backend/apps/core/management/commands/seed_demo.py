@@ -3,6 +3,11 @@
 
     python manage.py seed_demo            # байхгүй бол үүсгэнэ (дахин ажиллуулахад давхардахгүй)
     python manage.py seed_demo --password Demo12345
+    python manage.py seed_demo --tickets --autotest   # + жишээ ticket, автомат тестийн "TMS" апп
+
+--autotest: энэ сайтыг өөрийг нь шалгах автомат тестийн апп (орчин, бүх хуудас, нэвтрэх хуудас,
+эрх бүрийн тестийн хэрэглэгч — demo хэрэглэгчидтэй холбоотой) үүсгэнэ. Сценариг QA өөрөө
+"Хуудсыг шалгах"-аар үүсгэнэ.
 
 Хэрэглэгч, баг, ангилал, төсөл/модуль-ийг нэрээр нь get_or_create хийнэ; ticket-үүдийг
 зөвхөн demo хэрэглэгчдийн ticket хараахан байхгүй үед үүсгэнэ. Ticket-үүдийн огноог
@@ -21,7 +26,7 @@ from django.utils import timezone
 from apps.categories.models import Category, CategoryTeamAssignment, Team
 from apps.projects.models import Module, Project
 from apps.tickets.models import Comment, StatusHistory, Ticket
-from apps.tickets.permissions import ROLE_ADMIN, ROLE_DEV, ROLE_PM, ROLE_QA
+from apps.tickets.permissions import CLOSED_TICKET_STATUSES, ROLE_ADMIN, ROLE_DEV, ROLE_PM, ROLE_QA
 
 USERS = [
     # username, овог, нэр, эрх
@@ -108,6 +113,38 @@ TICKETS = [
     ("Нүүр хуудасны баннер солих", "task", "low", "Вэб интерфэйс", "Цахим дэлгүүр", "Бүтээгдэхүүн", "new"),
 ]
 
+AUTOTEST_APP = "TMS"
+AUTOTEST_CATEGORY = "Вэб интерфэйс"  # унасан тестийн bug ticket Frontend баг руу очно
+AUTOTEST_ACCOUNTS = [
+    # нэр, demo хэрэглэгч — эрх тус бүрээр нэг
+    ("Admin", "zaya.admin"),
+    ("PM", "bat.pm"),
+    ("QA", "oyuka.qa"),
+    ("Dev", "anu"),  # багийн ахлагч биш энгийн хөгжүүлэгч
+]
+# (нэр, зам) — {ticket}, {category}, {project} нь байгаа эхний объектын id-гаар солигдоно
+AUTOTEST_PAGES = [
+    ("Нэвтрэх", "/accounts/login/"),
+    ("Нууц үг сэргээх", "/accounts/password_reset/"),
+    ("Нууц үг солих", "/accounts/password_change/"),
+    ("Ticket жагсаалт", "/"),
+    ("Ticket үүсгэх", "/tickets/new/"),
+    ("Ticket дэлгэрэнгүй (сэтгэгдэл)", "/tickets/{ticket}/"),
+    ("Ticket засах", "/tickets/{ticket}/edit/"),
+    ("Миний ажил", "/my-work/"),
+    ("Миний баг", "/my-team/"),
+    ("Тайлан", "/dashboard/"),
+    ("Хэрэглэгчид", "/manage/users/"),
+    ("Хэрэглэгч үүсгэх", "/manage/users/new/"),
+    ("Ангиллууд", "/manage/categories/"),
+    ("Ангилал үүсгэх", "/manage/categories/new/"),
+    ("Ангилал засах (дэд ангилал)", "/manage/categories/{category}/edit/"),
+    ("Багууд", "/manage/teams/"),
+    ("Төслүүд", "/manage/projects/"),
+    ("Төсөл үүсгэх", "/manage/projects/new/"),
+    ("Төсөл засах (модуль)", "/manage/projects/{project}/"),
+]
+
 COMMENTS = {
     "assigned": ["Хүлээж авлаа, өнөөдөр эхэлнэ.", "Логийг шалгаад хариу өгье."],
     "in_progress": ["Шалтгааныг олсон, засаж байна.", "Staging орчинд давтаж чадлаа."],
@@ -136,9 +173,16 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--password", default="Demo12345", help="Demo хэрэглэгчдийн нууц үг.")
         parser.add_argument("--tickets", action="store_true", help="Жишээ ticket-үүдийг мөн үүсгэнэ.")
+        parser.add_argument(
+            "--autotest", action="store_true", help="Энэ сайтыг шалгах автомат тестийн апп үүсгэнэ."
+        )
+        parser.add_argument(
+            "--autotest-url", default="http://web:8000",
+            help="Автомат тестийн орчны хаяг (worker Docker-т бол http://web:8000).",
+        )
 
     @transaction.atomic
-    def handle(self, *args, password, tickets=False, **options):
+    def handle(self, *args, password, tickets=False, autotest=False, autotest_url="http://web:8000", **options):
         rng = random.Random(42)  # үр дүн давтагдахуйц
         users = self._users(password)
         teams = self._teams(users)
@@ -152,6 +196,9 @@ class Command(BaseCommand):
         else:
             count = self._tickets(rng, users, categories, projects)
             self.stdout.write(f"  {count} ticket үүсгэлээ")
+
+        if autotest:
+            self._autotest(users, categories, password, autotest_url)
 
         self.stdout.write(self.style.SUCCESS(
             f"Demo өгөгдөл бэлэн. Нэвтрэх: {', '.join(users)} — нууц үг: {password}"
@@ -202,6 +249,45 @@ class Command(BaseCommand):
                 Module.objects.get_or_create(project=project, name=module)
             projects[name] = project
         return projects
+
+    # ------------------------------------------------------------------ autotest
+
+    def _autotest(self, users, categories, password, base_url):
+        from apps.autotest.models import Environment, Page, TestAccount, TestApp
+
+        app, _ = TestApp.objects.get_or_create(
+            name=AUTOTEST_APP, category=categories[AUTOTEST_CATEGORY],
+            defaults={"description": "Энэ сайтыг (Ticket Management System) өөрийг нь шалгана."},
+        )
+        Environment.objects.get_or_create(app=app, name="local", defaults={"base_url": base_url})
+
+        ids = {
+            # Хаагдсан ticket-ийг засах боломжгүй тул нээлттэйг сонгоно.
+            "ticket": Ticket.objects.exclude(status__in=CLOSED_TICKET_STATUSES)
+            .order_by("pk").values_list("pk", flat=True).first(),
+            "category": Category.objects.order_by("pk").values_list("pk", flat=True).first(),
+            "project": Project.objects.order_by("pk").values_list("pk", flat=True).first(),
+        }
+        for name, path in AUTOTEST_PAGES:
+            key = next((k for k in ids if "{%s}" % k in path), None)
+            if key and ids[key] is None:
+                continue  # жишээ нь ticket байхгүй бол ticket-ийн хуудсыг алгасна
+            path = path.format(**{k: v for k, v in ids.items() if v is not None})
+            if not app.pages.filter(path=path).exists() and not app.pages.filter(name=name).exists():
+                Page.objects.create(app=app, name=name, path=path)
+        if app.login_page_id is None:
+            app.login_page = app.pages.get(path="/accounts/login/")
+            app.save(update_fields=["login_page", "updated_at"])
+
+        for label, username in AUTOTEST_ACCOUNTS:
+            if not app.accounts.filter(label=label).exists():
+                account = TestAccount(app=app, label=label, username=username)
+                account.set_password(password)
+                account.save()
+        self.stdout.write(
+            f"  Автомат тест: '{app.name}' апп — {app.pages.count()} хуудас, "
+            f"{app.accounts.count()} тестийн хэрэглэгч, орчин {base_url}"
+        )
 
     # ------------------------------------------------------------------ tickets
 

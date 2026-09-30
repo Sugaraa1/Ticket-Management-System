@@ -118,6 +118,23 @@ def write_xlsx(columns, rows):
     return buffer.getvalue()
 
 
+def write_csv(columns, rows):
+    """
+    UTF-8 BOM-тэй CSV — Excel кирилл үсгийг зөв нээнэ. Утгыг өөрчлөхгүй тул татаж аваад
+    дахин оруулахад ижил өгөгдөл болно (read_rows BOM-ийг хасна).
+    """
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    for values in [columns, *rows]:
+        writer.writerow(["" if value is None else str(value) for value in values])
+    return buffer.getvalue().encode("utf-8-sig")
+
+
+def write_table(columns, rows, fmt):
+    """fmt: 'xlsx' эсвэл 'csv'."""
+    return write_csv(columns, rows) if fmt == "csv" else write_xlsx(columns, rows)
+
+
 def _read_csv(fileobj):
     data = fileobj.read()
     if isinstance(data, bytes):
@@ -191,16 +208,28 @@ def _norm_text(text):
 
 # --- Placeholder ------------------------------------------------------------
 
-PLACEHOLDER_RE = re.compile(r"\{\{\s*(random|timestamp|row)\s*\}\}")
+PLACEHOLDER_RE = re.compile(r"\{\{\s*(random|timestamp|row|run|digits)\s*\}\}")
 
 
-def placeholder_values(row_number):
+def run_stamp():
+    """{{run}} — ажиллуулалт эхэлсэн unix секунд (10 оронтой тул {{run}}{{row}} ажиллуулалт хооронд давхардахгүй)."""
+    return str(int(time.time()))
+
+
+def placeholder_values(row_number, run=None):
     """Нэг мөрийн placeholder-ууд — мөр доторх бүх нүдэд ижил (нууц үг давтах г.м.), мөр бүрт шинэ."""
-    return {"random": secrets.token_hex(3), "timestamp": str(int(time.time())), "row": str(row_number)}
+    now = str(int(time.time()))
+    return {
+        "random": secrets.token_hex(3), "timestamp": now, "row": str(row_number),
+        "run": run or now, "digits": f"{secrets.randbelow(10 ** 6):06d}",
+    }
 
 
 def fill_placeholders(value, row_number, values=None):
-    """{{random}} — мөр бүрт шинэ 6 тэмдэгт, {{timestamp}} — unix секунд, {{row}} — мөрийн дугаар."""
+    """
+    {{random}} — мөр бүрт шинэ 6 тэмдэгт, {{digits}} — мөр бүрт шинэ 6 орон, {{timestamp}} — unix секунд,
+    {{row}} — мөрийн дугаар, {{run}} — нэг ажиллуулалтын бүх мөрт ижил.
+    """
     values = values or placeholder_values(row_number)
     return PLACEHOLDER_RE.sub(lambda match: values[match.group(1)], value or "")
 

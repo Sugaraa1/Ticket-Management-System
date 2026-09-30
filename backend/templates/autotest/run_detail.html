@@ -7,8 +7,9 @@
   <div>
     <h2 class="mb-0">{{ run.scenario.name }} <span class="text-muted fs-5">#{{ run.pk }}</span> <span id="runStatusBadge" class="fs-6 align-middle">{% include "autotest/_run_status.html" %}</span></h2>
     <div class="text-muted small">
-      <i class="bi bi-file-earmark-spreadsheet"></i> {{ run.data_file_name }} ·
+      <i class="bi {% if run.kind == 'access' %}bi-shield-lock{% else %}bi-file-earmark-spreadsheet{% endif %}"></i> {{ run.data_file_name }} ·
       <span class="badge text-bg-light border">{{ run.environment_name }}</span> <span class="font-monospace">{{ run.target_url }}</span> ·
+      {% if run.account_label %}<i class="bi bi-person-badge"></i> {{ run.account_label }} ·{% endif %}
       {% if run.started_by %}{{ run.started_by.get_full_name|default:run.started_by.username }} · {% endif %}{{ run.created_at|date:"Y-m-d H:i" }}
     </div>
   </div>
@@ -20,7 +21,8 @@
       <form method="post" action="{% url 'autotest:run_rerun' run.pk %}">{% csrf_token %}<button class="btn btn-outline-primary"><i class="bi bi-arrow-repeat"></i> {% trans "Дахин ажиллуулах" %}</button></form>
       {% endif %}
     {% endif %}
-    <a href="{% url 'autotest:run_export' run.pk %}" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-excel"></i> {% trans "Excel татах" %}</a>
+    {% url 'autotest:run_export' run.pk as export_url %}{% trans "Татах" as export_label %}
+    {% include "autotest/_download_menu.html" with url=export_url label=export_label %}
   </div>
 </div>
 

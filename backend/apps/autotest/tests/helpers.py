@@ -7,9 +7,9 @@ from unittest import mock
 from django.core.files.uploadedfile import SimpleUploadedFile
 from openpyxl import Workbook
 
-from apps.autotest.models import DataFile, Environment, RunResult, Scenario, TestApp
+from apps.autotest.models import DataFile, Environment, Page, RunResult, Scenario, TestApp
+from apps.categories.models import Category
 from apps.tickets.models import Attachment
-from apps.tickets.tests.helpers import make_project
 
 REGISTER_FIELDS = [
     {"label": "Имэйл", "selector": "#email", "kind": "email", "source": "column", "value": "email"},
@@ -54,13 +54,18 @@ class TempMediaMixin:
         super().tearDownClass()
 
 
-def make_setup(base_url="https://staging.example.com", fields=None, rows=None, project=None):
-    """Апп + орчин + сценари + өгөгдлийн файлыг бэлдэнэ."""
-    project = project or make_project()
-    app = TestApp.objects.create(project=project, name="Shop")
+def make_category():
+    return Category.objects.create(name=f"Web {Category.objects.count() + 1}")
+
+
+def make_setup(base_url="https://staging.example.com", fields=None, rows=None, category=None):
+    """Апп + орчин + хуудас + сценари + өгөгдлийн файлыг бэлдэнэ."""
+    category = category or make_category()
+    app = TestApp.objects.create(category=category, name="Shop")
     env = Environment.objects.create(app=app, name="staging", base_url=base_url)
+    page = Page.objects.create(app=app, name="Бүртгүүлэх", path="/register")
     scenario = Scenario.objects.create(
-        app=app, name="Бүртгүүлэх", page_path="/register",
+        app=app, name="Бүртгүүлэх", page=page,
         fields=fields if fields is not None else REGISTER_FIELDS,
         expected_column="хүлээгдэх",
     )
@@ -69,6 +74,6 @@ def make_setup(base_url="https://staging.example.com", fields=None, rows=None, p
         ["Зөв", "a@mail.mn", "Pass1234", "амжилттай"],
     ]
     upload = xlsx_upload(rows)
-    data_file = DataFile(project=project, name="users", columns=rows[0], row_count=len(rows) - 1)
+    data_file = DataFile(category=category, name="users", columns=rows[0], row_count=len(rows) - 1)
     data_file.file.save(upload.name, upload, save=True)
     return app, env, scenario, data_file

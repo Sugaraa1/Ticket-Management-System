@@ -36,7 +36,8 @@
         <tr><td>Зөв бүртгэл</td><td>test{% templatetag openvariable %}random{% templatetag closevariable %}@mail.mn</td><td>Pass123!</td><td>амжилттай</td></tr>
         <tr><td>Буруу имэйл</td><td>bat@@mail</td><td>Pass123!</td><td>алдаа</td></tr>
       </table>
-      <a href="{% url 'autotest:template_download' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> {% trans "Жишээ загвар татах" %}</a>
+      {% url 'autotest:template_download' as template_url %}{% trans "Жишээ загвар татах" as template_label %}
+      {% include "autotest/_download_menu.html" with url=template_url label=template_label btn="btn-sm btn-outline-secondary" %}
     </div></div>
   </div>
 </div>

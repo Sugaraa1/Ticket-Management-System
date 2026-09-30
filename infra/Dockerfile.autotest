@@ -20,6 +20,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     rm -f /etc/apt/apt.conf.d/docker-clean \
     && playwright install-deps chromium
-RUN playwright install chromium
+# Chromium-ыг cache mount руу татна — build cache цэвэрлэгдсэн ч дахин татагдахгүй.
+RUN --mount=type=cache,target=/root/.cache/ms-playwright \
+    PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright playwright install chromium \
+    && cp -r /root/.cache/ms-playwright /ms-playwright
 
 COPY . .

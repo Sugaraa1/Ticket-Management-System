@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
   <div>
     <h2 class="mb-0">{{ scenario.name }}</h2>
-    <div class="text-muted small font-monospace">{{ scenario.page_path }}</div>
+    <div class="text-muted small">{{ scenario.page.name }} <span class="font-monospace">{{ scenario.page.path|default:"/" }}</span></div>
   </div>
   {% if can_edit %}
   <div class="d-flex gap-2">
@@ -60,6 +60,11 @@
           <div class="mb-3">
             <label class="form-label" for="{{ run_form.environment.id_for_label }}">{{ run_form.environment.label }}</label>{{ run_form.environment }}
           </div>
+          <div class="mb-3 small">
+            <span class="text-body-secondary">{% trans "Хэн болж шалгах" %}:</span>
+            {% if scenario.account %}<i class="bi bi-person-badge"></i> <b>{{ scenario.account.label }}</b> <span class="font-monospace text-body-secondary">{{ scenario.account.username }}</span>
+            {% else %}<b>{% trans "Нэвтрэхгүй" %}</b>{% endif %}
+          </div>
           <button class="btn btn-primary w-100"><i class="bi bi-play-fill"></i> {% trans "Ажиллуулах" %}</button>
         </form>
         {% else %}
@@ -80,8 +85,9 @@
       <div class="card-body">
         <ol class="tms-scenario-steps mb-0">
           <li>
+            {% if scenario.account %}<div class="fw-medium">{% blocktrans with name=scenario.account.label user=scenario.account.username %}{{ name }} ({{ user }}) хэрэглэгчээр нэвтэрнэ{% endblocktrans %}</div>{% endif %}
             <div class="fw-medium">{% trans "Хуудсыг нээнэ" %}</div>
-            <div class="small text-body-secondary">{% trans "орчны хаяг" %} + <code>{{ scenario.page_path }}</code></div>
+            <div class="small text-body-secondary">{% trans "орчны хаяг" %} + <code>{{ scenario.page.path|default:"/" }}</code></div>
           </li>
           <li>
             <div class="fw-medium">{% trans "Талбаруудыг бөглөнө" %}</div>
@@ -112,6 +118,41 @@
     </div>
   </div>
 </div>
+
+{% if can_edit %}
+<div class="card mb-3">
+  <button type="button" class="card-header btn text-start d-flex align-items-center gap-2 border-0 rounded-0{% if not scenario.access_rules %} collapsed{% endif %}"
+          data-bs-toggle="collapse" data-bs-target="#accessCheck" aria-expanded="{% if scenario.access_rules %}true{% else %}false{% endif %}" aria-controls="accessCheck">
+    <i class="bi bi-shield-lock"></i> {% trans "Эрх шалгах" %}
+    <i class="bi bi-chevron-down ms-auto small"></i>
+  </button>
+  <form method="post" action="{% url 'autotest:access_run_create' scenario.pk %}" id="accessCheck" class="collapse{% if scenario.access_rules %} show{% endif %}">
+    {% csrf_token %}
+    <div class="table-responsive">
+      <table class="table mb-0 align-middle">
+        <thead><tr><th>{% trans "Хэрэглэгч" %}</th><th class="text-center">{% trans "Нээлттэй" %}</th><th class="text-center">{% trans "Хаалттай" %}</th><th class="text-center">{% trans "Шалгахгүй" %}</th></tr></thead>
+        <tbody>
+          {% for key, label, username, expect in access_rows %}
+          <tr>
+            <td><span class="fw-medium">{{ label }}</span>{% if username %} <span class="small font-monospace text-body-secondary">{{ username }}</span>{% endif %}</td>
+            <td class="text-center"><input class="form-check-input" type="radio" name="expect_{{ key }}" value="open" aria-label="{{ label }}: {% trans "Нээлттэй" %}"{% if expect == "open" %} checked{% endif %}></td>
+            <td class="text-center"><input class="form-check-input" type="radio" name="expect_{{ key }}" value="denied" aria-label="{{ label }}: {% trans "Хаалттай" %}"{% if expect == "denied" %} checked{% endif %}></td>
+            <td class="text-center"><input class="form-check-input" type="radio" name="expect_{{ key }}" value="" aria-label="{{ label }}: {% trans "Шалгахгүй" %}"{% if not expect %} checked{% endif %}></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-body d-flex gap-2 align-items-center flex-wrap">
+      <select name="environment" class="form-select w-auto" aria-label="{% trans "Орчин" %}">
+        {% for env in environments %}<option value="{{ env.pk }}"{% if env.pk == access_environment %} selected{% endif %}>{{ env.name }} — {{ env.base_url }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-primary"><i class="bi bi-shield-check"></i> {% trans "Шалгах" %}</button>
+      {% if access_rows|length == 1 %}<a href="{% url 'autotest:app_detail' scenario.app.pk %}" class="small">+ {% trans "Тестийн хэрэглэгч нэмэх" %}</a>{% endif %}
+    </div>
+  </form>
+</div>
+{% endif %}
 
 <div class="card">
   <div class="card-header"><i class="bi bi-clock-history"></i> {% trans "Ажиллуулсан түүх" %}</div>

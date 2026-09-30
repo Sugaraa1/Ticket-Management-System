@@ -17,7 +17,7 @@
               {{ field }}
               <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
             {% else %}
-              <label class="form-label">{{ field.label }}</label>
+              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
               {{ field }}
             {% endif %}
             {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}

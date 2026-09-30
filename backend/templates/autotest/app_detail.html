@@ -6,17 +6,17 @@
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
   <div>
     <h2 class="mb-0">{{ app.name }}</h2>
-    <div class="text-muted small">{{ app.project.name }}{% if app.description %} · {{ app.description }}{% endif %}</div>
+    <div class="text-muted small">{{ app.subcategory|default:app.category }}{% if app.description %} · {{ app.description }}{% endif %}</div>
   </div>
-  {% if can_edit and environments %}
+  {% if can_edit and environments and pages %}
   <a href="{% url 'autotest:scenario_create' app.pk %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> {% trans "Шинэ сценари" %}</a>
   {% endif %}
 </div>
 
-{% if not environments %}
+{% if not environments or not pages %}
 <div class="alert alert-info d-flex align-items-center gap-2">
   <i class="bi bi-arrow-right-circle fs-5"></i>
-  <div>{% trans "Эхлээд орчны хаяг нэмнэ үү." %}</div>
+  <div>{% if not environments %}{% trans "Эхлээд орчны хаяг нэмнэ үү." %}{% else %}{% trans "Шалгах хуудсаа нэмнэ үү." %}{% endif %}</div>
 </div>
 {% endif %}
 
@@ -30,7 +30,7 @@
           <div class="d-flex align-items-start gap-3">
             <div class="flex-grow-1 min-w-0">
               <a href="{% url 'autotest:scenario_detail' s.pk %}" class="fw-semibold text-body text-decoration-none">{{ s.name }}</a>
-              <div class="small text-body-secondary font-monospace text-truncate">{{ s.page_path }}</div>
+              <div class="small text-body-secondary text-truncate">{{ s.page.name }} <span class="font-monospace">{{ s.page.path|default:"/" }}</span>{% if s.account %} · <i class="bi bi-person-badge"></i> {{ s.account.label }}{% endif %}</div>
               <div class="mt-2">{% include "autotest/_last_run.html" with run=s.last_run %}</div>
             </div>
             {% if can_edit %}
@@ -89,6 +89,73 @@
       {% endif %}
     </div>
 
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-window"></i> {% trans "Хуудсууд" %}</div>
+      <ul class="list-group list-group-flush">
+        {% for page in pages %}
+        <li class="list-group-item d-flex align-items-center gap-2">
+          <span class="fw-medium text-truncate">{{ page.name }}</span>
+          <span class="small font-monospace text-body-secondary text-truncate flex-grow-1">{{ page.path|default:"/" }}</span>
+          {% if can_edit and not page.scenario_count %}
+          <form method="post" action="{% url 'autotest:page_delete' app.pk page.pk %}" data-confirm-danger
+                data-confirm="{% blocktrans with name=page.name %}'{{ name }}' хуудсыг устгах уу?{% endblocktrans %}">
+            {% csrf_token %}
+            <button class="btn btn-sm tms-icon-btn text-danger" title="{% trans "Устгах" %}"><i class="bi bi-trash"></i></button>
+          </form>
+          {% endif %}
+        </li>
+        {% empty %}
+        <li class="list-group-item text-body-secondary small">{% trans "Хуудас нэмээгүй байна." %}</li>
+        {% endfor %}
+      </ul>
+      {% if can_edit %}
+      <div class="card-body">
+        <form method="post" action="{% url 'autotest:page_create' app.pk %}" class="row g-2">
+          {% csrf_token %}
+          <div class="col-5">{{ page_form.name }}{% for e in page_form.name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+          <div class="col-7">{{ page_form.path }}{% for e in page_form.path.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+          <div class="col-12"><button class="btn btn-outline-primary btn-sm">+ {% trans "Хуудас нэмэх" %}</button></div>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-person-badge"></i> {% trans "Тестийн хэрэглэгчид" %}</div>
+      <ul class="list-group list-group-flush">
+        {% if accounts and not app.login_page %}
+        <li class="list-group-item small text-danger"><i class="bi bi-exclamation-triangle"></i> {% trans "Апп-ын мэдээлэлд нэвтрэх хуудсаа сонгоно уу." %}</li>
+        {% endif %}
+        {% for account in accounts %}
+        <li class="list-group-item d-flex align-items-center gap-2">
+          <span class="badge text-bg-light border">{{ account.label }}</span>
+          <span class="small font-monospace text-truncate flex-grow-1">{{ account.username }}</span>
+          <span class="small text-body-tertiary">••••••</span>
+          {% if can_edit and not account.scenario_count %}
+          <form method="post" action="{% url 'autotest:account_delete' app.pk account.pk %}" data-confirm-danger
+                data-confirm="{% blocktrans with name=account.label %}'{{ name }}' хэрэглэгчийг устгах уу?{% endblocktrans %}">
+            {% csrf_token %}
+            <button class="btn btn-sm tms-icon-btn text-danger" title="{% trans "Устгах" %}"><i class="bi bi-trash"></i></button>
+          </form>
+          {% endif %}
+        </li>
+        {% empty %}
+        <li class="list-group-item text-body-secondary small">{% trans "Нэвтрэхгүйгээр шалгана." %}</li>
+        {% endfor %}
+      </ul>
+      {% if can_edit %}
+      <div class="card-body">
+        <form method="post" action="{% url 'autotest:account_save' app.pk %}" class="row g-2" autocomplete="off">
+          {% csrf_token %}
+          <div class="col-3">{{ account_form.label }}{% for e in account_form.label.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+          <div class="col-5">{{ account_form.username }}{% for e in account_form.username.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+          <div class="col-4">{{ account_form.password }}{% for e in account_form.password.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+          <div class="col-12"><button class="btn btn-outline-primary btn-sm">+ {% trans "Хэрэглэгч нэмэх / шинэчлэх" %}</button></div>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
     {% if can_manage %}
     <div class="card">
       <div class="card-header">{% trans "Апп-ын мэдээлэл" %}</div>
@@ -116,4 +183,5 @@
   </div>
 </div>
 {% include "autotest/_clickable_rows.html" %}
+{% if can_manage %}{% include "tickets/_subcategory_script.html" with data=subcategories_by_category json_id="subcategories-by-category" prefix="id" %}{% endif %}
 {% endblock %}

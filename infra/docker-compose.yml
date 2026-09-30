@@ -37,6 +37,9 @@ services:
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
       DATABASE_URL: postgres://${POSTGRES_USER:-ticket_user}:${POSTGRES_PASSWORD:-ticket_pass}@db:5432/${POSTGRES_DB:-ticket_db}
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@ticket-system.local}
+      # Нэвтрэх буруу оролдлогын хязгаар. Local-д автомат тестээр login-ийг олон удаа
+      # шалгахад .env-д өсгөж болно (production-д 5 хэвээр).
+      LOGIN_FAILURE_LIMIT: ${LOGIN_FAILURE_LIMIT:-5}
     depends_on:
       db:
         condition: service_healthy

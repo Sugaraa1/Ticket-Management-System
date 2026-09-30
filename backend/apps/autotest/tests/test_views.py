@@ -7,13 +7,13 @@ from django.urls import reverse
 from openpyxl import load_workbook
 
 from apps.autotest.datafiles import read_rows
-from apps.autotest.models import DataFile, PageScan, RunResult, Scenario, TestApp, TestRun
-from apps.projects.models import Project
+from apps.autotest.models import DataFile, Page, PageScan, RunResult, Scenario, TestAccount, TestApp, TestRun
+from apps.categories.models import Category, Subcategory
 from apps.tickets.models import Ticket
-from apps.tickets.permissions import ROLE_DEV, ROLE_PM, ROLE_QA
+from apps.tickets.permissions import ROLE_ADMIN, ROLE_DEV, ROLE_PM, ROLE_QA
 from apps.tickets.tests.helpers import make_project, make_routed_category, make_user
 
-from .helpers import REGISTER_FIELDS, TempMediaMixin, make_setup, xlsx_upload
+from .helpers import REGISTER_FIELDS, TempMediaMixin, csv_upload, make_category, make_setup, xlsx_upload
 
 
 class PermissionTests(TempMediaMixin, TestCase):
@@ -30,15 +30,15 @@ class PermissionTests(TempMediaMixin, TestCase):
                 )
                 self.client.post(reverse("autotest:run_create", args=[self.scenario.pk]),
                                  {"data_file": self.data_file.pk, "environment": self.env.pk})
-                self.client.post(reverse("autotest:app_create"), {"project": self.app.project_id, "name": role})
+                self.client.post(reverse("autotest:app_create"), {"category": self.app.category_id, "name": role})
                 self.assertFalse(TestRun.objects.exists())
                 self.assertFalse(TestApp.objects.filter(name=role).exists())
                 self.assertNotContains(self.client.get(reverse("tickets:ticket_list")), reverse("autotest:home"))
 
     def test_qa_can_register_apps_and_create_scenarios(self):
         self.client.force_login(make_user("qa", ROLE_QA))
-        self.client.post(reverse("autotest:app_create"), {"project": self.app.project_id, "name": "Other"})
-        self.assertTrue(TestApp.objects.filter(name="Other").exists())
+        self.client.post(reverse("autotest:app_create"), {"category": self.app.category_id, "name": "Other"})
+        self.assertTrue(TestApp.objects.filter(name="Other", category=self.app.category).exists())
         response = self.client.get(reverse("autotest:scenario_create", args=[self.app.pk]))
         self.assertEqual(response.status_code, 200)
 
@@ -49,12 +49,12 @@ class PermissionTests(TempMediaMixin, TestCase):
 
 class DataFileViewTests(TempMediaMixin, TestCase):
     def setUp(self):
-        self.project = make_project()
+        self.category = make_category()
         self.client.force_login(make_user("qa", ROLE_QA))
 
     def test_upload_reads_columns_and_rows(self):
         upload = xlsx_upload([["email", "password"], ["a@mail.mn", "x"], ["b@mail.mn", "y"]])
-        response = self.client.post(reverse("autotest:datafile_create"), {"project": self.project.pk, "file": upload})
+        response = self.client.post(reverse("autotest:datafile_create"), {"category": self.category.pk, "file": upload})
         data_file = DataFile.objects.get()
         self.assertRedirects(response, reverse("autotest:datafile_detail", args=[data_file.pk]))
         self.assertEqual(data_file.name, "users")
@@ -65,13 +65,14 @@ class DataFileViewTests(TempMediaMixin, TestCase):
 
     def test_broken_file_shows_error(self):
         upload = xlsx_upload([["email", "email"], ["a", "b"]])
-        response = self.client.post(reverse("autotest:datafile_create"), {"project": self.project.pk, "file": upload})
+        response = self.client.post(reverse("autotest:datafile_create"), {"category": self.category.pk, "file": upload})
         self.assertContains(response, "Давхардсан")
         self.assertFalse(DataFile.objects.exists())
 
     def test_detail_lists_compatible_scenarios(self):
-        _app, _env, scenario, data_file = make_setup(project=self.project)
-        Scenario.objects.create(app=scenario.app, name="Утас", page_path="/p",
+        _app, _env, scenario, data_file = make_setup(category=self.category)
+        page = Page.objects.create(app=scenario.app, name="Утас", path="/p")
+        Scenario.objects.create(app=scenario.app, name="Утас", page=page,
                                 fields=[{"label": "Утас", "selector": "#p", "source": "column", "value": "phone"}])
         response = self.client.get(reverse("autotest:datafile_detail", args=[data_file.pk]))
         self.assertContains(response, "Бэлэн")
@@ -79,17 +80,44 @@ class DataFileViewTests(TempMediaMixin, TestCase):
 
     def test_template_download(self):
         response = self.client.get(reverse("autotest:template_download"))
-        sheet = load_workbook(BytesIO(response.content)).worksheets[0]
+        sheet = load_workbook(BytesIO(b"".join(response.streaming_content))).worksheets[0]
         self.assertEqual(sheet["B1"].value, "email")
+
+    def test_template_download_as_csv(self):
+        response = self.client.get(reverse("autotest:template_download"), {"format": "csv"})
+        self.assertIn("text/csv", response["Content-Type"])
+        columns, rows = read_rows(BytesIO(b"".join(response.streaming_content)), "t.csv")
+        self.assertEqual(columns[1], "email")
+        self.assertEqual(rows[0][1]["email"], "test{{random}}@mail.mn")
+
+    def test_download_converts_between_formats(self):
+        upload = csv_upload("email,password\nа@mail.mn,-5\n")
+        self.client.post(reverse("autotest:datafile_create"), {"category": self.category.pk, "file": upload})
+        data_file = DataFile.objects.get()
+        url = reverse("autotest:datafile_download", args=[data_file.pk])
+        for fmt in ("csv", "xlsx"):
+            with self.subTest(fmt=fmt):
+                response = self.client.get(url, {"format": fmt})
+                self.assertIn(f'.{fmt}"', response["Content-Disposition"])
+                columns, rows = read_rows(BytesIO(b"".join(response.streaming_content)), f"f.{fmt}")
+                self.assertEqual(columns, ["email", "password"])
+                self.assertEqual(rows[0][1], {"email": "а@mail.mn", "password": "-5"})
+
+    def test_category_with_tests_cannot_be_deleted(self):
+        make_setup(category=self.category)
+        self.client.force_login(make_user("admin", ROLE_ADMIN))
+        self.client.post(reverse("categories:category_delete", args=[self.category.pk]))
+        self.assertTrue(Category.objects.filter(pk=self.category.pk).exists())
 
 
 class ScenarioViewTests(TempMediaMixin, TestCase):
     def setUp(self):
-        self.app, self.env, _scenario, _file = make_setup()
+        self.app, self.env, scenario, _file = make_setup()
+        self.page = scenario.page
         self.client.force_login(make_user("qa", ROLE_QA))
 
     def _post(self, fields, **extra):
-        data = {"name": "Нэвтрэх", "page_path": "/login", "success_mode": "auto", "fields_json": json.dumps(fields)}
+        data = {"name": "Нэвтрэх", "page": self.page.pk, "success_mode": "auto", "fields_json": json.dumps(fields)}
         data.update(extra)
         return self.client.post(reverse("autotest:scenario_create", args=[self.app.pk]), data)
 
@@ -109,25 +137,48 @@ class ScenarioViewTests(TempMediaMixin, TestCase):
         response = self._post([{"label": "Имэйл", "selector": "#e", "source": "column", "value": ""}])
         self.assertContains(response, "багана сонгоогүй")
 
-    def test_absolute_url_is_rejected(self):
-        """Бүтэн URL бичвэл орчны хязгаарлалтыг тойрох тул хүлээж авахгүй."""
+    def test_absolute_url_page_is_rejected(self):
+        """Бүтэн URL бичвэл орчны хязгаарлалтыг тойрох тул хуудас болгож хүлээж авахгүй."""
         for path in ("https://evil.example.com/x", "//evil.example.com/x"):
-            response = self.client.post(reverse("autotest:scan_create", args=[self.app.pk]),
-                                        {"environment": self.env.pk, "page_path": path})
-            self.assertEqual(response.status_code, 400)
-        response = self._post(REGISTER_FIELDS, page_path="http://169.254.169.254/")
-        self.assertContains(response, "Бүтэн хаяг биш")
+            response = self.client.post(reverse("autotest:page_create", args=[self.app.pk]),
+                                        {"page-name": path, "page-path": path})
+            self.assertContains(response, "Бүтэн хаяг биш")
+        self.assertEqual(self.app.pages.count(), 1)
+
+    def test_page_is_added_and_path_normalized(self):
+        self.client.post(reverse("autotest:page_create", args=[self.app.pk]),
+                         {"page-name": "Нэвтрэх", "page-path": "login"})
+        self.assertEqual(self.app.pages.get(name="Нэвтрэх").path, "/login")
+        response = self.client.post(reverse("autotest:page_create", args=[self.app.pk]),
+                                    {"page-name": "Дахин", "page-path": "/login"})
+        self.assertContains(response, "бүртгэлтэй байна")
+
+    def test_page_used_by_scenario_is_not_deleted(self):
+        self.client.post(reverse("autotest:page_delete", args=[self.app.pk, self.page.pk]))
+        self.assertTrue(Page.objects.filter(pk=self.page.pk).exists())
+        self.app.delete()  # апп-ыг устгахад хуудас, сценари хамт устна
+        self.assertFalse(Page.objects.exists())
+
+    def test_page_of_other_app_is_rejected(self):
+        other_app, *_ = make_setup()
+        response = self.client.post(reverse("autotest:scan_create", args=[self.app.pk]),
+                                    {"environment": self.env.pk, "page": other_app.pages.get().pk})
+        self.assertEqual(response.status_code, 400)
+        response = self._post(REGISTER_FIELDS, page=other_app.pages.get().pk)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Scenario.objects.filter(name="Нэвтрэх").exists())
 
     def test_empty_path_uses_environment_url(self):
         self.env.base_url = "http://web:8000/accounts/login"
         self.env.save()
+        home = Page.objects.create(app=self.app, name="Нүүр", path="")
         response = self.client.post(reverse("autotest:scan_create", args=[self.app.pk]),
-                                    {"environment": self.env.pk, "page_path": ""})
+                                    {"environment": self.env.pk, "page": home.pk})
         self.assertEqual(PageScan.objects.get(pk=response.json()["id"]).url, "http://web:8000/accounts/login")
 
     def test_scan_is_queued_and_only_owner_can_read_it(self):
         response = self.client.post(reverse("autotest:scan_create", args=[self.app.pk]),
-                                    {"environment": self.env.pk, "page_path": "/register"})
+                                    {"environment": self.env.pk, "page": self.page.pk})
         scan = PageScan.objects.get(pk=response.json()["id"])
         self.assertEqual(scan.url, "https://staging.example.com/register")
         scan.status = PageScan.Status.DONE
@@ -143,7 +194,8 @@ class ScenarioViewTests(TempMediaMixin, TestCase):
 
 class RunViewTests(TempMediaMixin, TestCase):
     def setUp(self):
-        self.app, self.env, self.scenario, self.data_file = make_setup()
+        self.category, _team = make_routed_category()
+        self.app, self.env, self.scenario, self.data_file = make_setup(category=self.category)
         self.qa = make_user("qa", ROLE_QA)
         self.client.force_login(self.qa)
 
@@ -207,8 +259,14 @@ class RunViewTests(TempMediaMixin, TestCase):
     def test_export_escapes_formulas(self):
         run, _failed = self._finished_run()
         response = self.client.get(reverse("autotest:run_export", args=[run.pk]))
-        sheet = load_workbook(BytesIO(response.content)).worksheets[0]
+        sheet = load_workbook(BytesIO(b"".join(response.streaming_content))).worksheets[0]
         values = [cell.value for row in sheet.iter_rows() for cell in row]
+        self.assertIn("'=HYPERLINK(1)", values)
+        self.assertIn("Унасан", values)
+
+        response = self.client.get(reverse("autotest:run_export", args=[run.pk]), {"format": "csv"})
+        _columns, rows = read_rows(BytesIO(b"".join(response.streaming_content)), "r.csv")
+        values = [v for _line, row in rows for v in row.values()]
         self.assertIn("'=HYPERLINK(1)", values)
         self.assertIn("Унасан", values)
 
@@ -219,14 +277,15 @@ class RunViewTests(TempMediaMixin, TestCase):
         self.assertContains(response, "[Автомат тест] Бүртгүүлэх: Давхардсан имэйл")
         self.assertContains(response, "Тавтай морил")
 
-        category, _team = make_routed_category()
         form = response.context["form"]
+        self.assertEqual(form.initial["category"], self.category.pk)  # апп-ын ангиллаар бөглөгдөнө
         response = self.client.post(url, {
             "title": form.initial["title"], "description": form.initial["description"],
-            "ticket_type": "bug", "priority": "medium", "category": category.pk,
-            "project": self.app.project_id,
+            "ticket_type": "bug", "priority": "medium", "category": form.initial["category"],
+            "project": make_project().pk,
         })
         ticket = Ticket.objects.get()
+        self.assertEqual(ticket.category, self.category)
         self.assertRedirects(response, reverse("tickets:ticket_detail", args=[ticket.pk]))
         failed.refresh_from_db()
         self.assertEqual(failed.ticket, ticket)
@@ -248,13 +307,35 @@ class RunViewTests(TempMediaMixin, TestCase):
         self.assertEqual(new_run.status, TestRun.Status.CANCELLED)
 
 
-class ProjectDeleteTests(TempMediaMixin, TestCase):
-    def test_project_with_tests_is_deactivated_not_deleted(self):
-        app, *_ = make_setup()
-        self.client.force_login(make_user("pm", ROLE_PM))
-        self.client.post(reverse("projects:project_delete", args=[app.project_id]))
-        project = Project.objects.get(pk=app.project_id)
-        self.assertFalse(project.is_active)
+class AppCategoryTests(TempMediaMixin, TestCase):
+    def setUp(self):
+        self.client.force_login(make_user("qa", ROLE_QA))
+        self.web, self.mobile = make_category(), make_category()
+        self.ios = Subcategory.objects.create(category=self.mobile, name="iOS")
+
+    def test_subcategory_must_belong_to_category(self):
+        response = self.client.post(reverse("autotest:app_create"),
+                                    {"category": self.web.pk, "subcategory": self.ios.pk, "name": "Shop"})
+        self.assertContains(response, "харьяалагдахгүй")
+        self.client.post(reverse("autotest:app_create"),
+                         {"category": self.mobile.pk, "subcategory": self.ios.pk, "name": "Shop"})
+        self.assertEqual(TestApp.objects.get().subcategory, self.ios)
+
+    def test_bug_ticket_gets_app_subcategory(self):
+        app, *_ = make_setup(category=self.mobile)
+        app.subcategory = self.ios
+        app.save()
+        run = TestRun.objects.create(scenario=app.scenarios.get(), data_file=DataFile.objects.get(),
+                                     environment=app.environments.get(), target_url="https://x", total=1)
+        result = RunResult.objects.create(run=run, row_number=2, verdict=RunResult.Verdict.FAIL)
+        response = self.client.get(reverse("autotest:bug_ticket", args=[run.pk]) + f"?ids={result.pk}")
+        self.assertEqual(response.context["form"].initial["subcategory"], self.ios.pk)
+
+    def test_run_offers_only_files_of_app_category(self):
+        app, _env, scenario, own_file = make_setup(category=self.web)
+        _other_app, _env2, _s2, other_file = make_setup(category=self.mobile)
+        response = self.client.get(reverse("autotest:scenario_detail", args=[scenario.pk]))
+        self.assertEqual(list(response.context["run_form"].fields["data_file"].queryset), [own_file])
 
 
 class PagesRenderTests(TempMediaMixin, TestCase):
@@ -322,14 +403,137 @@ class EnvironmentCreateTests(TempMediaMixin, TestCase):
         app, env, *_ = make_setup()
         self.client.force_login(make_user("qa", ROLE_QA))
         url = reverse("autotest:env_create", args=[app.pk])
-        response = self.client.post(url, {"name": env.name, "base_url": "http://web:8000/accounts/login"})
+        response = self.client.post(url, {"env-name": env.name, "env-base_url": "http://web:8000/accounts/login"})
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, f"&#x27;{env.name}&#x27; нэртэй орчин аль хэдийн байна.")
         self.assertContains(response, 'value="http://web:8000/accounts/login"')
 
-        response = self.client.post(url, {"name": "prod", "base_url": "http://web:8000"})
+        response = self.client.post(url, {"env-name": "prod", "env-base_url": "http://web:8000"})
         self.assertRedirects(response, reverse("autotest:app_detail", args=[app.pk]))
         self.assertEqual(app.environments.count(), 2)
+
+
+class TestAccountTests(TempMediaMixin, TestCase):
+    def setUp(self):
+        self.app, self.env, self.scenario, self.data_file = make_setup()
+        self.login_page = Page.objects.create(app=self.app, name="Нэвтрэх", path="/accounts/login/")
+        self.client.force_login(make_user("qa", ROLE_QA))
+
+    def _save_account(self, password="S3cret!pw", username="qa_test"):
+        return self.client.post(reverse("autotest:account_save", args=[self.app.pk]),
+                                {"account-label": "QA", "account-username": username, "account-password": password})
+
+    def test_password_is_encrypted_and_never_shown(self):
+        self._save_account()
+        account = TestAccount.objects.get()
+        self.assertNotIn("S3cret!pw", account.password_encrypted)
+        self.assertEqual(account.get_password(), "S3cret!pw")
+        response = self.client.get(reverse("autotest:app_detail", args=[self.app.pk]))
+        self.assertContains(response, "qa_test")
+        self.assertNotContains(response, "S3cret!pw")
+        self.assertNotContains(response, account.password_encrypted)
+
+    def test_same_label_updates_credentials(self):
+        self._save_account()
+        self._save_account(password="New!pass1", username="qa2")
+        account = TestAccount.objects.get()
+        self.assertEqual((account.username, account.get_password()), ("qa2", "New!pass1"))
+
+    def test_scenario_with_account_needs_login_page(self):
+        self._save_account()
+        account = TestAccount.objects.get()
+        data = {"name": "Ticket", "page": self.scenario.page_id, "account": account.pk,
+                "success_mode": "auto", "fields_json": json.dumps(REGISTER_FIELDS)}
+        response = self.client.post(reverse("autotest:scenario_create", args=[self.app.pk]), data)
+        self.assertContains(response, "нэвтрэх хуудсаа сонгоно уу")
+
+        self.app.login_page = self.login_page
+        self.app.save()
+        self.client.post(reverse("autotest:scenario_create", args=[self.app.pk]), data)
+        self.assertEqual(Scenario.objects.get(name="Ticket").account, account)
+
+    def test_scan_and_run_carry_login(self):
+        self._save_account()
+        account = TestAccount.objects.get()
+        self.app.login_page = self.login_page
+        self.app.save()
+        response = self.client.post(reverse("autotest:scan_create", args=[self.app.pk]),
+                                    {"environment": self.env.pk, "page": self.scenario.page_id, "account": account.pk})
+        scan = PageScan.objects.get(pk=response.json()["id"])
+        self.assertEqual((scan.account, scan.login_url), (account, "https://staging.example.com/accounts/login/"))
+
+        self.scenario.account = account
+        self.scenario.save()
+        self.client.post(reverse("autotest:run_create", args=[self.scenario.pk]),
+                         {"data_file": self.data_file.pk, "environment": self.env.pk})
+        run = TestRun.objects.get()
+        self.assertEqual((run.account, run.account_label), (account, "QA"))
+        self.assertEqual(run.login_url, "https://staging.example.com/accounts/login/")
+
+    def test_account_and_login_page_in_use_are_not_deleted(self):
+        self._save_account()
+        account = TestAccount.objects.get()
+        self.app.login_page = self.login_page
+        self.app.save()
+        self.scenario.account = account
+        self.scenario.save()
+        self.client.post(reverse("autotest:account_delete", args=[self.app.pk, account.pk]))
+        self.client.post(reverse("autotest:page_delete", args=[self.app.pk, self.login_page.pk]))
+        self.assertTrue(TestAccount.objects.exists())
+        self.assertTrue(Page.objects.filter(pk=self.login_page.pk).exists())
+
+    def test_access_check_saves_rules_and_queues_run(self):
+        self._save_account()
+        account = TestAccount.objects.get()
+        url = reverse("autotest:access_run_create", args=[self.scenario.pk])
+        data = {"environment": self.env.pk, "expect_anon": "denied", f"expect_{account.pk}": "open"}
+        self.client.post(url, data)  # нэвтрэх хуудасгүй бол хэрэглэгчээр шалгахгүй
+        self.assertFalse(TestRun.objects.exists())
+
+        self.app.login_page = self.login_page
+        self.app.save()
+        response = self.client.post(url, data)
+        run = TestRun.objects.get()
+        self.assertRedirects(response, reverse("autotest:run_detail", args=[run.pk]))
+        self.assertEqual(run.kind, TestRun.Kind.ACCESS)
+        self.assertEqual(run.access_rules, [
+            {"account": None, "label": "Нэвтрэхгүй", "expect": "denied"},
+            {"account": account.pk, "label": "QA", "expect": "open"},
+        ])
+        self.assertEqual((run.total, run.login_url), (2, "https://staging.example.com/accounts/login/"))
+        self.scenario.refresh_from_db()
+        self.assertEqual(self.scenario.access_rules, {"anon": "denied", str(account.pk): "open"})
+
+        detail = self.client.get(reverse("autotest:scenario_detail", args=[self.scenario.pk]))
+        self.assertContains(detail, f'name="expect_{account.pk}" value="open" aria-label="QA: Нээлттэй" checked')
+        self.client.post(reverse("autotest:run_rerun", args=[run.pk]))
+        self.assertEqual(TestRun.objects.filter(kind=TestRun.Kind.ACCESS).count(), 2)
+
+    def test_access_check_is_collapsed_and_defaults_to_scenario_user(self):
+        self._save_account()
+        account = TestAccount.objects.get()
+        self.scenario.account = account
+        self.scenario.save()
+        detail = self.client.get(reverse("autotest:scenario_detail", args=[self.scenario.pk]))
+        self.assertContains(detail, 'id="accessCheck" class="collapse"')
+        self.assertContains(detail, f'name="expect_{account.pk}" value="open" aria-label="QA: Нээлттэй" checked')
+        self.assertContains(detail, "qa_test")  # "Ажиллуулах" дээр хэн болж шалгахыг харуулна
+
+    def test_access_check_needs_a_choice(self):
+        self.client.post(reverse("autotest:access_run_create", args=[self.scenario.pk]),
+                         {"environment": self.env.pk, "expect_anon": ""})
+        self.assertFalse(TestRun.objects.exists())
+
+    def test_deleted_account_fails_run_with_message(self):
+        from apps.autotest.runner import execute_run
+
+        run = TestRun.objects.create(scenario=self.scenario, data_file=self.data_file, environment=self.env,
+                                     target_url="https://staging.example.com/register",
+                                     login_url="https://staging.example.com/accounts/login/", total=1)
+        execute_run(run)
+        run.refresh_from_db()
+        self.assertEqual(run.status, TestRun.Status.FAILED)
+        self.assertIn("устгагдсан", run.error_message)
 
 
 class RunnerFailureTests(TempMediaMixin, TestCase):
@@ -340,7 +544,7 @@ class RunnerFailureTests(TempMediaMixin, TestCase):
         _app, env, scenario, data_file = make_setup(rows=[["Тайлбар", "email", "хүлээгдэх"], ["a", "a@b.mn", ""]])
         run = TestRun.objects.create(scenario=scenario, data_file=data_file, environment=env,
                                      data_file_name="users", environment_name="staging",
-                                     target_url=env.url_for(scenario.page_path), total=1)
+                                     target_url=env.url_for(scenario.page.path), total=1)
         execute_run(run)
         run.refresh_from_db()
         self.assertEqual(run.status, TestRun.Status.FAILED)

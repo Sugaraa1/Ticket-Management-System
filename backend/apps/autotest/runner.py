@@ -14,6 +14,7 @@ from django.utils.translation import gettext as _
 
 from .datafiles import (
     DataFileError, description_of, fill_placeholders, judge, parse_expected, placeholder_values, read_rows,
+    run_stamp,
 )
 from .models import PageScan, RunResult, TestRun
 from .safety import UnsafeURL, check_url
@@ -30,6 +31,14 @@ DEFAULT_ERROR_SELECTORS = ", ".join([
 ])
 SUCCESS_SELECTORS = ", ".join([
     ".alert-success", ".success", ".success-message", ".toast-success", "[role=status]",
+])
+# Формоос өөр хуудас руу шилжсэний дараа алдаа гэж тооцох зүйлс (өнгөний класс .text-danger биш).
+PAGE_ERROR_SELECTORS = ", ".join([
+    ".alert-danger", ".alert-error", "[role=alert]", ".toast-error", ".errorlist", ".invalid-feedback",
+])
+WARNING_SELECTORS = ".alert-warning, .toast-warning"
+NOT_ERROR_SELECTORS = SUCCESS_SELECTORS + ", " + ", ".join([
+    ".alert-info", ".alert-primary", ".alert-secondary", ".alert-light", ".alert-dark",
 ])
 TRUTHY = {"1", "true", "yes", "y", "x", "тийм", "✓", "✔", "✅", "on"}
 
@@ -76,8 +85,10 @@ SCAN_JS = r"""
       const t = by.split(/\s+/).map(id => { const n = document.getElementById(id); return n ? text(n) : ''; }).join(' ').trim();
       if (t) return t;
     }
-    if (el.placeholder) return el.placeholder.trim();
     const prev = el.previousElementSibling;
+    // for=-гүй ч талбарын яг өмнөх <label> — placeholder-оос (урт тайлбар байж болно) илүү нэр.
+    if (prev && prev.tagName === 'LABEL' && text(prev) && text(prev).length < 60) return text(prev);
+    if (el.placeholder) return el.placeholder.trim();
     if (prev && text(prev) && text(prev).length < 60) return text(prev);
     return el.name || el.id || '';
   }
@@ -117,7 +128,12 @@ SCAN_JS = r"""
       id: el.id || '',
       placeholder: el.getAttribute('placeholder') || '',
       required: !!el.required,
-      options: el.tagName === 'SELECT' ? [...el.options].map(o => o.text.trim()).filter(Boolean).slice(0, 50) : [],
+      // Өөр талбараас хамаарч идэвхждэг (ж: ангилал сонгоход дэд ангилал) — өгөгдөл үүсгэхгүй.
+      disabled: !!el.disabled,
+      // Утгагүй сонголт ("---------", "Дэд ангилал байхгүй") нь жинхэнэ сонголт биш.
+      has_empty_option: el.tagName === 'SELECT' && [...el.options].some(o => o.value === ''),
+      options: el.tagName === 'SELECT'
+        ? [...el.options].filter(o => o.value !== '').map(o => o.text.trim()).filter(Boolean).slice(0, 50) : [],
     });
   });
 
@@ -156,6 +172,76 @@ class RowError(Exception):
     """Мөрийг ажиллуулж чадаагүй (талбар олдоогүй г.м.) — хэрэглэгчид харуулах мессежтэй."""
 
 
+class LoginFailed(Exception):
+    """Тестийн хэрэглэгчээр нэвтэрч чадаагүй — ажил бүхэлдээ зогсоно."""
+
+
+def _login_of(job):
+    """(login_url, username, password) эсвэл None. Нууц үгийг DB-тэй thread-д тайлна."""
+    from .crypto import DecryptError
+
+    if not job.login_url:
+        return None
+    account = job.account
+    if account is None:
+        raise LoginFailed(_("Тестийн хэрэглэгч устгагдсан байна."))
+    try:
+        password = account.get_password()
+    except DecryptError:
+        raise LoginFailed(
+            _("'%(name)s' хэрэглэгчийн нууц үгийг уншиж чадсангүй. Нууц үгийг дахин оруулна уу.") % {"name": account.label}
+        )
+    try:
+        check_url(job.login_url)
+    except UnsafeURL as exc:
+        raise LoginFailed(str(exc))
+    return job.login_url, account.username, password
+
+
+def login(browser, login_url, username, password):
+    """
+    Нэвтрэх хуудсыг бөглөж, session-ийг (cookie, localStorage) буцаана — мөр бүр тэр session-тэй
+    шинэ context дээр ажиллана. Талбарыг автоматаар олно: харагдаж буй нууц үгийн талбар ба
+    түүний формын эхний текст/имэйл талбар.
+    """
+    from playwright.sync_api import Error as PlaywrightError
+
+    context = _new_context(browser)
+    page = context.new_page()
+    try:
+        page.goto(login_url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
+        _settle(page)
+        password_input = page.locator("input[type=password]:visible").first
+        if not password_input.count():
+            raise LoginFailed(_("Нэвтрэх хуудсанд нууц үгийн талбар олдсонгүй: %(url)s") % {"url": login_url})
+        form = password_input.locator("xpath=ancestor::form[1]")
+        scope = form if form.count() else page
+        username_input = scope.locator(
+            "input[type=email]:visible, input[type=text]:visible, input[type=tel]:visible, input:not([type]):visible"
+        ).first
+        if not username_input.count():
+            raise LoginFailed(_("Нэвтрэх хуудсанд нэвтрэх нэрийн талбар олдсонгүй: %(url)s") % {"url": login_url})
+        username_input.fill(username)
+        password_input.fill(password)
+        password_input.press("Enter")
+        _settle(page)
+        still_on_login = (
+            _strip_url(page.url) == _strip_url(login_url)
+            and page.locator("input[type=password]:visible").count()
+        )
+        if still_on_login:
+            errors = "; ".join(_visible_texts(page, DEFAULT_ERROR_SELECTORS))[:300]
+            raise LoginFailed(
+                _("'%(user)s' хэрэглэгчээр нэвтэрч чадсангүй: %(err)s")
+                % {"user": username, "err": errors or _("нэвтрэх нэр, нууц үгээ шалгана уу")}
+            )
+        return context.storage_state()
+    except PlaywrightError as exc:
+        raise LoginFailed(_("Нэвтрэх хуудсыг нээж чадсангүй: %(err)s") % {"err": _short_error(exc)})
+    finally:
+        context.close()
+
+
 def launch_browser(playwright):
     try:
         return playwright.chromium.launch(headless=True)
@@ -164,9 +250,10 @@ def launch_browser(playwright):
         return playwright.chromium.launch(headless=True, channel="chrome")
 
 
-def _new_context(browser):
+def _new_context(browser, storage_state=None):
     context = browser.new_context(
-        locale="mn-MN", ignore_https_errors=True, viewport={"width": 1280, "height": 900}
+        locale="mn-MN", ignore_https_errors=True, viewport={"width": 1280, "height": 900},
+        storage_state=storage_state,
     )
     context.set_default_timeout(ACTION_TIMEOUT_MS)
     _guard_requests(context)
@@ -224,11 +311,11 @@ def execute_scan(scan):
 
     try:
         check_url(scan.url)
-        scan.result = _in_browser_thread(_scan_page, scan.url)
+        scan.result = _in_browser_thread(_scan_page, scan.url, _login_of(scan))
         scan.status = PageScan.Status.DONE
         if not scan.result.get("fields"):
             scan.error_message = _("Энэ хуудсанд бөглөх талбар олдсонгүй.")
-    except UnsafeURL as exc:
+    except (UnsafeURL, LoginFailed) as exc:
         scan.status, scan.error_message = PageScan.Status.FAILED, str(exc)
     except PlaywrightError as exc:
         scan.status = PageScan.Status.FAILED
@@ -236,13 +323,14 @@ def execute_scan(scan):
     scan.save()
 
 
-def _scan_page(url):
+def _scan_page(url, credentials=None):
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as playwright:
         browser = launch_browser(playwright)
         try:
-            page = _new_context(browser).new_page()
+            state = login(browser, *credentials) if credentials else None
+            page = _new_context(browser, state).new_page()
             page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
             _settle(page)
             return page.evaluate(SCAN_JS)
@@ -278,11 +366,14 @@ def execute_run(run):
     """
     run.started_at = timezone.now()
     run.save(update_fields=["started_at", "updated_at"])
+    if run.kind == TestRun.Kind.ACCESS:
+        return _execute_access(run)
     scenario = run.scenario
     try:
         rows = _load_rows(run)
+        credentials = _login_of(run)
         check_url(run.target_url)
-    except (DataFileError, UnsafeURL) as exc:
+    except (DataFileError, UnsafeURL, LoginFailed) as exc:
         return _finish(run, TestRun.Status.FAILED, str(exc))
 
     run.total = len(rows)
@@ -292,15 +383,18 @@ def execute_run(run):
 
     results, stop = queue.Queue(), threading.Event()
     browser_thread = threading.Thread(
-        target=_browse_rows, args=(scenario, run.target_url, rows, delay, results, stop), daemon=True
+        target=_browse_rows, args=(scenario, run.target_url, rows, delay, results, stop, credentials), daemon=True
     )
     browser_thread.start()
-    status = TestRun.Status.DONE
+    status, error = TestRun.Status.DONE, ""
     try:
         while True:
             item = results.get()
             if item is _FINISHED:
                 break
+            if isinstance(item, LoginFailed):
+                status, error = TestRun.Status.FAILED, str(item)
+                continue
             if isinstance(item, BaseException):
                 raise item
             line_number, row, result = item
@@ -311,26 +405,123 @@ def execute_run(run):
     finally:
         stop.set()
         browser_thread.join()
-    return _finish(run, status)
+    return _finish(run, status, error)
 
 
 _FINISHED = object()
 
 
-def _browse_rows(scenario, url, rows, delay, results, stop):
+# --- Эрх шалгах -------------------------------------------------------------
+
+def _execute_access(run):
+    """
+    Хэрэглэгч бүрээр (эсвэл нэвтрэхгүйгээр) хуудсыг нээж, нээлттэй/хаалттай эсэхийг хүлээлттэй
+    тулгана. Сценарийн форм харагдвал "нээлттэй", үгүй бол (403/404, нэвтрэх хуудас руу
+    шилжүүлсэн, "эрхгүй" хуудас) "хаалттай".
+    """
+    from .crypto import DecryptError
+    from .models import TestAccount
+
+    try:
+        check_url(run.target_url)
+    except UnsafeURL as exc:
+        return _finish(run, TestRun.Status.FAILED, str(exc))
+    accounts = TestAccount.objects.in_bulk([r["account"] for r in run.access_rules if r.get("account")])
+    checks = []  # (label, expect, credentials | None, алдааны мессеж)
+    for rule in run.access_rules:
+        credentials, problem = None, ""
+        if rule.get("account"):
+            account = accounts.get(rule["account"])
+            if account is None:
+                problem = _("Тестийн хэрэглэгч устгагдсан байна.")
+            elif not run.login_url:
+                problem = _("Апп-ын мэдээлэлд нэвтрэх хуудсаа сонгоно уу.")
+            else:
+                try:
+                    credentials = (run.login_url, account.username, account.get_password())
+                except DecryptError:
+                    problem = _("'%(name)s' хэрэглэгчийн нууц үгийг уншиж чадсангүй. Нууц үгийг дахин оруулна уу.") % {
+                        "name": account.label}
+        checks.append((rule["label"], rule["expect"], credentials, problem))
+
+    selectors = [f["selector"] for f in run.scenario.fields if f.get("source") != "skip" and f.get("selector")]
+    results = _in_browser_thread(_browse_access, run.target_url, run.login_url, selectors, checks)
+    for index, ((label, _expect, _cred, _problem), result) in enumerate(zip(checks, results), start=1):
+        _save_result(run, index, {"Тайлбар": label}, result, set())
+    return _finish(run, TestRun.Status.DONE)
+
+
+def _browse_access(url, login_url, selectors, checks):
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as playwright:
+        browser = launch_browser(playwright)
+        try:
+            return [check_access(browser, url, login_url, selectors, *check) for check in checks]
+        finally:
+            browser.close()
+
+
+def check_access(browser, url, login_url, selectors, label, expect, credentials, problem):
+    from playwright.sync_api import Error as PlaywrightError
+
+    result = {
+        "expected_outcome": expect, "expected_message": "", "actual_outcome": "", "actual_message": "",
+        "final_url": "", "used_values": {}, "screenshot": None,
+    }
+    started = time.monotonic()
+    if problem:
+        result.update(verdict=RunResult.Verdict.ERROR, actual_message=problem, duration_ms=0)
+        return result
+    context = None
+    try:
+        state = login(browser, *credentials) if credentials else None
+        context = _new_context(browser, state)
+        page = context.new_page()
+        response = page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
+        _settle(page)
+        status = response.status if response else 0
+        form_visible = any(page.locator(s).first.is_visible() for s in selectors) if status < 400 else False
+        if status >= 400:
+            message = f"HTTP {status}"
+        elif login_url and _strip_url(page.url.split("?")[0]) == _strip_url(login_url.split("?")[0]):
+            message = _("Нэвтрэх хуудас руу шилжүүлсэн")
+        elif form_visible:
+            message = _("Хуудас нээгдэж, форм харагдсан")
+        else:
+            message = _("Хуудас нээгдсэн ч форм харагдаагүй")
+        actual = RunResult.Outcome.OPEN if form_visible else RunResult.Outcome.DENIED
+        result.update(actual_outcome=actual, actual_message=message, final_url=page.url,
+                      verdict=RunResult.Verdict.PASS if actual == expect else RunResult.Verdict.FAIL)
+        if result["verdict"] == RunResult.Verdict.FAIL:
+            result["screenshot"] = page.screenshot(full_page=True, type="png")
+    except LoginFailed as exc:
+        result.update(verdict=RunResult.Verdict.ERROR, actual_message=str(exc))
+    except PlaywrightError as exc:
+        result.update(verdict=RunResult.Verdict.ERROR, actual_message=_short_error(exc))
+    finally:
+        if context:
+            context.close()
+    result["duration_ms"] = int((time.monotonic() - started) * 1000)
+    return result
+
+
+def _browse_rows(scenario, url, rows, delay, results, stop, credentials=None):
     """Browser thread: DB-д хандахгүй, зөвхөн үр дүнг дараалалд хийнэ."""
     from playwright.sync_api import sync_playwright
 
     try:
         with sync_playwright() as playwright:
             browser = launch_browser(playwright)
+            stamp = run_stamp()
             try:
+                state = login(browser, *credentials) if credentials else None  # нэг л удаа нэвтэрнэ
                 for index, (line_number, row) in enumerate(rows):
                     if stop.is_set():
                         break
                     if index and delay:
                         time.sleep(delay)
-                    results.put((line_number, row, run_row(browser, scenario, url, row, line_number)))
+                    results.put((line_number, row, run_row(browser, scenario, url, row, line_number, stamp, state)))
             finally:
                 browser.close()
     except BaseException as exc:
@@ -363,8 +554,8 @@ def _expected_for(scenario, row):
     return outcome, message
 
 
-def run_row(browser, scenario, url, row, line_number):
-    """Нэг мөрийг шинэ (cookie-гүй) browser context дээр ажиллуулж, dict буцаана."""
+def run_row(browser, scenario, url, row, line_number, stamp=None, storage_state=None):
+    """Нэг мөрийг шинэ browser context дээр (нэвтэрсэн бол тэр session-тэй) ажиллуулж, dict буцаана."""
     from playwright.sync_api import Error as PlaywrightError
 
     expected_outcome, expected_message = _expected_for(scenario, row)
@@ -374,13 +565,13 @@ def run_row(browser, scenario, url, row, line_number):
         "used_values": {}, "screenshot": None,
     }
     started = time.monotonic()
-    context = _new_context(browser)
+    context = _new_context(browser, storage_state)
     page = context.new_page()
     try:
         page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
         _settle(page)
         start_url = page.url
-        _fill_fields(page, scenario, row, line_number, result["used_values"])
+        _fill_fields(page, scenario, row, line_number, result["used_values"], stamp)
         # Browser-ийн өөрийн шалгалтыг (required, type=email) илгээхээс ӨМНӨ уншина — илгээсний
         # дараа сервер талбарыг хоосолж буцаавал (нууц үг г.м.) түүнийг алдаа гэж андуурахгүй.
         invalid = page.evaluate(INVALID_JS, scenario.submit_selector or DEFAULT_SUBMIT_SELECTOR)
@@ -405,10 +596,10 @@ def run_row(browser, scenario, url, row, line_number):
     return result
 
 
-def _fill_fields(page, scenario, row, line_number, used_values):
+def _fill_fields(page, scenario, row, line_number, used_values, stamp=None):
     from playwright.sync_api import Error as PlaywrightError
 
-    placeholders = placeholder_values(line_number)
+    placeholders = placeholder_values(line_number, stamp)
     for field in scenario.fields:
         source = field.get("source")
         if source not in ("column", "constant", "check"):
@@ -423,6 +614,14 @@ def _fill_fields(page, scenario, row, line_number, used_values):
             value = fill_placeholders(value, line_number, placeholders)
             if source == "column":
                 used_values[field["value"]] = value
+            if locator.count() and locator.is_disabled():
+                # Өөр талбараас хамаарч идэвхждэг талбар (ж: дэд ангилал) — хүлээж timeout болохгүй.
+                if not value.strip() or value.strip() == _current_text(locator):
+                    continue
+                raise RowError(
+                    _("'%(label)s' талбар идэвхгүй тул '%(value)s' утгыг оруулж чадсангүй.")
+                    % {"label": label, "value": value[:60]}
+                )
             _fill(locator, field.get("kind"), value)
         except PlaywrightError as exc:
             raise RowError(
@@ -444,6 +643,13 @@ def _fill(locator, kind, value):
                 locator.select_option(value=value)
     else:
         locator.fill(value)
+
+
+def _current_text(locator):
+    """Талбарын одоогийн утга (select бол сонгосон сонголтын текст)."""
+    return locator.evaluate(
+        "el => (el.tagName === 'SELECT' ? (el.selectedOptions[0] || {}).text || '' : el.value || '').trim()"
+    )
 
 
 def _set_checked(locator, checked):
@@ -478,10 +684,13 @@ def _settle(page):
         pass
 
 
-def _visible_texts(page, selector):
+def _visible_texts(page, selector, exclude=None):
+    """exclude-д таарах элементийг алгасна (ж: role=alert-тай амжилтын мессеж)."""
     texts = []
     try:
         for element in page.locator(selector).all()[:20]:
+            if exclude and element.evaluate("(el, s) => el.matches(s)", exclude):
+                continue
             if element.is_visible():
                 text = " ".join(element.inner_text().split())
                 if text and text not in texts:
@@ -494,10 +703,19 @@ def _visible_texts(page, selector):
 def _read_outcome(page, scenario, start_url, invalid=()):
     """(амжилттай/алдаа/тодорхойгүй, мессеж, хуудасны текст)."""
     url_changed = _strip_url(page.url) != _strip_url(start_url)
-    errors = _visible_texts(page, scenario.error_selector or DEFAULT_ERROR_SELECTORS)
+    left_form = url_changed and not _form_present(page, scenario)
+    if scenario.error_selector:
+        errors = _visible_texts(page, scenario.error_selector)
+    elif left_form:
+        # Формоос өөр хуудас руу шилжсэн (ж: нэвтэрсний дараах ticket жагсаалт) — тэнд байгаа
+        # улаан текст (.text-danger, SLA ⚠) илгээлтийн алдаа биш. Зөвхөн тодорхой алдааны мессеж.
+        errors = _visible_texts(page, PAGE_ERROR_SELECTORS, exclude=NOT_ERROR_SELECTORS)
+    else:  # [role=alert]-ыг амжилт/мэдээллийн мессежид ч хэрэглэдэг (Bootstrap, Django messages)
+        errors = _visible_texts(page, DEFAULT_ERROR_SELECTORS, exclude=NOT_ERROR_SELECTORS)
     if not url_changed:
         # Хуудас шилжээгүй бол browser-ийн өөрийн шалгалт илгээлтийг зогсоосон байж болно.
-        errors = list(invalid) + errors
+        # Шар анхааруулга ч татгалзсан гэсэн үг (ж: "олон удаа буруу оролдсон" түгжээ).
+        errors = list(invalid) + errors + _visible_texts(page, WARNING_SELECTORS)
     successes = _visible_texts(page, SUCCESS_SELECTORS)
     try:
         page_text = page.locator("body").inner_text()[:20_000]
@@ -518,6 +736,15 @@ def _read_outcome(page, scenario, start_url, invalid=()):
 
     message = "; ".join(errors if outcome != "success" else successes)[:1000]
     return outcome, message, page_text
+
+
+def _form_present(page, scenario):
+    """Илгээсэн форм (сценарийн талбарууд) хуудсан дээр хэвээр байгаа эсэх."""
+    selectors = [f["selector"] for f in scenario.fields if f.get("source") != "skip" and f.get("selector")]
+    try:
+        return any(page.locator(s).count() for s in selectors[:5])
+    except Exception:
+        return True
 
 
 def _strip_url(url):

@@ -1,0 +1,11 @@
+{% load i18n %}
+{# Параметр: url, label, btn (класс, заавал биш), id (JS-ээр url солих бол, заавал биш) #}
+<div class="dropdown d-inline-block"{% if id %} id="{{ id }}"{% endif %}>
+  <button type="button" class="btn {{ btn|default:'btn-outline-secondary' }} dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+    <i class="bi bi-download"></i> {{ label }}
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><a class="dropdown-item" data-format="xlsx" href="{{ url }}?format=xlsx"><i class="bi bi-file-earmark-excel text-success"></i> Excel (.xlsx)</a></li>
+    <li><a class="dropdown-item" data-format="csv" href="{{ url }}?format=csv"><i class="bi bi-filetype-csv text-primary"></i> CSV (.csv)</a></li>
+  </ul>
+</div>

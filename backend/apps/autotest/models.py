@@ -2,9 +2,12 @@
 Автомат тест (data-driven): QA өгөгдлийн файл (Excel/CSV) бэлдээд, шалгах апп-ын
 хуудсан дээр мөр бүрийг browser-оор бөглүүлж, үр дүнг хүлээгдэх үр дүнтэй тулгана.
 
-    TestApp ─ Environment (dev/staging... base URL)
+    TestApp (ангилалд харьяалагдана — bug ticket тэр ангиллын баг руу чиглэнэ)
+            ├ Environment (dev/staging... base URL)
+            ├ Page (нэр + зам: "Бүртгүүлэх" — /register); login_page — нэвтрэх хуудас
+            ├ TestAccount (тестийн хэрэглэгч: "QA" — qa_test / шифрлэгдсэн нууц үг)
             └ Scenario (хуудас, талбар ↔ баганын холбоос, амжилтын нөхцөл)
-    DataFile (project-д харьяалагдах, олон сценарид дахин ашиглагдана)
+    DataFile (ангилалд харьяалагдах, олон сценарид дахин ашиглагдана)
     TestRun (сценари + файл + орчин) └ RunResult (мөр бүрийн үр дүн)
     PageScan — сценари тохируулахад хуудасны талбаруудыг олох түр ажил
 
@@ -19,15 +22,22 @@ from django.core.validators import URLValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from apps.categories.models import Category, Subcategory
 from apps.core.models import TimeStampedModel
-from apps.projects.models import Project
 from apps.tickets.storage import private_storage
 
 
 class TestApp(TimeStampedModel):
-    project = models.ForeignKey(Project, related_name="test_apps", on_delete=models.PROTECT)
+    category = models.ForeignKey(Category, related_name="test_apps", on_delete=models.PROTECT)
+    subcategory = models.ForeignKey(
+        Subcategory, related_name="test_apps", on_delete=models.SET_NULL, null=True, blank=True
+    )
     name = models.CharField(_("Нэр"), max_length=150)
     description = models.TextField(_("Тайлбар"), blank=True)
+    login_page = models.ForeignKey(
+        "Page", related_name="+", on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name=_("Нэвтрэх хуудас"),
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
@@ -35,7 +45,7 @@ class TestApp(TimeStampedModel):
     class Meta:
         ordering = ["name"]
         constraints = [
-            models.UniqueConstraint(fields=["project", "name"], name="autotest_unique_app_name"),
+            models.UniqueConstraint(fields=["category", "name"], name="autotest_unique_app_name"),
         ]
 
     def __str__(self):
@@ -85,8 +95,58 @@ class Environment(models.Model):
         return self.base_url.rstrip("/") + "/" + path.lstrip("/")
 
 
+class Page(models.Model):
+    """Апп-ын шалгах хуудас — сценари замаа гараар бичихгүй, эндээс сонгоно."""
+    app = models.ForeignKey(TestApp, related_name="pages", on_delete=models.CASCADE)
+    name = models.CharField(_("Хуудас"), max_length=150, help_text=_("Жишээ: Бүртгүүлэх"))
+    path = models.CharField(
+        _("Зам"), max_length=500, blank=True,
+        help_text=_("Орчны хаягаас хойших зам. Хоосон бол орчны хаягийг шууд нээнэ."),
+    )
+
+    class Meta:
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(fields=["app", "name"], name="autotest_unique_page_name"),
+            models.UniqueConstraint(fields=["app", "path"], name="autotest_unique_page_path"),
+        ]
+
+    def __str__(self):
+        return f"{self.name} — {self.path or '/'}"
+
+
+class TestAccount(models.Model):
+    """
+    Сценари нэвтэрсэн хэрэглэгчээр ажиллахад ашиглах тестийн хэрэглэгч. Нууц үгийг
+    шифрлэж хадгална (worker нэвтрэхэд тайлна), дэлгэцэнд хэзээ ч харуулахгүй.
+    """
+    app = models.ForeignKey(TestApp, related_name="accounts", on_delete=models.CASCADE)
+    label = models.CharField(_("Нэр"), max_length=50, help_text=_("Жишээ: QA, Admin"))
+    username = models.CharField(_("Нэвтрэх нэр"), max_length=150)
+    password_encrypted = models.TextField()
+
+    class Meta:
+        ordering = ["label"]
+        constraints = [
+            models.UniqueConstraint(fields=["app", "label"], name="autotest_unique_account_label"),
+        ]
+
+    def __str__(self):
+        return f"{self.label} ({self.username})"
+
+    def set_password(self, raw):
+        from .crypto import encrypt
+
+        self.password_encrypted = encrypt(raw)
+
+    def get_password(self):
+        from .crypto import decrypt
+
+        return decrypt(self.password_encrypted)
+
+
 class DataFile(TimeStampedModel):
-    project = models.ForeignKey(Project, related_name="test_data_files", on_delete=models.PROTECT)
+    category = models.ForeignKey(Category, related_name="test_data_files", on_delete=models.PROTECT)
     name = models.CharField(_("Нэр"), max_length=150)
     file = models.FileField(upload_to="autotest/data/%Y/%m/", storage=private_storage)
     columns = models.JSONField(default=list)
@@ -110,9 +170,12 @@ class Scenario(TimeStampedModel):
 
     app = models.ForeignKey(TestApp, related_name="scenarios", on_delete=models.CASCADE)
     name = models.CharField(_("Нэр"), max_length=150, help_text=_("Жишээ: Бүртгүүлэх, Нэвтрэх"))
-    page_path = models.CharField(
-        _("Хуудас"), max_length=500, blank=True,
-        help_text=_("Орчны хаягаас хойших зам. Хоосон бол орчны хаягийг шууд нээнэ."),
+    # RESTRICT: ашиглагдаж буй хуудсыг дангаар нь устгахгүй, харин апп-ын хамт устна.
+    page = models.ForeignKey(Page, related_name="scenarios", on_delete=models.RESTRICT, verbose_name=_("Хуудас"))
+    # Хоосон бол нэвтрэхгүйгээр шалгана. Ашиглагдаж буй хэрэглэгчийг устгахгүй (RESTRICT).
+    account = models.ForeignKey(
+        TestAccount, related_name="scenarios", on_delete=models.RESTRICT, null=True, blank=True,
+        verbose_name=_("Хэн болж шалгах"),
     )
     # [{"label", "selector", "kind", "source": "column|constant|check|skip", "value"}]
     fields = models.JSONField(default=list)
@@ -133,6 +196,8 @@ class Scenario(TimeStampedModel):
     expected_message_column = models.CharField(
         _("Хүлээгдэх мессежийн багана"), max_length=150, blank=True
     )
+    # Эрх шалгах тохиргоо: {"anon" | "<account_id>": "open" | "denied"} — дахин ажиллуулахад бөглөгдөнө.
+    access_rules = models.JSONField(default=dict, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
@@ -171,13 +236,24 @@ class TestRun(TimeStampedModel):
 
     ACTIVE_STATUSES = (Status.QUEUED, Status.RUNNING)
 
+    class Kind(models.TextChoices):
+        DATA = "data", _("Өгөгдлөөр")
+        ACCESS = "access", _("Эрх шалгах")
+
     scenario = models.ForeignKey(Scenario, related_name="runs", on_delete=models.CASCADE)
+    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.DATA)
+    # Эрх шалгахад: [{"account": id | None, "label": "QA", "expect": "open" | "denied"}]
+    access_rules = models.JSONField(default=list, blank=True)
     data_file = models.ForeignKey(DataFile, related_name="runs", on_delete=models.SET_NULL, null=True)
     environment = models.ForeignKey(Environment, related_name="runs", on_delete=models.SET_NULL, null=True)
     # Файл / орчин дараа нь өөрчлөгдсөн ч түүх хэвээр харагдана.
     data_file_name = models.CharField(max_length=150)
     environment_name = models.CharField(max_length=50)
     target_url = models.URLField(max_length=600)
+    # Нэвтэрсэн хэрэглэгчээр ажиллуулсан бол (хэрэглэгчийг устгасан ч түүх харагдана).
+    account = models.ForeignKey(TestAccount, related_name="runs", on_delete=models.SET_NULL, null=True, blank=True)
+    account_label = models.CharField(max_length=50, blank=True)
+    login_url = models.URLField(max_length=600, blank=True)
 
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.QUEUED)
     started_by = models.ForeignKey(
@@ -224,6 +300,8 @@ class RunResult(models.Model):
         SUCCESS = "success", _("амжилттай")
         ERROR = "error", _("алдаа")
         UNKNOWN = "unknown", _("тодорхойгүй")
+        OPEN = "open", _("нээлттэй")
+        DENIED = "denied", _("хаалттай")
 
     run = models.ForeignKey(TestRun, related_name="results", on_delete=models.CASCADE)
     row_number = models.PositiveIntegerField()
@@ -255,6 +333,8 @@ class PageScan(TimeStampedModel):
         FAILED = "failed", _("Алдаатай")
 
     url = models.URLField(max_length=600)
+    account = models.ForeignKey(TestAccount, related_name="+", on_delete=models.SET_NULL, null=True, blank=True)
+    login_url = models.URLField(max_length=600, blank=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.QUEUED)
     # {"fields": [...], "buttons": [...], "title": "..."}
     result = models.JSONField(default=dict, blank=True)

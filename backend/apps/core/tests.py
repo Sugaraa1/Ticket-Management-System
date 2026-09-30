@@ -11,6 +11,38 @@ def names(response, key, attr="name"):
     return [getattr(obj, attr) for obj in response.context[key]]
 
 
+class SeedDemoAutotestTests(TestCase):
+    def test_autotest_app_is_ready_to_use_and_seed_is_idempotent(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        from apps.autotest.models import TestApp
+        from apps.categories.models import Team
+        from apps.tickets.models import Ticket
+
+        for _ in range(2):
+            call_command("seed_demo", "--tickets", "--autotest", "--password", "Pw#12345", stdout=StringIO())
+        self.assertEqual(Team.objects.filter(team_lead__isnull=False).count(), 3)
+        app = TestApp.objects.get()
+        self.assertEqual(app.category.name, "Вэб интерфэйс")
+        self.assertEqual(app.environments.get().base_url, "http://web:8000")
+        self.assertEqual(app.login_page.path, "/accounts/login/")
+        ticket = Ticket.objects.exclude(status__in=["closed", "rejected"]).order_by("pk").first()
+        self.assertTrue(app.pages.filter(path=f"/tickets/{ticket.pk}/edit/").exists())
+        self.assertEqual(app.pages.count(), 19)
+        accounts = {a.label: a for a in app.accounts.all()}
+        self.assertEqual(sorted(accounts), ["Admin", "Dev", "PM", "QA"])
+        self.assertEqual((accounts["Dev"].username, accounts["Dev"].get_password()), ("anu", "Pw#12345"))
+        # Demo хэрэглэгч тэр нууц үгээр нэвтэрч чаддаг.
+        self.assertTrue(self.client.login(username="anu", password="Pw#12345"))
+        # Бүх хуудасны зам зөв — Admin-д нээгдэнэ.
+        self.client.login(username="zaya.admin", password="Pw#12345")
+        for page in app.pages.all():
+            with self.subTest(page=page.path):
+                self.assertEqual(self.client.get(page.path).status_code, 200)
+
+
 class AdminListFilterTests(TestCase):
     def setUp(self):
         self.admin = make_user("admin", ROLE_ADMIN)

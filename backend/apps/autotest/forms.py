@@ -4,10 +4,10 @@ import os
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from apps.projects.models import Project
+from apps.categories.models import Category, Subcategory
 
 from .datafiles import DataFileError, read_rows
-from .models import DataFile, Environment, Scenario, TestApp
+from .models import DataFile, Environment, Page, Scenario, TestAccount, TestApp
 
 MAX_UPLOAD_MB = 5
 FIELD_SOURCES = {"column", "constant", "check", "skip"}
@@ -17,25 +17,34 @@ FIELD_KINDS = {"text", "email", "password", "checkbox", "radio", "select"}
 class TestAppForm(forms.ModelForm):
     class Meta:
         model = TestApp
-        fields = ["project", "name", "description"]
+        fields = ["name", "category", "subcategory", "login_page", "description"]
         widgets = {
-            "project": forms.Select(attrs={"class": "form-select"}),
+            "category": forms.Select(attrs={"class": "form-select"}),
+            "subcategory": forms.Select(attrs={"class": "form-select"}),
+            "login_page": forms.Select(attrs={"class": "form-select"}),
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": _("Жишээ: Дэлгүүрийн вэб")}),
             "description": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
         }
-        labels = {"project": _("Төсөл")}
+        labels = {"category": _("Ангилал"), "subcategory": _("Дэд ангилал")}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["project"].queryset = Project.objects.filter(is_active=True)
+        self.fields["category"].queryset = Category.objects.all()
+        self.fields["subcategory"].queryset = Subcategory.objects.select_related("category")
+        if self.instance.pk:  # шинэ апп-д хуудас хараахан байхгүй
+            self.fields["login_page"].queryset = self.instance.pages.all()
+        else:
+            del self.fields["login_page"]
 
     def clean(self):
         cleaned = super().clean()
-        project, name = cleaned.get("project"), cleaned.get("name")
-        if project and name:
-            duplicate = TestApp.objects.filter(project=project, name__iexact=name).exclude(pk=self.instance.pk)
+        category, subcategory, name = cleaned.get("category"), cleaned.get("subcategory"), cleaned.get("name")
+        if subcategory and category and subcategory.category_id != category.id:
+            self.add_error("subcategory", _("Сонгосон дэд ангилал сонгосон ангилалд харьяалагдахгүй байна."))
+        if category and name:
+            duplicate = TestApp.objects.filter(category=category, name__iexact=name).exclude(pk=self.instance.pk)
             if duplicate.exists():
-                self.add_error("name", _("Энэ төсөлд ийм нэртэй апп бүртгэлтэй байна."))
+                self.add_error("name", _("Энэ ангилалд ийм нэртэй апп бүртгэлтэй байна."))
         return cleaned
 
 
@@ -71,17 +80,17 @@ def _read_upload(uploaded):
 class DataFileForm(forms.ModelForm):
     class Meta:
         model = DataFile
-        fields = ["project", "name", "file"]
+        fields = ["category", "name", "file"]
         widgets = {
-            "project": forms.Select(attrs={"class": "form-select"}),
+            "category": forms.Select(attrs={"class": "form-select"}),
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": _("Жишээ: Хэрэглэгчид v1")}),
             "file": forms.ClearableFileInput(attrs={"class": "form-control", "accept": ".xlsx,.csv"}),
         }
-        labels = {"project": _("Төсөл"), "file": _("Файл (.xlsx / .csv)")}
+        labels = {"category": _("Ангилал"), "file": _("Файл (.xlsx / .csv)")}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["project"].queryset = Project.objects.filter(is_active=True)
+        self.fields["category"].queryset = Category.objects.all()
         self.fields["name"].required = False
         self.fields["name"].help_text = _("Хоосон орхивол файлын нэрийг авна.")
 
@@ -122,18 +131,74 @@ def clean_page_path(value):
     return value
 
 
+class PageForm(forms.ModelForm):
+    class Meta:
+        model = Page
+        fields = ["name", "path"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": _("Бүртгүүлэх")}),
+            "path": forms.TextInput(attrs={"class": "form-control", "placeholder": "/register"}),
+        }
+
+    def __init__(self, *args, app=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.app = app
+
+    def clean_name(self):
+        name = self.cleaned_data["name"].strip()
+        if self.app and self.app.pages.filter(name__iexact=name).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError(_("'%(name)s' нэртэй хуудас аль хэдийн байна.") % {"name": name})
+        return name
+
+    def clean_path(self):
+        path = clean_page_path(self.cleaned_data.get("path"))
+        if path and not path.startswith("/"):
+            path = "/" + path
+        duplicate = self.app and self.app.pages.filter(path=path).exclude(pk=self.instance.pk).first()
+        if duplicate:
+            raise forms.ValidationError(
+                _("Энэ зам '%(name)s' хуудсанд бүртгэлтэй байна.") % {"name": duplicate.name}
+            )
+        return path
+
+
+class TestAccountForm(forms.Form):
+    """Ижил нэртэй хэрэглэгч байвал нэвтрэх нэр, нууц үгийг нь шинэчилнэ."""
+    label = forms.CharField(
+        max_length=50, widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "QA"})
+    )
+    username = forms.CharField(
+        max_length=150,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": _("нэвтрэх нэр"), "autocomplete": "off"}),
+    )
+    password = forms.CharField(
+        max_length=200,
+        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": _("нууц үг"), "autocomplete": "new-password"}),
+    )
+
+    def save(self, app):
+        label = self.cleaned_data["label"].strip()
+        account = app.accounts.filter(label__iexact=label).first() or TestAccount(app=app, label=label)
+        account.username = self.cleaned_data["username"].strip()
+        account.set_password(self.cleaned_data["password"])
+        created = account.pk is None
+        account.save()
+        return account, created
+
+
 class ScenarioForm(forms.ModelForm):
     fields_json = forms.CharField(widget=forms.HiddenInput, required=False)
 
     class Meta:
         model = Scenario
         fields = [
-            "name", "page_path", "submit_selector", "submit_label", "success_mode", "success_value",
+            "name", "page", "account", "submit_selector", "submit_label", "success_mode", "success_value",
             "error_selector", "expected_column", "expected_message_column",
         ]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control"}),
-            "page_path": forms.TextInput(attrs={"class": "form-control", "placeholder": _("(заавал биш) /register")}),
+            "page": forms.Select(attrs={"class": "form-select"}),
+            "account": forms.Select(attrs={"class": "form-select"}),
             "submit_selector": forms.HiddenInput,
             "submit_label": forms.HiddenInput,
             "success_mode": forms.Select(attrs={"class": "form-select"}),
@@ -143,13 +208,15 @@ class ScenarioForm(forms.ModelForm):
             "expected_message_column": forms.TextInput(attrs={"class": "form-control", "list": "column-options"}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, app, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["page"].queryset = app.pages.all()
+        self.fields["page"].empty_label = None
+        self.fields["account"].queryset = app.accounts.all()
+        self.fields["account"].empty_label = _("Нэвтрэхгүй")
+        self.app = app
         if not self.is_bound:
             self.initial["fields_json"] = json.dumps(self.instance.fields or [], ensure_ascii=False)
-
-    def clean_page_path(self):
-        return clean_page_path(self.cleaned_data.get("page_path"))
 
     def clean_fields_json(self):
         try:
@@ -187,6 +254,8 @@ class ScenarioForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        if cleaned.get("account") and not self.app.login_page_id:
+            self.add_error("account", _("Эхлээд апп-ын мэдээлэлд нэвтрэх хуудсаа сонгоно уу."))
         if cleaned.get("success_mode") in ("url_contains", "text_visible") and not cleaned.get("success_value"):
             self.add_error("success_value", _("Нөхцөлийн текстийг бичнэ үү."))
         return cleaned
@@ -212,7 +281,7 @@ class RunForm(forms.Form):
     def __init__(self, *args, scenario, **kwargs):
         super().__init__(*args, **kwargs)
         self.scenario = scenario
-        self.fields["data_file"].queryset = DataFile.objects.filter(project_id=scenario.app.project_id)
+        self.fields["data_file"].queryset = DataFile.objects.filter(category_id=scenario.app.category_id)
         self.fields["environment"].queryset = scenario.app.environments.all()
         self.fields["data_file"].label_from_instance = lambda f: f"{f.name} ({f.row_count})"
         self.fields["environment"].label_from_instance = lambda e: f"{e.name} — {e.base_url}"

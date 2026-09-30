@@ -140,6 +140,7 @@ def category_delete(request, pk):
     """
     Ticket-гүй ангиллыг багийн холбоосуудтай нь устгана (зөвхөн Admin).
     Ticket-тэй бол түүх алдагдахгүйн тулд (Ticket.category = PROTECT) устгахгүй.
+    Автомат тестийн апп / өгөгдлийн файлтай бол мөн устгахгүй (PROTECT).
     """
     category = get_object_or_404(Category, pk=pk)
     name = category.name
@@ -149,6 +150,13 @@ def category_delete(request, pk):
             request,
             _("'%(name)s' ангилалд %(n)s ticket холбоотой тул устгах боломжгүй.")
             % {"name": name, "n": count},
+        )
+        return redirect("categories:category_list")
+    if category.test_apps.exists() or category.test_data_files.exists():
+        messages.error(
+            request,
+            _("'%(name)s' ангилалд автомат тестийн апп эсвэл өгөгдлийн файл холбоотой тул устгах боломжгүй.")
+            % {"name": name},
         )
         return redirect("categories:category_list")
     category.delete()

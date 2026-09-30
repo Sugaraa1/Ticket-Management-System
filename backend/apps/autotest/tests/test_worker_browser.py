@@ -13,7 +13,7 @@ from django.core.management import call_command
 from django.test import TestCase, override_settings, tag
 
 from apps.autotest.datafiles import suggest_mapping
-from apps.autotest.models import PageScan, TestRun
+from apps.autotest.models import Page, PageScan, TestAccount, TestRun
 from apps.tickets.tests.helpers import make_user
 
 from .helpers import REGISTER_FIELDS, TempMediaMixin, make_setup
@@ -32,9 +32,35 @@ REGISTER_PAGE = """<!doctype html><html><head><meta charset="utf-8"><title>Бү�
 </form></body></html>"""
 
 
+LOGIN_PAGE = """<!doctype html><html><head><meta charset="utf-8"></head><body>
+<form method="post" action="/login">
+  <label>Нэвтрэх нэр <input name="username"></label>
+  <label>Нууц үг <input name="password" type="password"></label>
+  {error}<button type="submit">Нэвтрэх</button>
+</form></body></html>"""
+
+NEW_ITEM_PAGE = """<!doctype html><html><head><meta charset="utf-8"></head><body>
+<form method="post" action="/panel/new">
+  <label for="title">Гарчиг</label><input id="title" name="title">
+  <label for="sub">Дэд ангилал</label><select id="sub" name="sub" disabled><option value="">Дэд ангилал байхгүй</option></select>
+  <label>Тайлбар</label><textarea name="desc" placeholder="Алдааны хувьд: давтах алхам, хүлээгдэж буй үр дүн"></textarea>
+  {error}<button type="submit">Хадгалах</button>
+</form></body></html>"""
+
+
 class FakeSite(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
+
+    def _redirect(self, location, cookie=None):
+        self.send_response(302)
+        self.send_header("Location", location)
+        if cookie:
+            self.send_header("Set-Cookie", cookie)
+        self.end_headers()
+
+    def _logged_in(self):
+        return "session=qa-ok" in self.headers.get("Cookie", "")
 
     def _html(self, body, status=200):
         data = body.encode("utf-8")
@@ -53,13 +79,41 @@ class FakeSite(BaseHTTPRequestHandler):
         elif self.path.startswith("/register"):
             self._html(REGISTER_PAGE.format(error=""))
         elif self.path.startswith("/welcome"):
-            self._html("<h1>Амжилттай бүртгэгдлээ</h1>")
+            # Амжилтын хуудсан дээрх улаан текст (TMS-ийн SLA ⚠ шиг) нь илгээлтийн алдаа биш.
+            self._html('<h1>Амжилттай бүртгэгдлээ</h1><span class="text-danger">⚠ 2026-09-30 16:31</span>')
+        elif self.path.startswith("/login"):
+            self._html(LOGIN_PAGE.format(error=""))
+        elif self.path.startswith("/panel/new"):
+            if "session=dev" in self.headers.get("Cookie", ""):
+                return self._html("<h1>Хандах эрхгүй</h1>", 403)
+            if not self._logged_in():
+                return self._redirect("/login")
+            self._html(NEW_ITEM_PAGE.format(error=""))
+        elif self.path.startswith("/panel"):
+            # Django messages шиг: амжилтын мессеж ч role="alert"-тай.
+            body = '<h1>Самбар</h1><div class="alert alert-success" role="alert">Амжилттай хадгалагдлаа</div>'
+            self._html(body if self._logged_in() else "forbidden", 200 if self._logged_in() else 403)
         else:
             self._html("not found", 404)
 
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))
         form = {k: v[0] for k, v in parse_qs(self.rfile.read(length).decode()).items()}
+        if self.path.startswith("/login"):
+            if (form.get("username"), form.get("password")) == ("qa_test", "Right#pw1"):
+                return self._redirect("/panel", cookie="session=qa-ok; Path=/")
+            if (form.get("username"), form.get("password")) == ("dev_test", "Dev#pw1"):
+                return self._redirect("/", cookie="session=dev; Path=/")
+            return self._html(LOGIN_PAGE.format(error='<div class="error">Нэр эсвэл нууц үг буруу</div>'))
+        if self.path.startswith("/panel/new"):
+            if not self._logged_in():
+                return self._redirect("/login")
+            if not form.get("title"):
+                return self._html(NEW_ITEM_PAGE.format(error='<div class="error">Гарчиг заавал</div>'))
+            return self._redirect("/panel")
+        if form.get("email") == "locked@mail.mn":  # TMS-ийн нэвтрэх түгжээ шиг шар анхааруулга
+            return self._html(REGISTER_PAGE.format(
+                error='<div class="alert alert-warning">Олон удаа буруу оролдсон тул 15 минутын дараа</div>'))
         if len(form.get("password", "")) < 8:
             return self._html(REGISTER_PAGE.format(error='<div class="error">Нууц үг 8-аас доошгүй тэмдэгт</div>'))
         # "exist@" бүртгэлтэй гэж алдаа өгөх ёстой ч энэ сайт өгдөггүй — тест үүнийг bug гэж илрүүлнэ.
@@ -127,10 +181,11 @@ class WorkerBrowserTests(TempMediaMixin, TestCase):
             ["Буруу имэйл", "bat@@mail", "Pass1234", "", "алдаа"],
             ["Богино нууц үг", "a@mail.mn", "12", "", "алдаа: 8-аас доошгүй"],
             ["Давхардсан имэйл", "exist@mail.mn", "Pass1234", "", "алдаа: бүртгэлтэй"],
+            ["Түгжигдсэн", "locked@mail.mn", "Pass1234", "", "алдаа: Олон удаа"],
         ])
         run = TestRun.objects.create(
             scenario=scenario, data_file=data_file, environment=env, data_file_name="users",
-            environment_name="staging", target_url=env.url_for(scenario.page_path), total=4,
+            environment_name="staging", target_url=env.url_for(scenario.page.path), total=5,
         )
         self._work()
         run.refresh_from_db()
@@ -151,14 +206,15 @@ class WorkerBrowserTests(TempMediaMixin, TestCase):
         bug = results["Давхардсан имэйл"]
         self.assertEqual((bug.verdict, bug.actual_outcome), ("fail", "success"))
         self.assertTrue(bug.screenshot)
-        self.assertEqual((run.passed, run.failed, run.errored), (3, 1, 0))
+        self.assertEqual(results["Түгжигдсэн"].verdict, "pass", results["Түгжигдсэн"].actual_message)
+        self.assertEqual((run.passed, run.failed, run.errored), (4, 1, 0))
 
     def test_missing_field_is_reported_as_error(self):
         fields = [{"label": "Байхгүй талбар", "selector": "#nope", "kind": "text", "source": "constant", "value": "x"}]
         _app, env, scenario, data_file = make_setup(base_url=self.base_url, fields=fields)
         run = TestRun.objects.create(
             scenario=scenario, data_file=data_file, environment=env, data_file_name="users",
-            environment_name="staging", target_url=env.url_for(scenario.page_path), total=1,
+            environment_name="staging", target_url=env.url_for(scenario.page.path), total=1,
         )
         self._work()
         result = run.results.get()
@@ -179,7 +235,7 @@ class WorkerBrowserTests(TempMediaMixin, TestCase):
         _app, env, scenario, data_file = make_setup(base_url=self.base_url, fields=fields, rows=[columns] + rows)
         run = TestRun.objects.create(
             scenario=scenario, data_file=data_file, environment=env, data_file_name="gen",
-            environment_name="staging", target_url=env.url_for(scenario.page_path), total=len(rows),
+            environment_name="staging", target_url=env.url_for(scenario.page.path), total=len(rows),
         )
         self._work()
         run.refresh_from_db()
@@ -196,12 +252,88 @@ class WorkerBrowserTests(TempMediaMixin, TestCase):
         self.assertEqual(scan.status, PageScan.Status.FAILED)
         self.assertIn("хаалттай хаяг", scan.error_message)
 
+    def _login_run(self, password):
+        fields = [
+            {"label": "Гарчиг", "selector": "#title", "kind": "text", "source": "column", "value": "title"},
+            {"label": "Дэд ангилал", "selector": "#sub", "kind": "select", "source": "column", "value": "sub"},
+        ]
+        # Хуучин scan-ээр үүссэн файл шиг: идэвхгүй талбарт утгагүй сонголтын текст бичигдсэн.
+        app, env, scenario, data_file = make_setup(base_url=self.base_url, fields=fields, rows=[
+            ["Тайлбар", "title", "sub", "хүлээгдэх"],
+            ["Зөв", "Шинэ", "Дэд ангилал байхгүй", "амжилттай"],
+            ["Хоосон", "", "", "алдаа: заавал"],
+        ])
+        page = Page.objects.create(app=app, name="Шинэ", path="/panel/new")
+        app.login_page = Page.objects.create(app=app, name="Нэвтрэх", path="/login")
+        app.save()
+        account = TestAccount(app=app, label="QA", username="qa_test")
+        account.set_password(password)
+        account.save()
+        scenario.page, scenario.account = page, account
+        scenario.save()
+        return TestRun.objects.create(
+            scenario=scenario, data_file=data_file, environment=env, data_file_name="items",
+            environment_name="staging", target_url=env.url_for(page.path), total=2,
+            account=account, account_label="QA", login_url=env.url_for("/login"),
+        )
+
+    def test_logged_in_run_reaches_protected_page(self):
+        run = self._login_run("Right#pw1")
+        self._work()
+        run.refresh_from_db()
+        self.assertEqual(run.status, TestRun.Status.DONE, run.error_message)
+        self.assertEqual((run.passed, run.failed, run.errored), (2, 0, 0),
+                         [r.actual_message for r in run.results.all()])
+
+    def test_wrong_password_fails_run_with_site_message(self):
+        run = self._login_run("wrong")
+        self._work()
+        run.refresh_from_db()
+        self.assertEqual(run.status, TestRun.Status.FAILED)
+        self.assertIn("нэвтэрч чадсангүй", run.error_message)
+        self.assertIn("Нэр эсвэл нууц үг буруу", run.error_message)
+        self.assertFalse(run.results.exists())
+
+    def test_access_check_per_user(self):
+        from apps.autotest.views import _queue_access_run
+
+        data_run = self._login_run("Right#pw1")
+        scenario, qa = data_run.scenario, data_run.account
+        dev = TestAccount(app=scenario.app, label="Dev", username="dev_test")
+        dev.set_password("Dev#pw1")
+        dev.save()
+        # Dev-д нээлттэй гэж буруу хүлээлт тавьж, унах ёстойг шалгана.
+        scenario.access_rules = {"anon": "denied", str(qa.pk): "open", str(dev.pk): "open"}
+        scenario.save()
+        run = _queue_access_run(scenario, data_run.environment, None)
+        self._work()
+        run.refresh_from_db()
+        self.assertEqual(run.status, TestRun.Status.DONE, run.error_message)
+        results = {r.description: r for r in run.results.all()}
+        self.assertEqual((results["Нэвтрэхгүй"].verdict, results["Нэвтрэхгүй"].actual_message),
+                         ("pass", "Нэвтрэх хуудас руу шилжүүлсэн"))
+        self.assertEqual((results["QA"].verdict, results["QA"].actual_outcome), ("pass", "open"))
+        self.assertEqual((results["Dev"].verdict, results["Dev"].actual_message), ("fail", "HTTP 403"))
+        self.assertTrue(results["Dev"].screenshot)
+
+    def test_scan_logs_in_first(self):
+        run = self._login_run("Right#pw1")
+        scan = PageScan.objects.create(url=run.target_url, account=run.account, login_url=run.login_url,
+                                       requested_by=make_user("qa"))
+        self._work()
+        scan.refresh_from_db()
+        self.assertEqual(scan.status, PageScan.Status.DONE, scan.error_message)
+        # for=-гүй шошго ч placeholder-оос давуу (урт placeholder баганын нэр болохгүй).
+        self.assertEqual([f["label"] for f in scan.result["fields"]], ["Гарчиг", "Дэд ангилал", "Тайлбар"])
+        sub = scan.result["fields"][1]
+        self.assertEqual((sub["disabled"], sub["has_empty_option"], sub["options"]), (True, True, []))
+
     @override_settings(AUTOTEST_ALLOW_PRIVATE_HOSTS=False)
     def test_private_hosts_blocked_by_default(self):
         _app, env, scenario, data_file = make_setup(base_url=self.base_url)
         run = TestRun.objects.create(
             scenario=scenario, data_file=data_file, environment=env, data_file_name="users",
-            environment_name="staging", target_url=env.url_for(scenario.page_path), total=1,
+            environment_name="staging", target_url=env.url_for(scenario.page.path), total=1,
         )
         self._work()
         run.refresh_from_db()
