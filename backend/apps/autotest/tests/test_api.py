@@ -189,7 +189,7 @@ class ApiScenarioViewTests(TempMediaMixin, TestCase):
             api_path="/api/users", api_body='{"email": "{{email}}", "password": "{{password}}"}',
             expected_column="хүлээгдэх",
         )
-        response = self.client.get(reverse("autotest:scenario_detail", args=[scenario.pk]))
+        response = self.client.get(reverse("autotest:scenario_steps", args=[scenario.pk]))
         steps = response.context["wf_steps"]
         self.assertEqual([s["title"] for s in steps], ["Нэвтрэх", "Хүсэлт илгээх", "Үр дүнг шалгах"])
         self.assertIn('"email": "a@mail.mn"', steps[1]["code"])

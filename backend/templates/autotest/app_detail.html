@@ -42,7 +42,7 @@
             </div>
             {% if can_edit %}
               {% if s.last_run and s.last_run.data_file_id and s.last_run.environment_id and not s.last_run.is_active %}
-              <form method="post" action="{% url 'autotest:run_create' s.pk %}">
+              <form method="post" action="{% url 'autotest:run_create' s.pk %}"{% if s.last_run.environment.is_production %} data-confirm="{% blocktrans with name=s.last_run.environment_name %}'{{ name }}' бол production орчин — тест жинхэнэ өгөгдөл үүсгэж, мэдэгдэл илгээж болно. Ажиллуулах уу?{% endblocktrans %}"{% endif %}>
                 {% csrf_token %}
                 <input type="hidden" name="data_file" value="{{ s.last_run.data_file_id }}">
                 <input type="hidden" name="environment" value="{{ s.last_run.environment_id }}">

@@ -44,7 +44,7 @@ def _attach_last_runs(objects, run_filter):
     objects = list(objects.annotate(last_run_id=Subquery(
         TestRun.objects.filter(**{run_filter: OuterRef("pk")}).order_by("-created_at").values("pk")[:1]
     )))
-    runs = TestRun.objects.in_bulk([o.last_run_id for o in objects if o.last_run_id])
+    runs = TestRun.objects.select_related("environment").in_bulk([o.last_run_id for o in objects if o.last_run_id])
     for obj in objects:
         obj.last_run = runs.get(obj.last_run_id)
     return objects
@@ -503,7 +503,7 @@ def _scenario_form_context(app, form, scenario=None):
     page = form.instance.page if form.instance.page_id else None
     return {
         "app": app,
-        "guide": guide.api_scenario_form(app) if isinstance(form, ApiScenarioForm) else guide.scenario_form(app, page),
+        "guide": guide.api_scenario_form(app, scenario) if isinstance(form, ApiScenarioForm) else guide.scenario_form(app, page, scenario),
         "form": form,
         "scenario": scenario,
         "environments": app.environments.all(),
@@ -578,7 +578,7 @@ def scenario_detail(request, pk):
         "environments": scenario.app.environments.all(),
         "access_environment": last_run.environment_id if last_run else None,
         "production_envs": {e.pk: e.name for e in scenario.app.environments.filter(is_production=True)},
-        **steps.context(scenario, last_data_run.data_file_id if last_data_run else None),
+        "steps_file": last_data_run.data_file_id if last_data_run else "",
         "can_edit": _can_edit(request.user),
     })
 

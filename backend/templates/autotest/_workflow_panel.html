@@ -10,7 +10,10 @@
       <li class="tms-flow-step{% if step.current %} is-current{% endif %}{% if step.optional %} is-optional{% endif %}"{% if step.key %} data-guide="{{ step.key }}"{% endif %}>
         <span class="tms-flow-icon"><i class="bi {{ step.icon }}"></i></span>
         <div class="tms-flow-body">
-          <div class="fw-semibold">{{ step.label }}</div>
+          <div class="fw-semibold d-flex flex-wrap align-items-center gap-2">{{ step.label }}
+            {% if step.current %}<span class="badge text-bg-primary fw-normal">{% trans "Энэ хуудсанд" %}</span>{% endif %}
+            {% if step.optional %}<span class="badge text-bg-light border fw-normal">{% trans "заавал биш" %}</span>{% endif %}
+          </div>
           {% if step.desc %}<div class="small text-body-secondary">{{ step.desc }}</div>{% endif %}
           <div class="js-guide-example small mt-1{% if not step.example %} d-none{% endif %}"><span class="tms-flow-value">{{ step.example }}</span></div>
         </div>
@@ -36,18 +39,20 @@
   }
   var pageSelect = document.querySelector("select[name=page]");
   if (pageSelect && example("page")) {
-    pageSelect.addEventListener("change", function () {
+    var showPage = function () {
       var opt = pageSelect.options[pageSelect.selectedIndex];
       chips(example("page"), opt && opt.value ? [[opt.text]] : []);
-    });
+    };
+    pageSelect.addEventListener("change", showPage);
+    showPage();
   }
   document.addEventListener("autotest:scan", function (e) {
     var fields = (e.detail.fields || []).filter(function (f) { return f.label && f.in_main_form !== false; });
     if (example("fields")) chips(example("fields"), fields.map(function (f) { return [f.label]; }));
     if (!example("rows")) return;
-    var rows = [["✓ {% trans "Бүх талбар зөв" %}", "ok"]];
-    fields.forEach(function (f) { if (f.required) rows.push(["✗ " + f.label + " {% trans "хоосон" %}", "bad"]); });
-    rows.push(["? {% trans "Хэт урт · SQL · XSS" %}"]);
+    var rows = [["✓ {{ _("Бүх талбар зөв")|escapejs }}", "ok"]];
+    fields.forEach(function (f) { if (f.required) rows.push(["✗ " + f.label + " {{ _("хоосон")|escapejs }}", "bad"]); });
+    rows.push(["? {{ _("Хэт урт · SQL · XSS")|escapejs }}"]);
     chips(example("rows"), rows);
   });
   var steps = panel.querySelector('[data-guide="steps"]');

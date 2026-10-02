@@ -408,7 +408,7 @@ class TestStepsTests(TempMediaMixin, TestCase):
         self.client.force_login(make_user("qa", ROLE_QA))
 
     def test_steps_follow_the_scenario_and_selected_row(self):
-        response = self.client.get(reverse("autotest:scenario_detail", args=[self.scenario.pk]))
+        response = self.client.get(reverse("autotest:scenario_steps", args=[self.scenario.pk]))
         titles = [s["title"] for s in response.context["wf_steps"]]
         self.assertEqual(titles, ["Хуудас нээх", "«Имэйл» бөглөх", "«Нууц үг» бөглөх", "«Зөвшөөрөх» чагтлах",
                                   "«Илгээх» товч дарах", "Үр дүнг шалгах"])
@@ -425,7 +425,7 @@ class TestStepsTests(TempMediaMixin, TestCase):
 
     def test_without_data_file_columns_are_shown(self):
         self.data_file.delete()
-        response = self.client.get(reverse("autotest:scenario_detail", args=[self.scenario.pk]))
+        response = self.client.get(reverse("autotest:scenario_steps", args=[self.scenario.pk]))
         self.assertIsNone(response.context["wf_steps"][1]["items"][0]["value"])
         self.assertEqual(response.context["wf_steps"][1]["items"][0]["column"], "email")
 

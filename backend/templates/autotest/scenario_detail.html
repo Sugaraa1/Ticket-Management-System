@@ -125,7 +125,9 @@
 </div>
 {% endif %}
 <div class="tab-pane fade{% if not can_edit %} show active{% endif %}" id="tab-steps" role="tabpanel">
-<div class="card mb-3"><div class="card-body">{% include "autotest/_test_steps.html" %}</div></div>
+<div class="card mb-3"><div class="card-body">
+  <div id="testSteps" data-url="{% url 'autotest:scenario_steps' scenario.pk %}" data-file="{{ steps_file }}"><div class="spinner-border spinner-border-sm text-body-tertiary"></div></div>
+</div></div>
 </div>
 <div class="tab-pane fade" id="tab-history" role="tabpanel">
 <div class="card">
@@ -139,15 +141,30 @@
 <script>
 // Тестийн алхмууд: файл/мөр солиход алхмуудыг тэр мөрийн утгаар дахин ачаална. Нээсэн tab-ыг URL-д (#steps) хадгална.
 (function () {
+  // Файлыг уншдаг тул табыг анх нээхэд л ачаална.
+  function loadSteps(params) {
+    var box = document.getElementById("testSteps");
+    box.style.opacity = .5;
+    fetch(box.dataset.url + "?" + params)
+      .then(function (r) { if (!r.ok) throw r; return r.text(); })
+      .then(function (html) { box.outerHTML = html; })
+      .catch(function () { box.style.opacity = 1; });
+  }
+  var stepsLoaded = false;
+  function loadStepsOnce() {
+    if (stepsLoaded) return;
+    stepsLoaded = true;
+    loadSteps(new URLSearchParams({file: document.getElementById("testSteps").dataset.file}));
+  }
+  var stepsPane = document.getElementById("tab-steps");
+  if (stepsPane.classList.contains("active")) loadStepsOnce();
+  document.querySelector('[data-bs-target="#tab-steps"]').addEventListener("shown.bs.tab", loadStepsOnce);
   document.addEventListener("change", function (e) {
     if (!e.target.matches(".js-wf-file, .js-wf-row")) return;
     var box = document.getElementById("testSteps");
     var params = new URLSearchParams({file: box.querySelector(".js-wf-file").value});
     if (e.target.matches(".js-wf-row")) params.set("row", e.target.value);
-    box.style.opacity = .5;
-    fetch(box.dataset.url + "?" + params).then(function (r) { return r.text(); }).then(function (html) {
-      box.outerHTML = html;
-    });
+    loadSteps(params);
   });
   var tabs = document.querySelectorAll("#scenarioTabs [data-bs-toggle=tab]");
   tabs.forEach(function (btn) {
