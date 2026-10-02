@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Ticket Management System\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-02 12:04+0800\n"
+"POT-Creation-Date: 2026-10-02 12:10+0800\n"
 "PO-Revision-Date: 2026-10-02 09:20+0800\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -852,6 +852,13 @@ msgstr "Where the tests run"
 #: templates/autotest/scenario_form.html:41
 msgid "Хуудас нэмэх"
 msgstr "Add page"
+
+#: apps/autotest/guide.py:26
+#, python-format
+msgid "%(n)s хуудас"
+msgid_plural "%(n)s хуудас"
+msgstr[0] "%(n)s page"
+msgstr[1] "%(n)s pages"
 
 #: apps/autotest/guide.py:26
 msgid "Шалгах хуудсуудын замыг бүртгэнэ"

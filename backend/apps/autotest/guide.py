@@ -3,7 +3,7 @@ Autotest-ийн хуудас бүрийн "Workflow" самбар: тухайн 
 богино нэр, бодит жишээ) харуулна. Апп, сценари г.м. бодит объектоос жишээгээ авдаг тул шинэ сценари үүсгэхэд
 workflow нь өөрөө үүснэ.
 """
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _, ngettext
 
 
 def _s(icon, label, example="", current=False, optional=False, key="", desc=""):
@@ -16,14 +16,14 @@ def _s(icon, label, example="", current=False, optional=False, key="", desc=""):
 def overview(app=None, current=()):
     """Бүх процесс: апп бүртгэхээс bug ticket хүртэл."""
     env = app.environments.first() if app else None
-    pages = list(app.pages.all()[:2]) if app else []
+    page_count = app.pages.count() if app else 0
     account = app.accounts.first() if app else None
     return {
         "title": _("Автомат тест"),
         "steps": [
             _s("bi-app-indicator", _("Апп бүртгэх"), app.name if app else "", "app" in current, desc=_("Шалгах системээ нэр, ангиллаар нэмнэ")),
             _s("bi-hdd-network", _("Орчин нэмэх"), env.base_url if env else "", "env" in current, desc=_("Тест аль хаяг дээр ажиллахыг заана")),
-            _s("bi-file-earmark", _("Хуудас нэмэх"), ", ".join(p.path for p in pages), "page" in current, desc=_("Шалгах хуудсуудын замыг бүртгэнэ")),
+            _s("bi-file-earmark", _("Хуудас нэмэх"), ngettext("%(n)s хуудас", "%(n)s хуудас", page_count) % {"n": page_count} if page_count else "", "page" in current, desc=_("Шалгах хуудсуудын замыг бүртгэнэ")),
             _s("bi-person-badge", _("Тестийн хэрэглэгч"), f"{account.label} · {account.username}" if account else "",
                "account" in current, optional=True, desc=_("Нэвтэрч ордог хуудсанд л хэрэгтэй")),
             _s("bi-file-earmark-spreadsheet", _("Өгөгдлийн файл"), "Excel / CSV", "file" in current, desc=_("Мөр бүр нэг тест болно")),
