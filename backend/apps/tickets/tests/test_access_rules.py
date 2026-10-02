@@ -1,4 +1,5 @@
 from io import StringIO
+from unittest import mock
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
@@ -88,6 +89,8 @@ class AccessRuleTests(TestCase):
     # --- 1. Scheduler
     def test_scheduler_once_runs_both_jobs(self):
         out = StringIO()
-        call_command("run_scheduler", once=True, stdout=out)
+        # TestCase-ийн transaction дотор close_old_connections холболтыг хаачихна.
+        with mock.patch("apps.tickets.management.commands.run_scheduler.close_old_connections"):
+            call_command("run_scheduler", once=True, stdout=out)
         self.assertIn("SLA", out.getvalue())
         self.assertIn("сануулга", out.getvalue())

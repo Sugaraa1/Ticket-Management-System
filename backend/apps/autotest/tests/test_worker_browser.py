@@ -9,6 +9,7 @@ import json
 import os
 import threading
 import time
+import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest import mock
 from urllib.parse import parse_qs
@@ -17,7 +18,7 @@ from django.core.management import call_command
 from django.test import TestCase, override_settings, tag
 
 from apps.autotest.datafiles import suggest_mapping
-from apps.autotest.models import Page, PageScan, TestAccount, TestRun
+from apps.autotest.models import Page, PageScan, RunResult, TestAccount, TestRun
 from apps.tickets.tests.helpers import make_user
 
 from .helpers import REGISTER_FIELDS, TempMediaMixin, make_setup
@@ -91,7 +92,7 @@ LOGIN2_PAGE = """<!doctype html><html><head><meta charset="utf-8"></head><body>
 </form></body></html>"""
 
 SHORT_TOKENS = itertools.count(1)
-SHORT_USES = {}  # session token → хэдэн удаа ашигласан (2 хүсэлтийн дараа дуусна)
+SHORT_USES = {}  # session token → хэдэн удаа ашигласан (3 хүсэлтийн дараа дуусна)
 
 
 class FakeSite(BaseHTTPRequestHandler):
@@ -107,10 +108,10 @@ class FakeSite(BaseHTTPRequestHandler):
 
     def _logged_in(self):
         cookie = self.headers.get("Cookie", "")
-        if "short=" in cookie:  # богино хугацааны session: GET + POST-ийн дараа дуусна
+        if "short=" in cookie:  # богино session: нэвтэрсний дараах redirect + нэг мөрийн GET, POST-ийн дараа дуусна
             token = cookie.split("short=")[1].split(";")[0]
             SHORT_USES[token] = SHORT_USES.get(token, 0) + 1
-            return SHORT_USES[token] <= 2
+            return SHORT_USES[token] <= (2 if token.startswith("t") else 3)
         return "session=qa-ok" in cookie
 
     def _html(self, body, status=200):
@@ -173,6 +174,8 @@ class FakeSite(BaseHTTPRequestHandler):
                 return self._redirect("/panel", cookie="session=qa-ok; Path=/")
             return self._html(LOGIN2_PAGE)
         if self.path.startswith("/login"):
+            if (form.get("username"), form.get("password")) == ("tiny_test", "Tiny#pw1"):  # POST үед дуусна
+                return self._redirect("/panel/new", cookie=f"short=t{next(SHORT_TOKENS)}; Path=/")
             if (form.get("username"), form.get("password")) == ("short_test", "Short#pw1"):
                 return self._redirect("/panel/new", cookie=f"short={next(SHORT_TOKENS)}; Path=/")
             if (form.get("username"), form.get("password")) == ("qa_test", "Right#pw1"):
@@ -218,9 +221,11 @@ def _chromium_available():
 class WorkerBrowserTests(TempMediaMixin, TestCase):
     @classmethod
     def setUpClass(cls):
-        super().setUpClass()
+        # super()-ээс ӨМНӨ: дараа нь алгасвал TestCase-ийн нээсэн transaction хаагдахгүй үлдэж,
+        # дараагийн тестүүдийн DB холболт эвдэрнэ.
         if not _chromium_available():
-            raise cls.skipTest(cls, "Playwright Chromium суугаагүй")
+            raise unittest.SkipTest("Playwright Chromium суугаагүй")
+        super().setUpClass()
         cls.server = ThreadingHTTPServer(("127.0.0.1", 0), FakeSite)
         threading.Thread(target=cls.server.serve_forever, daemon=True).start()
         cls.base_url = f"http://127.0.0.1:{cls.server.server_port}"
@@ -379,6 +384,15 @@ class WorkerBrowserTests(TempMediaMixin, TestCase):
         self.assertEqual(run.status, TestRun.Status.DONE, run.error_message)
         self.assertEqual((run.passed, run.errored), (2, 0), [r.actual_message for r in run.results.all()])
         self.assertGreater(next(SHORT_TOKENS), first_token + 2)  # дор хаяж нэг удаа дахин нэвтэрсэн
+
+    def test_login_redirect_after_submit_is_an_error_not_a_success(self):
+        run = self._login_run("Tiny#pw1", username="tiny_test")
+        self._work()
+        run.refresh_from_db()
+        self.assertEqual(run.status, TestRun.Status.DONE, run.error_message)
+        first = run.results.order_by("row_number").first()
+        self.assertEqual(first.verdict, RunResult.Verdict.ERROR)  # хуудас шилжсэн ч амжилттай биш
+        self.assertIn("нэвтрэх хуудас руу шилжсэн", first.actual_message)
 
     def _login_run(self, password, username="qa_test"):
         fields = [

@@ -7,7 +7,7 @@ V5 (redirect), V13/V14 (CSRF, HTTP header).
 from django.contrib.auth.password_validation import validate_password
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from apps.tickets.tests.helpers import make_user
@@ -60,6 +60,7 @@ class PasswordPolicyTests(TestCase):
                 self.assertNotRegex(message, r"[A-Za-z]{4,}")
 
 
+@override_settings(LOGIN_FAILURE_LIMIT=5)  # infra/.env-д local-д өсгөсөн байж болно
 class LoginRulesTests(TestCase):
     def setUp(self):
         self.user = make_user("bat", password="Tq9#mZ4pX")

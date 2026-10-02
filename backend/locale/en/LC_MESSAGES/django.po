@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Ticket Management System\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-02 12:10+0800\n"
+"POT-Creation-Date: 2026-10-02 12:36+0800\n"
 "PO-Revision-Date: 2026-10-02 09:20+0800\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -1417,30 +1417,36 @@ msgstr "The file is missing these columns: %(cols)s"
 msgid "Session дууссан — нэвтрэх хуудас руу шилжүүлсэн."
 msgstr "Session expired — redirected to the login page."
 
-#: apps/autotest/runner.py:650
+#: apps/autotest/runner.py:609
+msgid ""
+"Илгээсний дараа нэвтрэх хуудас руу шилжсэн — session дууссан байж магадгүй."
+msgstr ""
+"Redirected to the login page after submitting — the session may have expired."
+
+#: apps/autotest/runner.py:654
 #, python-format
 msgid "'%(label)s' талбар идэвхгүй тул '%(value)s' утгыг оруулж чадсангүй."
 msgstr "Field '%(label)s' is disabled, so '%(value)s' could not be entered."
 
-#: apps/autotest/runner.py:658
+#: apps/autotest/runner.py:662
 #, python-format
 msgid "'%(label)s' талбарыг бөглөж чадсангүй: %(err)s"
 msgstr "Could not fill the '%(label)s' field: %(err)s"
 
-#: apps/autotest/runner.py:737
+#: apps/autotest/runner.py:741
 msgid "илгээх"
 msgstr "submit"
 
-#: apps/autotest/runner.py:738
+#: apps/autotest/runner.py:742
 #, python-format
 msgid "'%(label)s' товчийг дарж чадсангүй: %(err)s"
 msgstr "Could not click the '%(label)s' button: %(err)s"
 
-#: apps/autotest/runner.py:946
+#: apps/autotest/runner.py:950
 msgid "хаалттай хаяг руу хандах гэсэн (аюулгүй байдлын хязгаарлалт)"
 msgstr "tried to reach a blocked address (security restriction)"
 
-#: apps/autotest/runner.py:948
+#: apps/autotest/runner.py:952
 msgid "хугацаа хэтэрлээ (элемент олдсонгүй эсвэл хуудас хариу өгсөнгүй)"
 msgstr "timed out (element not found or the page did not respond)"
 

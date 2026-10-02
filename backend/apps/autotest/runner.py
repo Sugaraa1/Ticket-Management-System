@@ -603,6 +603,10 @@ def run_row(browser, scenario, url, row, line_number, stamp=None, storage_state=
         invalid = page.evaluate(INVALID_JS, scenario.submit_selector or DEFAULT_SUBMIT_SELECTOR)
         _submit(page, scenario)
         flashes = _await_outcome(page)
+        if login_url and _same_page(page.url, login_url) and not _same_page(url, login_url):
+            # "Хуудас шилжсэн = амжилттай" гэж андуурахгүй. Илгээлт хийгдсэн эсэх нь тодорхойгүй тул
+            # (нууц үг солиод гаргасан ч байж болно) давхар илгээхгүйн тулд давтахгүй.
+            raise RowError(_("Илгээсний дараа нэвтрэх хуудас руу шилжсэн — session дууссан байж магадгүй."))
         outcome, message, page_text = _read_outcome(page, scenario, start_url, invalid, flashes)
         result.update(actual_outcome=outcome, actual_message=message, final_url=page.url)
         result["verdict"] = judge(expected_outcome, expected_message, outcome, message + "\n" + page_text)

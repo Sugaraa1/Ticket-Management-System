@@ -136,7 +136,9 @@ class AttachmentUploadPageTests(TestCase):
                 attachment = Attachment.objects.filter(ticket=self.ticket).latest("pk")
                 response = self.client.get(reverse("tickets:attachment_download", args=[attachment.pk]))
                 self.assertTrue(response["Content-Disposition"].startswith(expected))
-                response.close()
+                # response.close() нь request_finished-ээр DB холболтыг хаачихна. Харин агуулгыг бүрэн
+                # уншихад test client файлыг холболтод хүрэлгүй хаадаг.
+                b"".join(response.streaming_content)
 
     def test_anonymous_user_cannot_upload(self):
         """[ATT-07] Anonymous user cannot upload files"""
