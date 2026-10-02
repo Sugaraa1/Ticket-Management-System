@@ -4,7 +4,11 @@
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header py-2 gap-2">
-        <h6 class="modal-title me-auto" id="dataFileTitle"></h6>
+        <h6 class="modal-title me-auto text-truncate" id="dataFileTitle"></h6>
+        <div class="input-group input-group-sm" style="max-width: 14rem">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="search" class="form-control" id="dataFileSearch" placeholder="{% trans "Хайх" %}" aria-label="{% trans "Хайх" %}">
+        </div>
         {% if can_edit %}<button type="button" class="btn btn-sm btn-outline-primary" id="dataFileEditBtn"><i class="bi bi-pencil"></i> {% trans "Засах" %}</button>{% endif %}
         {% trans "Татах" as download_label %}
         {% include "autotest/_download_menu.html" with url="#" label=download_label btn="btn-sm btn-link" id="dataFileDownload" %}
@@ -36,64 +40,141 @@ window.tmsDataFile = (function () {
     discard: "{% trans 'Хадгалаагүй өөрчлөлт алга болно. Хаах уу?' %}",
     removeRow: "{% trans 'Мөр устгах' %}",
     copyRow: "{% trans 'Мөр хуулах' %}",
-    badOutcome: "{% trans 'амжилттай / алдаа / алдаа: мессеж' %}",
+    addColumn: "{% trans 'Багана нэмэх' %}",
+    removeColumn: "{% trans 'Багана устгах' %}",
+    newColumn: "{% trans 'шинэ багана' %}",
+    usedBy: "{% trans 'Сценари ашиглаж байгаа тул нэрийг солих, устгах боломжгүй' %}",
+    expected: "{% trans 'Хүлээгдэх үр дүн' %}",
+    secret: "{% trans 'Нууц утга' %}",
+    badOutcome: "{% trans 'амжилттай / алдаа / алдаа: мессеж / 201 / 400: мессеж' %}",
     saveFailed: "{% trans 'Хадгалж чадсангүй. Холболтоо шалгаад дахин оролдоно уу.' %}"
   };
   var modalEl = document.getElementById("dataFileModal");
   var table = document.getElementById("dataFileTable");
   var status = document.getElementById("dataFileStatus");
+  var search = document.getElementById("dataFileSearch");
   var editBtn = document.getElementById("dataFileEditBtn");
-  var state = {id: null, columns: [], rows: [], expected: [], words: [], editing: false, dirty: false, onSaved: null};
+  // columns: [{name, orig}] — orig нь серверээс ирсэн нэр (шинэ баганад null), үүргийг нь олоход.
+  var state = {id: null, columns: [], rows: [], lines: [], roles: {}, words: [], editing: false, dirty: false, onSaved: null};
 
-  // Хүлээгдэх үр дүнгийн нүд: "амжилттай", "алдаа", "алдаа: мессеж". Үсгийн алдаатай бол
-  // (ж: "амжилтай") тест үр дүнг биш мессежийг шалгаад ойлгомжгүй FAIL өгдөг тул тодруулна.
-  function checkOutcome(input) {
-    var head = input.value.split(":")[0].trim().toLowerCase();
-    var bad = head !== "" && state.words.indexOf(head) === -1 && !/^[1-5]\d\d$/.test(head);  // API: 201, 400
-    input.classList.toggle("is-invalid", bad);
-    input.title = bad ? T.badOutcome : "";
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text != null) node.textContent = text;
+    return node;
   }
 
-  function rowButton(icon, title, cls, onClick) {
-    var btn = document.createElement("button");
-    btn.type = "button"; btn.className = "btn btn-sm tms-icon-btn " + cls; btn.title = title;
+  function role(column) {
+    return (column.orig && state.roles[column.orig]) || {used_by: [], expected: false, secret: false};
+  }
+
+  function iconButton(icon, title, cls, onClick) {
+    var btn = el("button", "btn btn-sm tms-icon-btn " + cls);
+    btn.type = "button"; btn.title = title;
     btn.innerHTML = '<i class="bi ' + icon + '"></i>';
     btn.addEventListener("click", onClick);
     return btn;
   }
 
-  function cell(tag, text, cls) {
-    var el = document.createElement(tag);
-    el.textContent = text;
-    if (cls) el.className = cls;
-    return el;
+  function changed() { state.dirty = true; }
+
+  // Хүлээгдэх үр дүнгийн нүд: "амжилттай", "алдаа: мессеж", API-д "201", "400: мессеж".
+  // Үсгийн алдаатай бол (ж: "амжилтай") тест ойлгомжгүй FAIL өгдөг тул тодруулна.
+  function checkOutcome(input) {
+    var head = input.value.split(":")[0].trim().toLowerCase();
+    var bad = head !== "" && state.words.indexOf(head) === -1 && !/^[1-5]\d\d$/.test(head);
+    input.classList.toggle("is-invalid", bad);
+    input.title = bad ? T.badOutcome : "";
   }
 
-  function render() {
-    var head = table.tHead, body = table.tBodies[0];
-    head.innerHTML = ""; body.innerHTML = "";
-    modalEl.classList.toggle("is-editing", state.editing);
-    var tr = document.createElement("tr");
-    tr.appendChild(cell("th", "#", "text-body-tertiary"));
-    state.columns.forEach(function (c) { tr.appendChild(cell("th", c)); });
-    if (state.editing) tr.appendChild(cell("th", ""));
-    head.appendChild(tr);
+  function roleBadges(column) {
+    var r = role(column), wrap = el("span", "ms-1 text-body-tertiary");
+    if (r.used_by.length) {
+      var link = el("i", "bi bi-link-45deg"); link.title = r.used_by.join("\n"); wrap.appendChild(link);
+    }
+    if (r.expected) { var target = el("i", "bi bi-bullseye ms-1"); target.title = T.expected; wrap.appendChild(target); }
+    if (r.secret) { var key = el("i", "bi bi-key ms-1"); key.title = T.secret; wrap.appendChild(key); }
+    return wrap;
+  }
+
+  function renderHead() {
+    var tr = el("tr");
+    tr.appendChild(el("th", "text-body-tertiary", "#"));
+    state.columns.forEach(function (column, c) {
+      var th = el("th", "text-nowrap");
+      var locked = role(column).used_by.length > 0;
+      if (state.editing && !locked) {
+        var group = el("div", "d-flex align-items-center gap-1");
+        var input = el("input", "form-control form-control-sm fw-semibold");
+        input.value = column.name;
+        input.addEventListener("input", function () { column.name = input.value; changed(); });
+        group.appendChild(input);
+        group.appendChild(roleBadges(column));
+        group.appendChild(iconButton("bi-x-lg", T.removeColumn, "text-danger", function () {
+          state.columns.splice(c, 1);
+          state.rows.forEach(function (row) { row.splice(c, 1); });
+          changed(); render();
+        }));
+        th.appendChild(group);
+      } else {
+        th.appendChild(document.createTextNode(column.name));
+        if (state.editing) { var lock = el("i", "bi bi-lock ms-1 text-body-tertiary"); lock.title = T.usedBy; th.appendChild(lock); }
+        th.appendChild(roleBadges(column));
+      }
+      tr.appendChild(th);
+    });
+    if (state.editing) {
+      var add = el("th");
+      add.appendChild(iconButton("bi-plus-square", T.addColumn, "text-primary", function () {
+        state.columns.push({name: T.newColumn + " " + (state.columns.length + 1), orig: null});
+        state.rows.forEach(function (row) { row.push(""); });
+        changed(); render();
+        var inputs = table.tHead.querySelectorAll("input");
+        if (inputs.length) { inputs[inputs.length - 1].focus(); inputs[inputs.length - 1].select(); }
+      }));
+      tr.appendChild(add);
+    }
+    table.tHead.appendChild(tr);
+  }
+
+  function cellInput(r, c) {
+    var column = state.columns[c], r0 = role(column);
+    var input = el("input", "form-control form-control-sm");
+    input.value = state.rows[r][c];
+    input.dataset.col = c;
+    if (r0.secret) {  // нууц утгыг зөвхөн засаж байх үед харуулна
+      input.type = "password";
+      input.addEventListener("focus", function () { input.type = "text"; });
+      input.addEventListener("blur", function () { input.type = "password"; });
+    }
+    if (r0.expected) { input.setAttribute("list", "dataFileOutcomes"); checkOutcome(input); }
+    input.addEventListener("input", function () {
+      state.rows[r][c] = input.value; changed();
+      if (r0.expected) checkOutcome(input);
+    });
+    // Enter — доод мөрийн ижил багана руу (Excel шиг).
+    input.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" || e.isComposing) return;
+      e.preventDefault();
+      var next = input.closest("tr").nextElementSibling;
+      while (next && next.hidden) next = next.nextElementSibling;
+      var target = next && next.querySelector('input[data-col="' + c + '"]');
+      if (target) { target.focus(); target.select(); }
+    });
+    return input;
+  }
+
+  function renderBody() {
+    var body = table.tBodies[0];
     state.rows.forEach(function (row, r) {
-      var line = document.createElement("tr");
-      line.appendChild(cell("td", r + 2, "text-body-tertiary"));
+      var line = el("tr");
+      line.appendChild(el("td", "text-body-tertiary", state.editing ? r + 2 : state.lines[r]));
       row.forEach(function (value, c) {
-        var td = document.createElement("td");
+        var td = el("td");
         if (state.editing) {
-          var input = document.createElement("input");
-          input.className = "form-control form-control-sm";
-          input.value = value;
-          var isOutcome = state.expected.indexOf(state.columns[c]) !== -1;
-          if (isOutcome) { input.setAttribute("list", "dataFileOutcomes"); checkOutcome(input); }
-          input.addEventListener("input", function () {
-            state.rows[r][c] = input.value; state.dirty = true;
-            if (isOutcome) checkOutcome(input);
-          });
-          td.appendChild(input);
+          td.appendChild(cellInput(r, c));
+        } else if (role(state.columns[c]).secret && value !== "") {
+          td.textContent = "••••••";
         } else {
           td.textContent = value === "" ? "∅" : value;
           td.title = value;
@@ -102,22 +183,40 @@ window.tmsDataFile = (function () {
         line.appendChild(td);
       });
       if (state.editing) {
-        var actions = document.createElement("td");
-        actions.className = "text-nowrap";
-        actions.appendChild(rowButton("bi-copy", T.copyRow, "text-body-secondary", function () {
-          state.rows.splice(r + 1, 0, state.rows[r].slice()); state.dirty = true; render();
+        var actions = el("td", "text-nowrap");
+        actions.appendChild(iconButton("bi-copy", T.copyRow, "text-body-secondary", function () {
+          state.rows.splice(r + 1, 0, state.rows[r].slice()); changed(); render();
           var inputs = table.tBodies[0].rows[r + 1].querySelectorAll("input");
           if (inputs.length) inputs[0].focus();
         }));
-        actions.appendChild(rowButton("bi-trash", T.removeRow, "text-danger", function () {
-          state.rows.splice(r, 1); state.dirty = true; render();
+        actions.appendChild(iconButton("bi-trash", T.removeRow, "text-danger", function () {
+          state.rows.splice(r, 1); changed(); render();
         }));
         line.appendChild(actions);
       }
       body.appendChild(line);
     });
-    status.textContent = state.rows.length + " " + T.rows;
+  }
+
+  function applySearch() {
+    var query = search.value.trim().toLowerCase(), shown = 0;
+    [].forEach.call(table.tBodies[0].rows, function (tr, r) {
+      var match = !query || state.rows[r].some(function (value, c) {
+        return !role(state.columns[c]).secret && value.toLowerCase().indexOf(query) !== -1;
+      });
+      tr.hidden = !match;
+      if (match) shown++;
+    });
+    status.textContent = (query ? shown + " / " : "") + state.rows.length + " " + T.rows;
     status.className = "small text-body-secondary";
+  }
+
+  function render() {
+    table.tHead.innerHTML = ""; table.tBodies[0].innerHTML = "";
+    modalEl.classList.toggle("is-editing", state.editing);
+    renderHead();
+    renderBody();
+    applySearch();
   }
 
   function load(id, edit) {
@@ -129,10 +228,11 @@ window.tmsDataFile = (function () {
         document.querySelectorAll("#dataFileDownload [data-format]").forEach(function (a) {
           a.href = data.download_url + "?format=" + a.dataset.format;
         });
-        state.columns = data.columns;
-        state.expected = data.expected_columns || [];
-        state.words = data.outcome_words || [];
+        state.columns = data.columns.map(function (name) { return {name: name, orig: name}; });
         state.rows = data.rows.map(function (row) { return row[1].slice(); });
+        state.lines = data.rows.map(function (row) { return row[0]; });
+        state.roles = data.roles || {};
+        state.words = data.outcome_words || [];
         state.editing = !!edit; state.dirty = false;
         render();
       });
@@ -141,9 +241,11 @@ window.tmsDataFile = (function () {
   function open(id, opts) {
     opts = opts || {};
     state.id = id; state.onSaved = opts.onSaved || null;
+    search.value = "";
     load(id, opts.edit).then(function () { bootstrap.Modal.getOrCreateInstance(modalEl).show(); });
   }
 
+  search.addEventListener("input", applySearch);
   if (editBtn) editBtn.addEventListener("click", function () { state.editing = true; render(); });
   document.getElementById("dataFileCancel").addEventListener("click", function () {
     if (state.dirty && !window.confirm(T.discard)) return;
@@ -151,7 +253,8 @@ window.tmsDataFile = (function () {
   });
   document.getElementById("dataFileAddRow").addEventListener("click", function () {
     state.rows.push(state.columns.map(function () { return ""; }));
-    state.dirty = true;
+    changed();
+    search.value = "";
     render();
     var inputs = table.tBodies[0].lastElementChild.querySelectorAll("input");
     if (inputs.length) inputs[0].focus();
@@ -163,7 +266,7 @@ window.tmsDataFile = (function () {
     fetch("{% url 'autotest:datafile_save_rows' 0 %}".replace("/0/", "/" + state.id + "/"), {
       method: "POST",
       headers: {"Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}"},
-      body: JSON.stringify({rows: state.rows})
+      body: JSON.stringify({columns: state.columns.map(function (c) { return c.name; }), rows: state.rows})
     })
       // Session дууссан бол нэвтрэх хуудасны HTML ирнэ — JSON биш хариуг ч алдаа гэж харуулна.
       .then(function (r) { return r.json().catch(function () { return {error: T.saveFailed}; }); })

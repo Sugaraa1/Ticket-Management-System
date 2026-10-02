@@ -159,7 +159,10 @@
     if (btn) insert(btn.dataset.name);
   });
   select.addEventListener("change", renderChips);
-  preview.addEventListener("click", function () { if (select.value) tmsDataFile.open(select.value, {}); });
+  preview.addEventListener("click", function () {
+    var file = currentFile();
+    if (file) tmsDataFile.open(file.id, {onSaved: function (data) { file.columns = data.columns; renderChips(); }});
+  });
 
   // Загварт ашигласан баганууд хамгийн их таарах файлыг анхнаасаа сонгоно.
   var names = used(), best = null, score = -1;

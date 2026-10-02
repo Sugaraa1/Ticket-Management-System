@@ -532,7 +532,7 @@
     tmsDataFile.open(id, {onSaved: function (data) {
       var option = sample.querySelector('option[value="' + id + '"]');
       if (option) option.textContent = data.name + " (" + data.rows + " " + T.rows + ")";
-      if (fileMeta[id]) fileMeta[id].rows = data.rows;
+      if (fileMeta[id]) { fileMeta[id].rows = data.rows; fileMeta[id].columns = data.columns; }
     }});
   }
   previewBtn.addEventListener("click", function () { if (sample.value) previewFile(sample.value); });

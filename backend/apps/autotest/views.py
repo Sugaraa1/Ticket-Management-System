@@ -327,16 +327,34 @@ def _file_format(name):
     return "csv" if name.lower().endswith(".csv") else "xlsx"
 
 
+def _column_roles(data_file):
+    """
+    Ангиллын сценариуд файлын баганыг юунд ашигладаг вэ: {багана: {"used_by": [нэр], "expected": bool,
+    "secret": bool}}. Ашиглагдаж буй баганын нэрийг засах цонхонд солих/устгахыг хориглоно.
+    """
+    from .api import is_secret_column
+
+    roles = {c: {"used_by": [], "expected": c == generator.EXPECTED_COLUMN, "secret": is_secret_column(c)}
+             for c in data_file.columns}
+    for scenario in Scenario.objects.filter(app__category_id=data_file.category_id).select_related("app"):
+        for column in scenario.required_columns():
+            if column in roles:
+                roles[column]["used_by"].append(str(scenario))
+        if scenario.expected_column in roles:
+            roles[scenario.expected_column]["expected"] = True
+        for column in scenario.secret_columns():
+            if column in roles:
+                roles[column]["secret"] = True
+    return roles
+
+
 @roles_required(*VIEW_ROLES)
 def datafile_preview(request, pk):
     """Сценари тохируулж байх үед файлыг хуудсаа орхилгүй (цонхонд) харуулах JSON."""
     from .datafiles import ERROR_WORDS, SUCCESS_WORDS, DataFileError, read_rows
 
     data_file = get_object_or_404(DataFile, pk=pk)
-    # Хүлээгдэх үр дүнгийн баганад засах цонх 'амжилттай / алдаа: ...' сонголт санал болгоно.
-    expected = set(
-        Scenario.objects.filter(app__category_id=data_file.category_id).values_list("expected_column", flat=True)
-    ) | {generator.EXPECTED_COLUMN}
+    roles = _column_roles(data_file)
     try:
         with data_file.file.open("rb") as fh:
             _cols, rows = read_rows(fh, data_file.file.name)
@@ -348,7 +366,7 @@ def datafile_preview(request, pk):
         "columns": data_file.columns,
         "rows": [[line, [row.get(c, "") for c in data_file.columns]] for line, row in rows[:limit]],
         "total": len(rows),
-        "expected_columns": [c for c in data_file.columns if c in expected],
+        "roles": roles,
         "outcome_words": sorted(SUCCESS_WORDS | ERROR_WORDS),
         "download_url": reverse("autotest:datafile_download", args=[data_file.pk]),
     })
@@ -360,17 +378,34 @@ MAX_CELL_LENGTH = 2000
 @roles_required(*EDIT_ROLES)
 @require_POST
 def datafile_save_rows(request, pk):
-    """Хүснэгтээр зассан мөрүүдийг хадгална — баганууд өөрчлөгдөхгүй (сценариудын холбоос эвдрэхгүй)."""
-    from .datafiles import max_rows, write_table
+    """
+    Хүснэгтээр зассан баганууд, мөрүүдийг хадгална. Сценарид ашиглагдаж буй багана нэрээрээ
+    үлдэх ёстой (сценариудын холбоос эвдрэхгүй); бусад баганыг нэмж, солих, устгаж болно.
+    """
+    from .datafiles import max_rows, update_xlsx, write_table
 
     data_file = get_object_or_404(DataFile, pk=pk)
     try:
-        rows = json.loads(request.body or b"{}").get("rows")
+        payload = json.loads(request.body or b"{}")
+        rows, columns = payload.get("rows"), payload.get("columns", data_file.columns)
     except (ValueError, AttributeError):
-        rows = None
-    width = len(data_file.columns)
+        rows = columns = None
+    invalid = JsonResponse({"error": _("Өгөгдөл буруу байна. Хуудсаа refresh хийгээд дахин оролдоно уу.")}, status=400)
+    if not isinstance(columns, list) or not all(isinstance(c, str) for c in columns):
+        return invalid
+    columns = [c.strip()[:150] for c in columns]
+    if not columns or "" in columns:
+        return JsonResponse({"error": _("Баганын нэр хоосон байж болохгүй.")}, status=400)
+    duplicates = sorted({c for c in columns if columns.count(c) > 1})
+    if duplicates:
+        return JsonResponse({"error": _("Давхардсан баганын нэр: %(cols)s") % {"cols": ", ".join(duplicates)}}, status=400)
+    removed = [c for c, role in _column_roles(data_file).items() if role["used_by"] and c not in columns]
+    if removed:
+        return JsonResponse({"error": _("Сценарид ашиглагдаж буй баганыг устгах, нэрийг солих боломжгүй: %(cols)s")
+                             % {"cols": ", ".join(removed)}}, status=400)
+    width = len(columns)
     if not isinstance(rows, list) or not all(isinstance(r, list) and len(r) == width for r in rows):
-        return JsonResponse({"error": _("Өгөгдөл буруу байна. Хуудсаа refresh хийгээд дахин оролдоно уу.")}, status=400)
+        return invalid
     rows = [[str(v if v is not None else "")[:MAX_CELL_LENGTH] for v in r] for r in rows]
     rows = [r for r in rows if any(v.strip() for v in r)]  # хоосон мөрийг хасна
     if not rows:
@@ -380,12 +415,21 @@ def datafile_save_rows(request, pk):
 
     storage, old_name = data_file.file.storage, data_file.file.name
     base, fmt = os.path.splitext(os.path.basename(old_name))[0], _file_format(old_name)  # форматаа хадгална
-    data_file.file.save(f"{base}.{fmt}", ContentFile(write_table(data_file.columns, rows, fmt)), save=False)
-    data_file.row_count = len(rows)
+    content = None
+    if fmt == "xlsx":  # бусад sheet, өнгө, баганын өргөнийг хадгална
+        try:
+            with storage.open(old_name, "rb") as fh:
+                content = update_xlsx(fh, columns, rows)
+        except Exception:
+            content = None  # эвдэрсэн / олдоогүй бол шинээр бичнэ
+    if content is None:
+        content = write_table(columns, rows, fmt)
+    data_file.file.save(f"{base}.{fmt}", ContentFile(content), save=False)
+    data_file.columns, data_file.row_count = columns, len(rows)
     data_file.save()
     if old_name != data_file.file.name:
         storage.delete(old_name)
-    return JsonResponse({"rows": data_file.row_count, "name": data_file.name})
+    return JsonResponse({"rows": data_file.row_count, "name": data_file.name, "columns": data_file.columns})
 
 
 @roles_required(*EDIT_ROLES)

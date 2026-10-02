@@ -119,6 +119,31 @@ def write_xlsx(columns, rows):
     return buffer.getvalue()
 
 
+def update_xlsx(fileobj, columns, rows):
+    """
+    Засах цонхоор хадгалахад эх Excel-ийн эхний sheet-ийн утгуудыг л солино — бусад sheet,
+    өнгө, баганын өргөн, тайлбар хэвээр үлдэнэ. Утгыг write_xlsx шиг текстээр бичнэ.
+    """
+    from openpyxl import load_workbook
+
+    workbook = load_workbook(fileobj)
+    sheet = workbook.worksheets[0]
+    width = max(len(columns), sheet.max_column)
+    for row in sheet.iter_rows(min_row=1, max_row=sheet.max_row, max_col=width):
+        for cell in row:
+            cell.value = None
+    for row_index, values in enumerate([columns, *rows], start=1):
+        for col_index, value in enumerate(values, start=1):
+            cell = sheet.cell(row=row_index, column=col_index)
+            cell.value = "" if value is None else str(value)
+            cell.data_type = "s"
+    if sheet.max_row > len(rows) + 1:  # устгасан мөрүүдийн хоосон хэлбэржүүлэлтийг хасна
+        sheet.delete_rows(len(rows) + 2, sheet.max_row - len(rows) - 1)
+    buffer = io.BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
+
+
 def write_csv(columns, rows):
     """
     UTF-8 BOM-тэй CSV — Excel кирилл үсгийг зөв нээнэ. Утгыг өөрчлөхгүй тул татаж аваад

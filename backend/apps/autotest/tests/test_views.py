@@ -573,7 +573,10 @@ class DataFilePreviewTests(TempMediaMixin, TestCase):
         self.assertEqual(data["columns"], ["Тайлбар", "email", "password", "хүлээгдэх"])
         self.assertEqual(data["rows"][0], [2, ["Зөв", "a@mail.mn", "Pass1234", "амжилттай"]])
         self.assertEqual(data["total"], 1)
-        self.assertEqual(data["expected_columns"], ["хүлээгдэх"])
+        self.assertTrue(data["roles"]["хүлээгдэх"]["expected"])
+        self.assertEqual(data["roles"]["email"]["used_by"], ["Shop · Бүртгүүлэх"])
+        self.assertTrue(data["roles"]["password"]["secret"])
+        self.assertEqual(data["roles"]["Тайлбар"]["used_by"], [])
         self.assertIn("амжилттай", data["outcome_words"])
 
 
@@ -583,8 +586,53 @@ class DataFileEditTests(TempMediaMixin, TestCase):
         self.client.force_login(make_user("qa", ROLE_QA))
         self.url = reverse("autotest:datafile_save_rows", args=[self.data_file.pk])
 
-    def _save(self, rows):
-        return self.client.post(self.url, json.dumps({"rows": rows}), content_type="application/json")
+    def _save(self, rows, columns=None):
+        payload = {"rows": rows} if columns is None else {"rows": rows, "columns": columns}
+        return self.client.post(self.url, json.dumps(payload), content_type="application/json")
+
+    def _read(self):
+        self.data_file.refresh_from_db()
+        with self.data_file.file.open("rb") as fh:
+            return read_rows(fh, self.data_file.file.name)
+
+    def test_unused_columns_can_be_added_renamed_and_removed(self):
+        response = self._save(
+            [["a@mail.mn", "Pass1", "амжилттай", "x"]], columns=["email", "password", "хүлээгдэх", "Шинэ"],
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["columns"], ["email", "password", "хүлээгдэх", "Шинэ"])
+        columns, rows = self._read()
+        self.assertEqual(columns, ["email", "password", "хүлээгдэх", "Шинэ"])  # "Тайлбар" устсан
+        self.assertEqual(self.data_file.columns, columns)
+        self.assertEqual(rows[0][1]["Шинэ"], "x")
+
+    def test_columns_used_by_scenarios_are_kept(self):
+        response = self._save([["a", "b", "c", "d"]], columns=["Тайлбар", "e-mail", "password", "хүлээгдэх"])
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("email", response.json()["error"])
+        self.assertEqual(self._save([["a", "b"]], columns=["x", "x"]).status_code, 400)
+        self.assertEqual(self._save([["a"]], columns=[" "]).status_code, 400)
+
+    def test_xlsx_keeps_other_sheets_and_styles(self):
+        from openpyxl.styles import PatternFill
+
+        with self.data_file.file.open("rb") as fh:
+            workbook = load_workbook(fh)
+        workbook.worksheets[0]["B2"].fill = PatternFill("solid", fgColor="FFFF00")
+        workbook.create_sheet("Тэмдэглэл")["A1"] = "QA notes"
+        buffer = BytesIO()
+        workbook.save(buffer)
+        self.data_file.file.save("users.xlsx", ContentFile(buffer.getvalue()), save=True)
+
+        self._save([["Шинэ", "n@mail.mn", "Pass1", "алдаа"], ["2", "m@mail.mn", "Pass2", "амжилттай"]])
+        self.data_file.refresh_from_db()
+        with self.data_file.file.open("rb") as fh:
+            saved = load_workbook(fh)
+        self.assertEqual(saved.sheetnames[1], "Тэмдэглэл")
+        self.assertEqual(saved["Тэмдэглэл"]["A1"].value, "QA notes")
+        self.assertEqual(saved.worksheets[0]["B2"].fill.fgColor.rgb, "00FFFF00")
+        _columns, rows = self._read()
+        self.assertEqual([r[1]["email"] for r in rows], ["n@mail.mn", "m@mail.mn"])
 
     def test_rows_are_saved_and_read_back(self):
         response = self._save([
