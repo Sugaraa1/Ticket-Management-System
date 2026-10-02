@@ -573,6 +573,8 @@ class DataFilePreviewTests(TempMediaMixin, TestCase):
         self.assertEqual(data["columns"], ["Тайлбар", "email", "password", "хүлээгдэх"])
         self.assertEqual(data["rows"][0], [2, ["Зөв", "a@mail.mn", "Pass1234", "амжилттай"]])
         self.assertEqual(data["total"], 1)
+        self.assertEqual(data["expected_columns"], ["хүлээгдэх"])
+        self.assertIn("амжилттай", data["outcome_words"])
 
 
 class DataFileEditTests(TempMediaMixin, TestCase):

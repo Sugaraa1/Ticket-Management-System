@@ -3945,3 +3945,12 @@ msgstr "Change status"
 #: templates/tickets/ticket_list.html:188
 msgid "Хэрэгжүүлэх"
 msgstr "Apply"
+
+msgid "Мөр хуулах"
+msgstr "Duplicate row"
+
+msgid "амжилттай / алдаа / алдаа: мессеж"
+msgstr "амжилттай / алдаа / алдаа: message"
+
+msgid "Хадгалж чадсангүй. Холболтоо шалгаад дахин оролдоно уу."
+msgstr "Could not save. Check your connection and try again."

@@ -330,9 +330,13 @@ def _file_format(name):
 @roles_required(*VIEW_ROLES)
 def datafile_preview(request, pk):
     """Сценари тохируулж байх үед файлыг хуудсаа орхилгүй (цонхонд) харуулах JSON."""
-    from .datafiles import DataFileError, read_rows
+    from .datafiles import ERROR_WORDS, SUCCESS_WORDS, DataFileError, read_rows
 
     data_file = get_object_or_404(DataFile, pk=pk)
+    # Хүлээгдэх үр дүнгийн баганад засах цонх 'амжилттай / алдаа: ...' сонголт санал болгоно.
+    expected = set(
+        Scenario.objects.filter(app__category_id=data_file.category_id).values_list("expected_column", flat=True)
+    ) | {generator.EXPECTED_COLUMN}
     try:
         with data_file.file.open("rb") as fh:
             _cols, rows = read_rows(fh, data_file.file.name)
@@ -344,6 +348,8 @@ def datafile_preview(request, pk):
         "columns": data_file.columns,
         "rows": [[line, [row.get(c, "") for c in data_file.columns]] for line, row in rows[:limit]],
         "total": len(rows),
+        "expected_columns": [c for c in data_file.columns if c in expected],
+        "outcome_words": sorted(SUCCESS_WORDS | ERROR_WORDS),
         "download_url": reverse("autotest:datafile_download", args=[data_file.pk]),
     })
 

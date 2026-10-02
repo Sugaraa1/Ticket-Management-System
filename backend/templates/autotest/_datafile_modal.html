@@ -11,6 +11,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Хаах" %}"></button>
       </div>
       <div class="modal-body p-0">
+        <datalist id="dataFileOutcomes"><option value="амжилттай"><option value="алдаа"><option value="алдаа: "></datalist>
         <div class="table-responsive">
           <table class="table table-sm mb-0 small tms-preview-table" id="dataFileTable"><thead></thead><tbody></tbody></table>
         </div>
@@ -33,13 +34,33 @@ window.tmsDataFile = (function () {
     saved: "{% trans 'Хадгалагдлаа' %}",
     saving: "{% trans 'Хадгалж байна…' %}",
     discard: "{% trans 'Хадгалаагүй өөрчлөлт алга болно. Хаах уу?' %}",
-    removeRow: "{% trans 'Мөр устгах' %}"
+    removeRow: "{% trans 'Мөр устгах' %}",
+    copyRow: "{% trans 'Мөр хуулах' %}",
+    badOutcome: "{% trans 'амжилттай / алдаа / алдаа: мессеж' %}",
+    saveFailed: "{% trans 'Хадгалж чадсангүй. Холболтоо шалгаад дахин оролдоно уу.' %}"
   };
   var modalEl = document.getElementById("dataFileModal");
   var table = document.getElementById("dataFileTable");
   var status = document.getElementById("dataFileStatus");
   var editBtn = document.getElementById("dataFileEditBtn");
-  var state = {id: null, columns: [], rows: [], editing: false, dirty: false, onSaved: null};
+  var state = {id: null, columns: [], rows: [], expected: [], words: [], editing: false, dirty: false, onSaved: null};
+
+  // Хүлээгдэх үр дүнгийн нүд: "амжилттай", "алдаа", "алдаа: мессеж". Үсгийн алдаатай бол
+  // (ж: "амжилтай") тест үр дүнг биш мессежийг шалгаад ойлгомжгүй FAIL өгдөг тул тодруулна.
+  function checkOutcome(input) {
+    var head = input.value.split(":")[0].trim().toLowerCase();
+    var bad = head !== "" && state.words.indexOf(head) === -1;
+    input.classList.toggle("is-invalid", bad);
+    input.title = bad ? T.badOutcome : "";
+  }
+
+  function rowButton(icon, title, cls, onClick) {
+    var btn = document.createElement("button");
+    btn.type = "button"; btn.className = "btn btn-sm tms-icon-btn " + cls; btn.title = title;
+    btn.innerHTML = '<i class="bi ' + icon + '"></i>';
+    btn.addEventListener("click", onClick);
+    return btn;
+  }
 
   function cell(tag, text, cls) {
     var el = document.createElement(tag);
@@ -66,7 +87,12 @@ window.tmsDataFile = (function () {
           var input = document.createElement("input");
           input.className = "form-control form-control-sm";
           input.value = value;
-          input.addEventListener("input", function () { state.rows[r][c] = input.value; state.dirty = true; });
+          var isOutcome = state.expected.indexOf(state.columns[c]) !== -1;
+          if (isOutcome) { input.setAttribute("list", "dataFileOutcomes"); checkOutcome(input); }
+          input.addEventListener("input", function () {
+            state.rows[r][c] = input.value; state.dirty = true;
+            if (isOutcome) checkOutcome(input);
+          });
           td.appendChild(input);
         } else {
           td.textContent = value === "" ? "∅" : value;
@@ -76,13 +102,17 @@ window.tmsDataFile = (function () {
         line.appendChild(td);
       });
       if (state.editing) {
-        var del = document.createElement("td");
-        var btn = document.createElement("button");
-        btn.type = "button"; btn.className = "btn btn-sm tms-icon-btn text-danger"; btn.title = T.removeRow;
-        btn.innerHTML = '<i class="bi bi-trash"></i>';
-        btn.addEventListener("click", function () { state.rows.splice(r, 1); state.dirty = true; render(); });
-        del.appendChild(btn);
-        line.appendChild(del);
+        var actions = document.createElement("td");
+        actions.className = "text-nowrap";
+        actions.appendChild(rowButton("bi-copy", T.copyRow, "text-body-secondary", function () {
+          state.rows.splice(r + 1, 0, state.rows[r].slice()); state.dirty = true; render();
+          var inputs = table.tBodies[0].rows[r + 1].querySelectorAll("input");
+          if (inputs.length) inputs[0].focus();
+        }));
+        actions.appendChild(rowButton("bi-trash", T.removeRow, "text-danger", function () {
+          state.rows.splice(r, 1); state.dirty = true; render();
+        }));
+        line.appendChild(actions);
       }
       body.appendChild(line);
     });
@@ -100,6 +130,8 @@ window.tmsDataFile = (function () {
           a.href = data.download_url + "?format=" + a.dataset.format;
         });
         state.columns = data.columns;
+        state.expected = data.expected_columns || [];
+        state.words = data.outcome_words || [];
         state.rows = data.rows.map(function (row) { return row[1].slice(); });
         state.editing = !!edit; state.dirty = false;
         render();
@@ -113,7 +145,10 @@ window.tmsDataFile = (function () {
   }
 
   if (editBtn) editBtn.addEventListener("click", function () { state.editing = true; render(); });
-  document.getElementById("dataFileCancel").addEventListener("click", function () { load(state.id, false); });
+  document.getElementById("dataFileCancel").addEventListener("click", function () {
+    if (state.dirty && !window.confirm(T.discard)) return;
+    load(state.id, false);
+  });
   document.getElementById("dataFileAddRow").addEventListener("click", function () {
     state.rows.push(state.columns.map(function () { return ""; }));
     state.dirty = true;
@@ -130,7 +165,8 @@ window.tmsDataFile = (function () {
       headers: {"Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}"},
       body: JSON.stringify({rows: state.rows})
     })
-      .then(function (r) { return r.json(); })
+      // Session дууссан бол нэвтрэх хуудасны HTML ирнэ — JSON биш хариуг ч алдаа гэж харуулна.
+      .then(function (r) { return r.json().catch(function () { return {error: T.saveFailed}; }); })
       .then(function (data) {
         btn.disabled = false;
         if (data.error) { status.textContent = data.error; status.className = "small text-danger"; return; }
@@ -141,7 +177,10 @@ window.tmsDataFile = (function () {
           status.className = "small text-success";
         });
       })
-      .catch(function () { btn.disabled = false; });
+      .catch(function () {
+        btn.disabled = false;
+        status.textContent = T.saveFailed; status.className = "small text-danger";
+      });
   });
   // Хадгалаагүй өөрчлөлттэй бол хаахаас өмнө асууна.
   modalEl.addEventListener("hide.bs.modal", function (e) {

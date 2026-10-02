@@ -3,6 +3,7 @@
 файлын баганатай автоматаар тааруулах — browser-гүй цэвэр логик.
 """
 import csv
+import datetime
 import io
 import os
 import re
@@ -156,6 +157,14 @@ def _read_csv(fileobj):
 def _cell_text(value):
     if value is None:
         return ""
+    if isinstance(value, datetime.datetime):  # Excel-ийн огноо нүд → '2024-01-05' ('00:00:00'-гүй)
+        if value.time() == datetime.time():
+            return value.date().isoformat()
+        return value.isoformat(sep=" ", timespec="minutes")
+    if isinstance(value, datetime.date):
+        return value.isoformat()
+    if isinstance(value, datetime.time):
+        return value.isoformat(timespec="minutes")
     if isinstance(value, float) and value.is_integer():
         value = int(value)  # Excel 99112233-ийг 99112233.0 болгодог
     return str(value).strip()

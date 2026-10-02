@@ -7,6 +7,7 @@ Playwright / Chromium суугаагүй орчинд алгасна. Удаан
 import os
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from unittest import mock
 from urllib.parse import parse_qs
 
 from django.core.management import call_command
@@ -156,7 +157,9 @@ class WorkerBrowserTests(TempMediaMixin, TestCase):
         super().tearDownClass()
 
     def _work(self):
-        call_command("run_autotest_worker", once=True, stdout=open(os.devnull, "w"))
+        # TestCase-ийн transaction дотор autocommit унтарсан тул close_old_connections холболтыг хаачихна.
+        with mock.patch("apps.autotest.management.commands.run_autotest_worker.close_old_connections"):
+            call_command("run_autotest_worker", once=True, stdout=open(os.devnull, "w"))
 
     def test_scan_finds_fields_by_visible_label(self):
         scan = PageScan.objects.create(url=self.base_url + "/register", requested_by=make_user("qa"))

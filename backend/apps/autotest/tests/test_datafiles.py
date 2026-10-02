@@ -1,8 +1,12 @@
+import datetime
+
 from django.test import SimpleTestCase, override_settings
 
 from apps.autotest.datafiles import (
     DataFileError, fill_placeholders, judge, parse_expected, placeholder_values, read_rows, suggest_mapping,
 )
+
+from apps.autotest.runner import normalize_date
 
 from .helpers import csv_upload, xlsx_upload
 
@@ -21,6 +25,14 @@ class ReadRowsTests(SimpleTestCase):
             (2, {"email": "a@mail.mn", "phone": "99112233"}),
             (4, {"email": "b@mail.mn", "phone": ""}),
         ])
+
+    def test_xlsx_dates_are_read_without_midnight_time(self):
+        upload = xlsx_upload([
+            ["огноо", "цаг"],
+            [datetime.datetime(2024, 1, 5), datetime.datetime(2024, 1, 5, 14, 30)],
+        ])
+        _columns, rows = read_rows(upload, upload.name)
+        self.assertEqual(rows[0][1], {"огноо": "2024-01-05", "цаг": "2024-01-05 14:30"})
 
     def test_csv_with_semicolon_and_bom(self):
         upload = csv_upload("﻿email;password\nbat@mail.mn;Pass1\n")
@@ -48,6 +60,18 @@ class ReadRowsTests(SimpleTestCase):
         upload = csv_upload("email\na\nb\nc\n")
         with self.assertRaisesMessage(DataFileError, "хамгийн ихдээ 2"):
             read_rows(upload, upload.name)
+
+
+class NormalizeDateTests(SimpleTestCase):
+    def test_date_inputs_get_their_html_format(self):
+        self.assertEqual(normalize_date("2024.1.5", "date"), "2024-01-05")
+        self.assertEqual(normalize_date("2024-01-05 00:00:00", "date"), "2024-01-05")
+        self.assertEqual(normalize_date("2024/01/05 9:30", "datetime-local"), "2024-01-05T09:30")
+        self.assertEqual(normalize_date("2024-01-05", "month"), "2024-01")
+
+    def test_unrecognised_values_are_left_for_negative_tests(self):
+        self.assertEqual(normalize_date("05/01/2024", "date"), "05/01/2024")
+        self.assertEqual(normalize_date("", "date"), "")
 
 
 class ExpectedTests(SimpleTestCase):

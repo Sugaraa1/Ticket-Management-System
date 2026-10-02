@@ -3,6 +3,7 @@ Playwright (Chromium)-аар хуудас шалгах (PageScan) болон с�
 Зөвхөн `run_autotest_worker` процессоос дуудагдана — вэб хүсэлт дотор browser нээхгүй.
 """
 import queue
+import re
 import threading
 import time
 from urllib.parse import urljoin, urlsplit
@@ -22,6 +23,7 @@ from .safety import UnsafeURL, check_url
 NAV_TIMEOUT_MS = 30_000
 ACTION_TIMEOUT_MS = 8_000
 SETTLE_TIMEOUT_MS = 8_000
+DEPENDENT_TIMEOUT_MS = 5_000  # дэд ангилал г.м. өөр талбараас хамаарч идэвхжихийг хүлээх
 
 DEFAULT_ERROR_SELECTORS = ", ".join([
     ".error", ".errors", ".errorlist", ".error-message", ".error-text", ".field-error",
@@ -615,21 +617,58 @@ def _fill_fields(page, scenario, row, line_number, used_values, stamp=None):
             if source == "column":
                 used_values[field["value"]] = value
             if locator.count() and locator.is_disabled():
-                # Өөр талбараас хамаарч идэвхждэг талбар (ж: дэд ангилал) — хүлээж timeout болохгүй.
+                # Өөр талбараас хамаарч идэвхждэг талбар (ж: ангилал сонгоход AJAX-аар ачаалагдах
+                # дэд ангилал) — утга өгөх шаардлагатай бол идэвхжтэл нь богино хүлээнэ.
                 if not value.strip() or value.strip() == _current_text(locator):
                     continue
-                raise RowError(
-                    _("'%(label)s' талбар идэвхгүй тул '%(value)s' утгыг оруулж чадсангүй.")
-                    % {"label": label, "value": value[:60]}
-                )
-            _fill(locator, field.get("kind"), value)
+                if not _wait_enabled(page, locator):
+                    raise RowError(
+                        _("'%(label)s' талбар идэвхгүй тул '%(value)s' утгыг оруулж чадсангүй.")
+                        % {"label": label, "value": value[:60]}
+                    )
+            _fill(locator, field.get("kind"), value, field.get("type"))
+            if field.get("kind") == "select" and value:
+                page.wait_for_timeout(200)  # сонголтоос хамаарсан талбарууд шинэчлэгдэх хугацаа
         except PlaywrightError as exc:
             raise RowError(
                 _("'%(label)s' талбарыг бөглөж чадсангүй: %(err)s") % {"label": label, "err": _short_error(exc)}
             )
 
 
-def _fill(locator, kind, value):
+def _wait_enabled(page, locator):
+    deadline = time.monotonic() + DEPENDENT_TIMEOUT_MS / 1000
+    while time.monotonic() < deadline:
+        page.wait_for_timeout(200)
+        if not locator.is_disabled():
+            return True
+    return False
+
+
+_DATE_RE = re.compile(r"^(\d{4})[-./](\d{1,2})[-./](\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?)?$")
+
+
+def normalize_date(value, input_type):
+    """
+    Excel-ийн '2024-01-05 00:00:00', '2024.1.5' г.м. утгыг <input type=date|datetime-local|month>-ийн
+    хүлээж авах хэлбэрт оруулна. Танихгүй бол өөрчлөхгүй (буруу огноог шалгах тест байж болно).
+    """
+    match = _DATE_RE.match(value.strip())
+    if not match:
+        return value
+    year, month, day, hour, minute = match.groups()
+    date = f"{year}-{int(month):02d}-{int(day):02d}"
+    if input_type == "date":
+        return date
+    if input_type == "month":
+        return date[:7]
+    if input_type == "datetime-local":
+        return f"{date}T{int(hour or 0):02d}:{minute or '00'}"
+    return value
+
+
+def _fill(locator, kind, value, input_type=""):
+    if input_type in ("date", "datetime-local", "month"):
+        value = normalize_date(value, input_type)
     if kind in ("checkbox", "radio"):
         if value.strip().lower() in TRUTHY:
             _set_checked(locator, True)
@@ -693,7 +732,10 @@ def _visible_texts(page, selector, exclude=None):
                 continue
             if element.is_visible():
                 text = " ".join(element.inner_text().split())
-                if text and text not in texts:
+                # Заавал бөглөх талбарын улаан "*" (.text-danger) г.м. үсэг, тоогүй тэмдэг алдаа биш.
+                if not any(ch.isalnum() for ch in text):
+                    continue
+                if text not in texts:
                     texts.append(text[:300])
     except Exception:
         pass
