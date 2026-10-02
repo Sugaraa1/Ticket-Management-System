@@ -540,7 +540,7 @@ def scenario_edit(request, pk):
 @roles_required(*VIEW_ROLES)
 def scenario_workflow(request, pk):
     scenario = get_object_or_404(Scenario.objects.select_related("app", "page", "account"), pk=pk)
-    return render(request, "autotest/_workflow.html", {
+    return render(request, "autotest/_test_steps.html", {
         "scenario": scenario, **workflow.context(scenario, request.GET.get("file"), request.GET.get("row")),
     })
 

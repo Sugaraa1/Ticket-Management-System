@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Ticket Management System\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-02 11:28+0800\n"
+"POT-Creation-Date: 2026-10-02 11:42+0800\n"
 "PO-Revision-Date: 2026-10-02 09:20+0800\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -454,7 +454,7 @@ msgid "6. Нэг файлыг олон сценарид (бүртгэл, нэв�
 msgstr "6. One file can be reused across many scenarios (sign-up, login ...)."
 
 #: apps/autotest/exports.py:93 templates/autotest/_results_table.html:7
-#: templates/autotest/_workflow.html:9
+#: templates/autotest/_test_steps.html:9
 #: templates/autotest/datafile_detail.html:25
 #: templates/autotest/datafile_list.html:18
 msgid "Мөр"
@@ -622,7 +622,7 @@ msgstr ""
 msgid "Эхлээд тестийн хэрэглэгчид хэсэгт API нэвтрэх замаа бичнэ үү."
 msgstr "First enter the API login path under Test users."
 
-#: apps/autotest/forms.py:366 templates/autotest/_workflow.html:5
+#: apps/autotest/forms.py:366 templates/autotest/_test_steps.html:5
 #: templates/autotest/api_scenario_form.html:47
 msgid "Өгөгдлийн файл"
 msgstr "Data file"
@@ -1367,7 +1367,7 @@ msgstr "Environment: %(env)s — %(url)s"
 msgid "Ажиллуулалт: #%(id)s — %(url)s"
 msgstr "Run: #%(id)s — %(url)s"
 
-#: apps/autotest/views.py:881 templates/autotest/_workflow.html:10
+#: apps/autotest/views.py:881 templates/autotest/_test_steps.html:10
 #, python-format
 msgid "Мөр %(n)s"
 msgstr "Row %(n)s"
@@ -2556,11 +2556,11 @@ msgstr "When"
 msgid "Одоогоор ажиллуулаагүй байна."
 msgstr "Not run yet."
 
-#: templates/autotest/_workflow.html:25
+#: templates/autotest/_test_steps.html:25
 msgid "хоосон"
 msgstr "empty"
 
-#: templates/autotest/_workflow.html:26
+#: templates/autotest/_test_steps.html:26
 msgid "Файлын багана"
 msgstr "File column"
 
@@ -2996,6 +2996,10 @@ msgstr "Delete scenario '%(name)s' together with all its results?"
 #: templates/autotest/scenario_detail.html:27
 msgid "Сүүлийн ажиллуулалт"
 msgstr "Last run"
+
+#: templates/autotest/scenario_detail.html:50
+msgid "Тестийн алхмууд"
+msgstr "Test steps"
 
 #: templates/autotest/scenario_detail.html:51
 msgid "Түүх"

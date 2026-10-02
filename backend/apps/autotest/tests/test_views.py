@@ -395,7 +395,7 @@ class OverviewUxTests(TempMediaMixin, TestCase):
         self.assertEqual(response.context["last_run"], last)
         self.assertEqual(response.context["run_form"].initial,
                          {"data_file": self.data_file.pk, "environment": self.env.pk})
-        self.assertContains(response, 'id="tab-workflow"')
+        self.assertContains(response, 'id="tab-steps"')
 
 
 class WorkflowTests(TempMediaMixin, TestCase):

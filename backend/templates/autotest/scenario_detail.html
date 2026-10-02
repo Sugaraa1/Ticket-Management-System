@@ -47,7 +47,7 @@
 
 <ul class="nav nav-tabs mb-3" role="tablist" id="scenarioTabs">
   {% if can_edit %}<li class="nav-item" role="presentation"><button class="nav-link active" type="button" data-bs-toggle="tab" data-bs-target="#tab-run" role="tab"><i class="bi bi-play-circle"></i> {% trans "Ажиллуулах" %}</button></li>{% endif %}
-  <li class="nav-item" role="presentation"><button class="nav-link{% if not can_edit %} active{% endif %}" type="button" data-bs-toggle="tab" data-bs-target="#tab-workflow" role="tab"><i class="bi bi-diagram-3"></i> Workflow</button></li>
+  <li class="nav-item" role="presentation"><button class="nav-link{% if not can_edit %} active{% endif %}" type="button" data-bs-toggle="tab" data-bs-target="#tab-steps" role="tab"><i class="bi bi-list-ol"></i> {% trans "Тестийн алхмууд" %}</button></li>
   <li class="nav-item" role="presentation"><button class="nav-link" type="button" data-bs-toggle="tab" data-bs-target="#tab-history" role="tab"><i class="bi bi-clock-history"></i> {% trans "Түүх" %}{% if runs %} <span class="badge text-bg-light border">{{ runs|length }}</span>{% endif %}</button></li>
 </ul>
 <div class="tab-content">
@@ -124,8 +124,8 @@
 </div>
 </div>
 {% endif %}
-<div class="tab-pane fade{% if not can_edit %} show active{% endif %}" id="tab-workflow" role="tabpanel">
-<div class="card mb-3"><div class="card-body">{% include "autotest/_workflow.html" %}</div></div>
+<div class="tab-pane fade{% if not can_edit %} show active{% endif %}" id="tab-steps" role="tabpanel">
+<div class="card mb-3"><div class="card-body">{% include "autotest/_test_steps.html" %}</div></div>
 </div>
 <div class="tab-pane fade" id="tab-history" role="tabpanel">
 <div class="card">
@@ -137,11 +137,11 @@
 {% include "autotest/_clickable_rows.html" %}
 {{ production_envs|json_script:"production-envs" }}
 <script>
-// Workflow: файл/мөр солиход алхмуудыг тэр мөрийн утгаар дахин ачаална. Нээсэн tab-ыг URL-д (#workflow) хадгална.
+// Тестийн алхмууд: файл/мөр солиход алхмуудыг тэр мөрийн утгаар дахин ачаална. Нээсэн tab-ыг URL-д (#steps) хадгална.
 (function () {
   document.addEventListener("change", function (e) {
     if (!e.target.matches(".js-wf-file, .js-wf-row")) return;
-    var box = document.getElementById("workflow");
+    var box = document.getElementById("testSteps");
     var params = new URLSearchParams({file: box.querySelector(".js-wf-file").value});
     if (e.target.matches(".js-wf-row")) params.set("row", e.target.value);
     box.style.opacity = .5;
