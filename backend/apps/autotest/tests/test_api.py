@@ -178,6 +178,24 @@ class ApiScenarioViewTests(TempMediaMixin, TestCase):
         payload.update(data)
         return self.client.post(reverse("autotest:scenario_create", args=[self.app.pk]) + "?kind=api", payload)
 
+    def test_workflow_shows_the_request_with_row_values(self):
+        self.app.api_login_path = "/api/login"
+        self.app.save()
+        account = TestAccount(app=self.app, label="QA", username="qa")
+        account.set_password("Secret#1")
+        account.save()
+        scenario = Scenario.objects.create(
+            app=self.app, kind=Scenario.Kind.API, name="API", account=account, api_method="POST",
+            api_path="/api/users", api_body='{"email": "{{email}}", "password": "{{password}}"}',
+            expected_column="хүлээгдэх",
+        )
+        response = self.client.get(reverse("autotest:scenario_detail", args=[scenario.pk]))
+        steps = response.context["wf_steps"]
+        self.assertEqual([s["title"] for s in steps], ["Нэвтрэх", "Хүсэлт илгээх", "Үр дүнг шалгах"])
+        self.assertIn('"email": "a@mail.mn"', steps[1]["code"])
+        self.assertIn('"password": "***"', steps[1]["code"])
+        self.assertNotContains(response, "Pass1234")
+
     def test_create_api_scenario(self):
         response = self._create()
         scenario = Scenario.objects.get(name="API")

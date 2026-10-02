@@ -697,7 +697,18 @@ h1, h2, h3, h4, h5, .tms-page-title, .tms-toolbar-title { color: var(--navy); fo
 .show-tech button.tms-tech { display: inline-block; }
 .tms-wizard-actions { position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: .5rem; padding: .75rem 0; background: var(--bg); border-top: 1px solid var(--border); }
 
-/* Сценарийн алхмууд (уншихад ойлгомжтой тохиргоо) */
-.tms-scenario-steps { padding-left: 1.25rem; }
-.tms-scenario-steps > li { padding: .35rem 0 .6rem; }
-.tms-scenario-steps > li::marker { color: var(--primary); font-weight: 700; }
+/* Сценарийн workflow: дугаартай алхмууд, хооронд нь холбосон шугам */
+.tms-flow { list-style: none; padding: 0; margin: 0; counter-reset: flow; }
+.tms-flow-step { position: relative; display: flex; gap: .85rem; padding-bottom: 1.1rem; counter-increment: flow; }
+.tms-flow-step:last-child { padding-bottom: 0; }
+.tms-flow-step:not(:last-child)::after { content: ""; position: absolute; left: 1.05rem; top: 2.3rem; bottom: .2rem; border-left: 2px solid var(--border); }
+.tms-flow-icon { position: relative; flex: none; width: 2.1rem; height: 2.1rem; border-radius: 50%; display: grid; place-items: center; background: var(--primary-tint); color: var(--primary); border: 1px solid var(--primary); }
+.tms-flow-icon::after { content: counter(flow); position: absolute; top: -.35rem; right: -.45rem; min-width: 1.05rem; height: 1.05rem; border-radius: 1rem; background: var(--primary); color: #fff; font-size: .65rem; font-weight: 700; display: grid; place-items: center; padding: 0 .2rem; }
+.tms-flow-body { flex: 1; min-width: 0; padding: .35rem .75rem .5rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); }
+.tms-flow-value { padding: .05rem .4rem; border-radius: 4px; background: var(--bg); border: 1px solid var(--border); word-break: break-all; }
+.tms-flow-step.is-success .tms-flow-icon { background: var(--status-closed-bg); color: var(--status-closed-fg); border-color: var(--status-closed-fg); }
+.tms-flow-step.is-success .tms-flow-icon::after { background: var(--status-closed-fg); }
+.tms-flow-step.is-error .tms-flow-icon { background: var(--status-rejected-bg); color: var(--status-rejected-fg); border-color: var(--status-rejected-fg); }
+.tms-flow-step.is-error .tms-flow-icon::after { background: var(--status-rejected-fg); }
+.tms-flow-step.is-manual .tms-flow-icon { background: var(--status-new-bg); color: var(--status-new-fg); border-color: var(--status-new-fg); }
+.tms-flow-step.is-manual .tms-flow-icon::after { background: var(--status-new-fg); }

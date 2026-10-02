@@ -26,6 +26,7 @@ from .forms import (
     ApiScenarioForm, AppLoginForm, DataFileForm, DataFileReplaceForm, EnvironmentForm, PageForm, RunForm, ScenarioForm, TestAccountForm,
     TestAppForm,
 )
+from . import workflow
 from .models import DataFile, Environment, Page, PageScan, RunResult, Scenario, TestAccount, TestApp, TestRun
 
 # Автомат тестийг зөвхөн QA, Admin ашиглана (Dev bug ticket-ээр үр дүнг, зургийг авна).
@@ -537,6 +538,14 @@ def scenario_edit(request, pk):
 
 
 @roles_required(*VIEW_ROLES)
+def scenario_workflow(request, pk):
+    scenario = get_object_or_404(Scenario.objects.select_related("app", "page", "account"), pk=pk)
+    return render(request, "autotest/_workflow.html", {
+        "scenario": scenario, **workflow.context(scenario, request.GET.get("file"), request.GET.get("row")),
+    })
+
+
+@roles_required(*VIEW_ROLES)
 def scenario_detail(request, pk):
     scenario = get_object_or_404(Scenario.objects.select_related("app__category", "page", "account"), pk=pk)
     runs = scenario.runs.select_related("started_by")[:30]
@@ -559,6 +568,7 @@ def scenario_detail(request, pk):
         "environments": scenario.app.environments.all(),
         "access_environment": last_run.environment_id if last_run else None,
         "production_envs": {e.pk: e.name for e in scenario.app.environments.filter(is_production=True)},
+        **workflow.context(scenario, last_data_run.data_file_id if last_data_run else None),
         "can_edit": _can_edit(request.user),
     })
 

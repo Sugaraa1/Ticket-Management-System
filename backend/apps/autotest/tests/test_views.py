@@ -395,7 +395,39 @@ class OverviewUxTests(TempMediaMixin, TestCase):
         self.assertEqual(response.context["last_run"], last)
         self.assertEqual(response.context["run_form"].initial,
                          {"data_file": self.data_file.pk, "environment": self.env.pk})
-        self.assertContains(response, "Тест юу хийх вэ")
+        self.assertContains(response, 'id="tab-workflow"')
+
+
+class WorkflowTests(TempMediaMixin, TestCase):
+    def setUp(self):
+        self.app, self.env, self.scenario, self.data_file = make_setup(rows=[
+            ["Тайлбар", "email", "password", "хүлээгдэх"],
+            ["Зөв", "a@mail.mn", "Pass1234", "амжилттай"],
+            ["Буруу имэйл", "bad", "Pass1234", "алдаа: Имэйл буруу"],
+        ])
+        self.client.force_login(make_user("qa", ROLE_QA))
+
+    def test_steps_follow_the_scenario_and_selected_row(self):
+        response = self.client.get(reverse("autotest:scenario_detail", args=[self.scenario.pk]))
+        titles = [s["title"] for s in response.context["wf_steps"]]
+        self.assertEqual(titles, ["Хуудас нээх", "«Имэйл» бөглөх", "«Нууц үг» бөглөх", "«Зөвшөөрөх» чагтлах",
+                                  "«Илгээх» товч дарах", "Үр дүнг шалгах"])
+        self.assertEqual(response.context["wf_steps"][1]["items"][0]["value"], "a@mail.mn")
+        self.assertEqual(response.context["wf_steps"][2]["items"][0]["value"], "***")  # нууц үг харагдахгүй
+        self.assertEqual(response.context["wf_steps"][-1]["verdict"], "success")
+
+        response = self.client.get(reverse("autotest:scenario_workflow", args=[self.scenario.pk]),
+                                   {"file": self.data_file.pk, "row": 3})
+        self.assertContains(response, "bad")
+        self.assertContains(response, "Имэйл буруу")
+        self.assertEqual(response.context["wf_steps"][-1]["verdict"], "error")
+        self.assertNotContains(response, "Pass1234")
+
+    def test_without_data_file_columns_are_shown(self):
+        self.data_file.delete()
+        response = self.client.get(reverse("autotest:scenario_detail", args=[self.scenario.pk]))
+        self.assertIsNone(response.context["wf_steps"][1]["items"][0]["value"])
+        self.assertEqual(response.context["wf_steps"][1]["items"][0]["column"], "email")
 
 
 class EnvironmentCreateTests(TempMediaMixin, TestCase):

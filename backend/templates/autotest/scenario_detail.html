@@ -45,9 +45,16 @@
 </a>
 {% endwith %}{% endif %}
 
+<ul class="nav nav-tabs mb-3" role="tablist" id="scenarioTabs">
+  {% if can_edit %}<li class="nav-item" role="presentation"><button class="nav-link active" type="button" data-bs-toggle="tab" data-bs-target="#tab-run" role="tab"><i class="bi bi-play-circle"></i> {% trans "Ажиллуулах" %}</button></li>{% endif %}
+  <li class="nav-item" role="presentation"><button class="nav-link{% if not can_edit %} active{% endif %}" type="button" data-bs-toggle="tab" data-bs-target="#tab-workflow" role="tab"><i class="bi bi-diagram-3"></i> Workflow</button></li>
+  <li class="nav-item" role="presentation"><button class="nav-link" type="button" data-bs-toggle="tab" data-bs-target="#tab-history" role="tab"><i class="bi bi-clock-history"></i> {% trans "Түүх" %}{% if runs %} <span class="badge text-bg-light border">{{ runs|length }}</span>{% endif %}</button></li>
+</ul>
+<div class="tab-content">
+{% if can_edit %}
+<div class="tab-pane fade show active" id="tab-run" role="tabpanel">
 <div class="row g-3 mb-3">
-  {% if can_edit %}
-  <div class="col-lg-5">
+  <div class="col-lg-6">
     <div class="card h-100 tms-run-card">
       <div class="card-header"><i class="bi bi-play-circle"></i> {% trans "Ажиллуулах" %}</div>
       <div class="card-body">
@@ -78,72 +85,9 @@
       </div>
     </div>
   </div>
-  {% endif %}
-  <div class="col-lg-{% if can_edit %}7{% else %}12{% endif %}">
-    <div class="card h-100">
-      <div class="card-header"><i class="bi bi-list-ol"></i> {% trans "Тест юу хийх вэ" %}</div>
-      <div class="card-body">
-        {% if scenario.is_api %}
-        <ol class="tms-scenario-steps mb-0">
-          {% if scenario.account %}
-          <li>
-            <div class="fw-medium">{% blocktrans with name=scenario.account.label user=scenario.account.username %}{{ name }} ({{ user }}) хэрэглэгчээр нэвтэрнэ{% endblocktrans %}</div>
-            <div class="small text-body-secondary"><span class="font-monospace">POST {{ scenario.app.api_login_path }}</span> → token / cookie</div>
-          </li>
-          {% endif %}
-          <li>
-            <div class="fw-medium">{% trans "Мөр бүрээр хүсэлт илгээнэ" %}</div>
-            <div class="small text-body-secondary"><span class="font-monospace">{{ scenario.api_method }}</span> {% trans "орчны хаяг" %} + <code>{{ scenario.api_path }}</code></div>
-            {% if scenario.api_headers %}<pre class="small bg-body-tertiary rounded p-2 mt-2 mb-0">{{ scenario.api_headers }}</pre>{% endif %}
-            {% if scenario.api_body %}<pre class="small bg-body-tertiary rounded p-2 mt-2 mb-0">{{ scenario.api_body }}</pre>{% endif %}
-          </li>
-          <li>
-            <div class="fw-medium">{% trans "Үр дүнг шалгана" %}</div>
-            <div class="small text-body-secondary">
-              {% if scenario.expected_column %}{% blocktrans with c=scenario.expected_column %}Status код / хүлээгдэх үр дүнг файлын «{{ c }}» баганаас авна.{% endblocktrans %}{% else %}{% trans "Хүлээгдэх үр дүнгийн багана заагаагүй — бүх мөр «Гараар шалгах» болно." %}{% endif %}
-            </div>
-          </li>
-        </ol>
-        {% else %}
-        <ol class="tms-scenario-steps mb-0">
-          <li>
-            {% if scenario.account %}<div class="fw-medium">{% blocktrans with name=scenario.account.label user=scenario.account.username %}{{ name }} ({{ user }}) хэрэглэгчээр нэвтэрнэ{% endblocktrans %}</div>{% endif %}
-            <div class="fw-medium">{% trans "Хуудсыг нээнэ" %}</div>
-            <div class="small text-body-secondary">{% trans "орчны хаяг" %} + <code>{{ scenario.page.path|default:"/" }}</code></div>
-          </li>
-          <li>
-            <div class="fw-medium">{% trans "Талбаруудыг бөглөнө" %}</div>
-            <ul class="list-unstyled small mb-0 mt-1">
-              {% for f in used_fields %}
-              <li class="d-flex align-items-center gap-2 py-1">
-                <span class="text-truncate">{{ f.label|default:f.selector }}</span>
-                <i class="bi bi-arrow-left text-body-tertiary"></i>
-                {% if f.source == "column" %}<span class="badge text-bg-primary-subtle text-primary-emphasis" title="{% trans "Файлын багана" %}"><i class="bi bi-table"></i> {{ f.value }}</span>
-                {% elif f.source == "check" %}<span class="badge text-bg-light border"><i class="bi bi-check2-square"></i> {% trans "үргэлж чагтлана" %}</span>
-                {% else %}<span class="badge text-bg-light border" title="{% trans "Тогтмол утга" %}">"{{ f.value }}"</span>{% endif %}
-              </li>
-              {% endfor %}
-            </ul>
-          </li>
-          <li>
-            <div class="fw-medium">{% blocktrans with b=scenario.submit_label|default:_("илгээх") %}«{{ b }}» товчийг дарна{% endblocktrans %}</div>
-          </li>
-          <li>
-            <div class="fw-medium">{% trans "Үр дүнг шалгана" %}</div>
-            <div class="small text-body-secondary">
-              {{ scenario.get_success_mode_display }}{% if scenario.success_value %} — "{{ scenario.success_value }}"{% endif %}.
-              {% if scenario.expected_column %}{% blocktrans with c=scenario.expected_column %}Хүлээгдэх үр дүнг файлын «{{ c }}» баганаас авна.{% endblocktrans %}{% else %}{% trans "Хүлээгдэх үр дүнгийн багана заагаагүй — бүх мөр «Гараар шалгах» болно." %}{% endif %}
-            </div>
-          </li>
-        </ol>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-</div>
-
 {% if can_edit and not scenario.is_api %}
-<div class="card mb-3">
+  <div class="col-lg-6">
+<div class="card">
   <button type="button" class="card-header btn text-start d-flex align-items-center gap-2 border-0 rounded-0{% if not scenario.access_rules %} collapsed{% endif %}"
           data-bs-toggle="collapse" data-bs-target="#accessCheck" aria-expanded="{% if scenario.access_rules %}true{% else %}false{% endif %}" aria-controls="accessCheck">
     <i class="bi bi-shield-lock"></i> {% trans "Эрх шалгах" %}
@@ -175,14 +119,46 @@
     </div>
   </form>
 </div>
+  </div>
 {% endif %}
-
+</div>
+</div>
+{% endif %}
+<div class="tab-pane fade{% if not can_edit %} show active{% endif %}" id="tab-workflow" role="tabpanel">
+<div class="card mb-3"><div class="card-body">{% include "autotest/_workflow.html" %}</div></div>
+</div>
+<div class="tab-pane fade" id="tab-history" role="tabpanel">
 <div class="card">
   <div class="card-header"><i class="bi bi-clock-history"></i> {% trans "Ажиллуулсан түүх" %}</div>
   {% include "autotest/_runs_table.html" %}
 </div>
+</div>
+</div>
 {% include "autotest/_clickable_rows.html" %}
 {{ production_envs|json_script:"production-envs" }}
+<script>
+// Workflow: файл/мөр солиход алхмуудыг тэр мөрийн утгаар дахин ачаална. Нээсэн tab-ыг URL-д (#workflow) хадгална.
+(function () {
+  document.addEventListener("change", function (e) {
+    if (!e.target.matches(".js-wf-file, .js-wf-row")) return;
+    var box = document.getElementById("workflow");
+    var params = new URLSearchParams({file: box.querySelector(".js-wf-file").value});
+    if (e.target.matches(".js-wf-row")) params.set("row", e.target.value);
+    box.style.opacity = .5;
+    fetch(box.dataset.url + "?" + params).then(function (r) { return r.text(); }).then(function (html) {
+      box.outerHTML = html;
+    });
+  });
+  var tabs = document.querySelectorAll("#scenarioTabs [data-bs-toggle=tab]");
+  tabs.forEach(function (btn) {
+    btn.addEventListener("shown.bs.tab", function () {
+      history.replaceState(null, "", btn.dataset.bsTarget.replace("#tab-", "#"));
+    });
+  });
+  var initial = location.hash && document.querySelector('#scenarioTabs [data-bs-target="#tab-' + location.hash.slice(1) + '"]');
+  if (initial) bootstrap.Tab.getOrCreateInstance(initial).show();
+})();
+</script>
 <script>
 // Production орчин сонгосон бол ажиллуулахаас өмнө анхааруулна.
 (function () {

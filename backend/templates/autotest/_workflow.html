@@ -1,0 +1,35 @@
+{% load i18n %}
+<div id="workflow" data-url="{% url 'autotest:scenario_workflow' scenario.pk %}">
+  {% if wf_files %}
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <select class="form-select form-select-sm w-auto js-wf-file" aria-label="{% trans "Өгөгдлийн файл" %}">
+      {% for f in wf_files %}<option value="{{ f.pk }}"{% if f == wf_file %} selected{% endif %}>{{ f.name }}</option>{% endfor %}
+    </select>
+    {% if wf_rows %}
+    <select class="form-select form-select-sm w-auto mw-100 js-wf-row" aria-label="{% trans "Мөр" %}">
+      {% for number, description, row in wf_rows %}<option value="{{ number }}"{% if number == wf_row.0 %} selected{% endif %}>{% blocktrans with n=number %}Мөр {{ n }}{% endblocktrans %}{% if description %} — {{ description|truncatechars:60 }}{% endif %}</option>{% endfor %}
+    </select>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <ol class="tms-flow">
+    {% for step in wf_steps %}
+    <li class="tms-flow-step{% if step.verdict %} is-{{ step.verdict }}{% endif %}">
+      <span class="tms-flow-icon"><i class="bi {{ step.icon }}"></i></span>
+      <div class="tms-flow-body">
+        <div class="fw-semibold">{{ step.title }}</div>
+        {% for item in step.items %}
+        <div class="d-flex flex-wrap align-items-center gap-2 small mt-1">
+          {% if item.label %}<span class="text-body-secondary{% if item.mono %} font-monospace fw-semibold{% endif %}">{{ item.label }}</span>{% endif %}
+          {% if item.value is not None %}<span class="tms-flow-value{% if item.mono %} font-monospace{% endif %}">{% if item.value == "" %}<span class="text-body-tertiary">{% trans "хоосон" %}</span>{% else %}{{ item.value }}{% endif %}</span>{% endif %}
+          {% if item.column %}<span class="badge text-bg-primary-subtle text-primary-emphasis fw-normal" title="{% trans "Файлын багана" %}"><i class="bi bi-table"></i> {{ item.column }}</span>{% endif %}
+        </div>
+        {% endfor %}
+        {% if step.detail %}<div class="small text-body-secondary font-monospace mt-1">{{ step.detail }}</div>{% endif %}
+        {% if step.code %}<pre class="small bg-body-tertiary rounded p-2 mt-2 mb-0">{{ step.code }}</pre>{% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+</div>
