@@ -15,6 +15,8 @@ FIELD_KINDS = {"text", "email", "password", "checkbox", "radio", "select"}
 
 
 class TestAppForm(forms.ModelForm):
+    LOGIN_FIELDS = ("login_page", "api_login_path", "api_login_body", "api_token_prefix")
+
     class Meta:
         model = TestApp
         fields = [
@@ -31,7 +33,10 @@ class TestAppForm(forms.ModelForm):
             "api_login_body": forms.Textarea(attrs={"class": "form-control font-monospace small", "rows": 2}),
             "api_token_prefix": forms.TextInput(attrs={"class": "form-control font-monospace", "placeholder": "Bearer"}),
         }
-        labels = {"category": _("Ангилал"), "subcategory": _("Дэд ангилал")}
+        labels = {
+            "category": _("Ангилал"), "subcategory": _("Дэд ангилал"),
+            "api_login_path": _("Нэвтрэх зам"), "api_login_body": _("Нэвтрэх body"),
+        }
         help_texts = {"api_login_path": ""}
 
     def __init__(self, *args, **kwargs):
@@ -41,8 +46,15 @@ class TestAppForm(forms.ModelForm):
         if self.instance.pk:  # шинэ апп-д хуудас хараахан байхгүй
             self.fields["login_page"].queryset = self.instance.pages.all()
         else:
-            for name in ("login_page", "api_login_path", "api_login_body", "api_token_prefix"):
+            for name in self.LOGIN_FIELDS:
                 del self.fields[name]
+
+    @property
+    def api_tab(self):
+        """API нэвтрэлт л тохируулсан, эсвэл түүний талбарт алдаа гарсан бол API tab-ыг нээнэ."""
+        if any(name in self.errors for name in self.LOGIN_FIELDS[1:]):
+            return True
+        return bool(self.instance.api_login_path and not self.instance.login_page_id)
 
     def clean_api_login_path(self):
         path = clean_page_path(self.cleaned_data.get("api_login_path"))

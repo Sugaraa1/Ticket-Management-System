@@ -169,13 +169,38 @@
       <div class="card-body">
         <form method="post">
           {% csrf_token %}
-          {% for field in form %}
+          {% for field in form %}{% if field.name not in login_fields %}
           <div class="mb-2">
             <label class="form-label small" for="{{ field.id_for_label }}">{{ field.label }}</label>
             {{ field }}
             {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
           </div>
-          {% endfor %}
+          {% endif %}{% endfor %}
+          <div class="mb-2">
+            <div class="form-label small">{% trans "Нэвтрэлт" %}</div>
+            <ul class="nav nav-tabs small" role="tablist">
+              <li class="nav-item" role="presentation"><button class="nav-link py-1{% if not api_tab %} active{% endif %}" type="button" data-bs-toggle="tab" data-bs-target="#appLoginWeb" role="tab"><i class="bi bi-window me-1"></i>{% trans "Веб" %}</button></li>
+              <li class="nav-item" role="presentation"><button class="nav-link py-1{% if api_tab %} active{% endif %}" type="button" data-bs-toggle="tab" data-bs-target="#appLoginApi" role="tab"><i class="bi bi-braces me-1"></i>{% trans "API" %}</button></li>
+            </ul>
+            <div class="tab-content border border-top-0 rounded-bottom p-2">
+              <div class="tab-pane fade{% if not api_tab %} show active{% endif %}" id="appLoginWeb" role="tabpanel">
+                {% with field=form.login_page %}
+                <label class="form-label small" for="{{ field.id_for_label }}">{% trans "Нэвтрэх хуудас" %}</label>
+                {{ field }}
+                {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+                {% endwith %}
+              </div>
+              <div class="tab-pane fade{% if api_tab %} show active{% endif %}" id="appLoginApi" role="tabpanel">
+                {% for field in form %}{% if field.name in login_fields and field.name != "login_page" %}
+                <div class="mb-2">
+                  <label class="form-label small" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                  {{ field }}
+                  {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+                </div>
+                {% endif %}{% endfor %}
+              </div>
+            </div>
+          </div>
           <button class="btn btn-primary btn-sm">{% trans "Хадгалах" %}</button>
         </form>
         <hr>

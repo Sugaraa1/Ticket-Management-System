@@ -110,9 +110,12 @@ def _render_app_detail(request, app, form=None, env_form=None, page_form=None, a
         app.scenarios.select_related("page", "account").annotate(run_count=Count("runs")), "scenario"
     )
     can_manage = bool(user_roles(request.user) & set(APP_ROLES))
+    form = form or TestAppForm(instance=app)
     return render(request, "autotest/app_detail.html", {
         "app": app,
-        "form": form or TestAppForm(instance=app),
+        "form": form,
+        "login_fields": TestAppForm.LOGIN_FIELDS,
+        "api_tab": form.api_tab,
         "env_form": env_form or EnvironmentForm(prefix="env"),
         "environments": app.environments.all(),
         "page_form": page_form or PageForm(prefix="page"),
