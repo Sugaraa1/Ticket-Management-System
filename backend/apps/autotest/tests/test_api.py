@@ -178,7 +178,7 @@ class ApiScenarioViewTests(TempMediaMixin, TestCase):
         payload.update(data)
         return self.client.post(reverse("autotest:scenario_create", args=[self.app.pk]) + "?kind=api", payload)
 
-    def test_workflow_shows_the_request_with_row_values(self):
+    def test_steps_show_the_request_with_row_values(self):
         self.app.api_login_path = "/api/login"
         self.app.save()
         account = TestAccount(app=self.app, label="QA", username="qa")

@@ -1,5 +1,5 @@
 {% load i18n %}
-<div id="testSteps" data-url="{% url 'autotest:scenario_workflow' scenario.pk %}">
+<div id="testSteps" data-url="{% url 'autotest:scenario_steps' scenario.pk %}">
   {% if wf_files %}
   <div class="d-flex flex-wrap gap-2 mb-3">
     <select class="form-select form-select-sm w-auto js-wf-file" aria-label="{% trans "Өгөгдлийн файл" %}">

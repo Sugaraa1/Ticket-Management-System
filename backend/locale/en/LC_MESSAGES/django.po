@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Ticket Management System\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-02 11:42+0800\n"
+"POT-Creation-Date: 2026-10-02 11:52+0800\n"
 "PO-Revision-Date: 2026-10-02 09:20+0800\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -324,7 +324,7 @@ msgstr "The first row must contain the column names."
 msgid "%(n)s-р баганын нэр хоосон байна."
 msgstr "Column %(n)s has an empty name."
 
-#: apps/autotest/datafiles.py:51 apps/autotest/views.py:430
+#: apps/autotest/datafiles.py:51 apps/autotest/views.py:437
 #, python-format
 msgid "Давхардсан баганын нэр: %(cols)s"
 msgstr "Duplicate column names: %(cols)s"
@@ -480,7 +480,8 @@ msgstr "Duration (ms)"
 msgid "Эцсийн хаяг"
 msgstr "Final URL"
 
-#: apps/autotest/exports.py:109 templates/autotest/_runs_table.html:8
+#: apps/autotest/exports.py:109 apps/autotest/guide.py:29
+#: apps/autotest/guide.py:73 templates/autotest/_runs_table.html:8
 msgid "Үр дүн"
 msgstr "Result"
 
@@ -577,7 +578,7 @@ msgid "Жишээ: /welcome эсвэл Амжилттай"
 msgstr "e.g. /welcome or Success"
 
 #: apps/autotest/forms.py:245 apps/autotest/forms.py:331
-#: apps/autotest/views.py:558 apps/autotest/views.py:613
+#: apps/autotest/views.py:567 apps/autotest/views.py:623
 #: templates/autotest/scenario_detail.html:73
 msgid "Нэвтрэхгүй"
 msgstr "Not logged in"
@@ -622,7 +623,8 @@ msgstr ""
 msgid "Эхлээд тестийн хэрэглэгчид хэсэгт API нэвтрэх замаа бичнэ үү."
 msgstr "First enter the API login path under Test users."
 
-#: apps/autotest/forms.py:366 templates/autotest/_test_steps.html:5
+#: apps/autotest/forms.py:366 apps/autotest/guide.py:26
+#: apps/autotest/guide.py:98 templates/autotest/_test_steps.html:5
 #: templates/autotest/api_scenario_form.html:47
 msgid "Өгөгдлийн файл"
 msgstr "Data file"
@@ -634,7 +636,7 @@ msgstr "Data file"
 msgid "Орчин"
 msgstr "Environment"
 
-#: apps/autotest/forms.py:387 apps/autotest/views.py:841
+#: apps/autotest/forms.py:387 apps/autotest/views.py:852
 #, python-format
 msgid "Энэ файлд сценарид хэрэгтэй багана алга: %(cols)s"
 msgstr "This file is missing columns the scenario needs: %(cols)s"
@@ -709,6 +711,7 @@ msgid "%(f)s: кирилл, emoji"
 msgstr "%(f)s: Cyrillic, emoji"
 
 #: apps/autotest/generator.py:303 apps/autotest/generator.py:331
+#: templates/autotest/_workflow_panel.html:47
 msgid "Бүх талбар зөв"
 msgstr "All fields valid"
 
@@ -817,6 +820,208 @@ msgstr "“%(a)s” and “%(b)s” must match."
 msgid "Бөглөнө үү: %(cols)s"
 msgstr "Please fill in: %(cols)s"
 
+#: apps/autotest/guide.py:19 templates/autotest/api_scenario_form.html:5
+#: templates/autotest/app_detail.html:5
+#: templates/autotest/datafile_detail.html:5
+#: templates/autotest/datafile_form.html:5
+#: templates/autotest/datafile_list.html:5 templates/autotest/home.html:3
+#: templates/autotest/home.html:6 templates/autotest/run_detail.html:5
+#: templates/autotest/scenario_detail.html:5
+#: templates/autotest/scenario_form.html:5 templates/base.html:55
+msgid "Автомат тест"
+msgstr "Autotest"
+
+#: apps/autotest/guide.py:21 templates/autotest/app_form.html:3
+#: templates/autotest/home.html:9
+msgid "Апп бүртгэх"
+msgstr "Register app"
+
+#: apps/autotest/guide.py:22 templates/autotest/app_detail.html:101
+msgid "Орчин нэмэх"
+msgstr "Add environment"
+
+#: apps/autotest/guide.py:23 templates/autotest/app_detail.html:132
+#: templates/autotest/scenario_form.html:41
+msgid "Хуудас нэмэх"
+msgstr "Add page"
+
+#: apps/autotest/guide.py:24
+msgid "Тестийн хэрэглэгч"
+msgstr "Test user"
+
+#: apps/autotest/guide.py:27
+msgid "Сценари үүсгэх"
+msgstr "Create scenario"
+
+#: apps/autotest/guide.py:27
+msgid "Веб форм / API"
+msgstr "Web form / API"
+
+#: apps/autotest/guide.py:28 apps/autotest/guide.py:71
+#: templates/autotest/app_detail.html:49 templates/autotest/app_detail.html:52
+#: templates/autotest/scenario_detail.html:49
+#: templates/autotest/scenario_detail.html:59
+#: templates/autotest/scenario_detail.html:75
+msgid "Ажиллуулах"
+msgstr "Run"
+
+#: apps/autotest/guide.py:30 apps/autotest/guide.py:74
+#: apps/autotest/guide.py:89
+msgid "Bug ticket"
+msgstr "Bug ticket"
+
+#: apps/autotest/guide.py:38 templates/autotest/app_detail.html:13
+#: templates/autotest/scenario_form.html:3
+#: templates/autotest/scenario_form.html:6
+msgid "Шинэ сценари"
+msgstr "New scenario"
+
+#: apps/autotest/guide.py:40
+msgid "Хуудас сонгох"
+msgstr "Pick page"
+
+#: apps/autotest/guide.py:41 templates/autotest/scenario_form.html:49
+msgid "Хуудсыг шалгах"
+msgstr "Scan page"
+
+#: apps/autotest/guide.py:42
+msgid "Талбар ↔ багана"
+msgstr "Field ↔ column"
+
+#: apps/autotest/guide.py:42
+msgid "Имэйл ← email"
+msgstr "Email ← email"
+
+#: apps/autotest/guide.py:43 templates/autotest/scenario_form.html:73
+msgid "Тест өгөгдөл үүсгэх"
+msgstr "Generate test data"
+
+#: apps/autotest/guide.py:44 apps/autotest/guide.py:57
+#: templates/autotest/_datafile_modal.html:47
+#: templates/autotest/api_scenario_form.html:67
+msgid "Хүлээгдэх үр дүн"
+msgstr "Expected result"
+
+#: apps/autotest/guide.py:44
+msgid "амжилттай / алдаа"
+msgstr "success / error"
+
+#: apps/autotest/guide.py:45 apps/autotest/guide.py:58
+#: templates/accounts/user_form.html:29
+#: templates/autotest/_datafile_modal.html:28
+#: templates/autotest/api_scenario_form.html:85
+#: templates/autotest/app_detail.html:165
+#: templates/autotest/app_detail.html:215 templates/autotest/app_form.html:17
+#: templates/autotest/scenario_form.html:184
+#: templates/categories/category_form.html:35
+#: templates/categories/team_detail.html:22
+#: templates/categories/team_detail.html:67
+#: templates/projects/project_form.html:26
+#: templates/projects/project_form.html:59
+#: templates/tickets/ticket_detail.html:200
+#: templates/tickets/ticket_form.html:29
+msgid "Хадгалах"
+msgstr "Save"
+
+#: apps/autotest/guide.py:52 templates/autotest/api_scenario_form.html:3
+#: templates/autotest/api_scenario_form.html:6
+msgid "Шинэ API сценари"
+msgstr "New API scenario"
+
+#: apps/autotest/guide.py:54
+msgid "Method + зам"
+msgstr "Method + path"
+
+#: apps/autotest/guide.py:55 apps/autotest/models.py:198
+msgid "Body"
+msgstr "Body"
+
+#: apps/autotest/guide.py:56 apps/autotest/models.py:202
+#: templates/autotest/api_scenario_form.html:22
+#: templates/autotest/scenario_detail.html:71
+msgid "Хэн болж шалгах"
+msgstr "Test as"
+
+#: apps/autotest/guide.py:68 apps/autotest/steps.py:39
+#: templates/registration/login.html:3 templates/registration/login.html:6
+#: templates/registration/login.html:27
+#: templates/registration/password_reset_complete.html:8
+msgid "Нэвтрэх"
+msgstr "Log in"
+
+#: apps/autotest/guide.py:70
+msgid "Файл + орчин сонгох"
+msgstr "Pick file + environment"
+
+#: apps/autotest/guide.py:72 templates/autotest/scenario_detail.html:50
+msgid "Тестийн алхмууд"
+msgstr "Test steps"
+
+#: apps/autotest/guide.py:72
+msgid "мөр бүр"
+msgstr "each row"
+
+#: apps/autotest/guide.py:74
+msgid "унасан мөрөөс"
+msgstr "from failed rows"
+
+#: apps/autotest/guide.py:77 apps/autotest/models.py:278
+#: apps/autotest/views.py:637 templates/autotest/scenario_detail.html:93
+msgid "Эрх шалгах"
+msgstr "Access check"
+
+#: apps/autotest/guide.py:77
+msgid "хэн нээж болох"
+msgstr "who can open it"
+
+#: apps/autotest/guide.py:85 templates/autotest/run_detail.html:34
+msgid "Явц"
+msgstr "Progress"
+
+#: apps/autotest/guide.py:86
+msgid "Мөр бүрийн үр дүн"
+msgstr "Result per row"
+
+#: apps/autotest/guide.py:87 templates/autotest/_results_table.html:32
+msgid "Дэлгэцийн зураг"
+msgstr "Screenshot"
+
+#: apps/autotest/guide.py:87
+msgid "унасан мөр"
+msgstr "failed rows"
+
+#: apps/autotest/guide.py:88
+msgid "Унасан мөр сонгох"
+msgstr "Select failed rows"
+
+#: apps/autotest/guide.py:90 templates/autotest/run_detail.html:22
+msgid "Дахин ажиллуулах"
+msgstr "Run again"
+
+#: apps/autotest/guide.py:90
+msgid "засварын дараа"
+msgstr "after the fix"
+
+#: apps/autotest/guide.py:100
+msgid "Загвар татах"
+msgstr "Download template"
+
+#: apps/autotest/guide.py:101
+msgid "Бөглөх"
+msgstr "Fill in"
+
+#: apps/autotest/guide.py:102 templates/autotest/datafile_form.html:20
+msgid "Оруулах"
+msgstr "Upload"
+
+#: apps/autotest/guide.py:103
+msgid "Browser-т засах"
+msgstr "Edit in browser"
+
+#: apps/autotest/guide.py:104
+msgid "Сценарид ашиглах"
+msgstr "Use in a scenario"
+
 #: apps/autotest/management/commands/run_autotest_worker.py:78
 msgid "Worker дахин эхэлсэн тул ажиллуулалт тасарсан. Дахин ажиллуулна уу."
 msgstr ""
@@ -915,15 +1120,6 @@ msgstr "e.g. Sign up, Log in"
 msgid "Header"
 msgstr "Headers"
 
-#: apps/autotest/models.py:198
-msgid "Body"
-msgstr "Body"
-
-#: apps/autotest/models.py:202 templates/autotest/api_scenario_form.html:22
-#: templates/autotest/scenario_detail.html:71
-msgid "Хэн болж шалгах"
-msgstr "Test as"
-
 #: apps/autotest/models.py:209
 msgid "Амжилттай гэж үзэх нөхцөл"
 msgstr "Success condition"
@@ -985,11 +1181,6 @@ msgstr "Cancelled"
 msgid "Өгөгдлөөр"
 msgstr "Data-driven"
 
-#: apps/autotest/models.py:278 apps/autotest/views.py:627
-#: templates/autotest/scenario_detail.html:93
-msgid "Эрх шалгах"
-msgstr "Access check"
-
 #: apps/autotest/models.py:330 templates/autotest/run_detail.html:36
 #: templates/autotest/run_detail.html:56
 msgid "Тэнцсэн"
@@ -1004,8 +1195,8 @@ msgstr "Failed"
 msgid "Ажиллуулж чадсангүй"
 msgstr "Could not run"
 
-#: apps/autotest/models.py:334 apps/autotest/workflow.py:52
-#: apps/autotest/workflow.py:57 templates/autotest/_run_status.html:1
+#: apps/autotest/models.py:334 apps/autotest/steps.py:52
+#: apps/autotest/steps.py:57 templates/autotest/_run_status.html:1
 #: templates/autotest/run_detail.html:39 templates/autotest/run_detail.html:47
 #: templates/autotest/run_detail.html:62
 msgid "Гараар шалгах"
@@ -1072,8 +1263,8 @@ msgstr "No fillable fields were found on this page."
 msgid "Хуудсыг нээж чадсангүй: %(err)s"
 msgstr "Could not open the page: %(err)s"
 
-#: apps/autotest/runner.py:454 apps/autotest/views.py:252
-#: apps/autotest/views.py:621
+#: apps/autotest/runner.py:454 apps/autotest/views.py:255
+#: apps/autotest/views.py:631
 msgid "Тестийн хэрэглэгчид хэсэгт нэвтрэх хуудсаа сонгоно уу."
 msgstr "Choose the login page under Test users."
 
@@ -1155,37 +1346,100 @@ msgstr ""
 "Testing against a private network address (%(ip)s) is not allowed. An admin "
 "can enable the AUTOTEST_ALLOW_PRIVATE_HOSTS setting."
 
-#: apps/autotest/views.py:86
+#: apps/autotest/steps.py:40 templates/accounts/user_list.html:14
+#: templates/autotest/scenario_detail.html:100
+#: templates/categories/team_detail.html:90 templates/tickets/reports.html:230
+msgid "Хэрэглэгч"
+msgstr "User"
+
+#: apps/autotest/steps.py:49
+msgid "Үр дүнг шалгах"
+msgstr "Check the result"
+
+#: apps/autotest/steps.py:52 apps/autotest/steps.py:57
+#: apps/autotest/steps.py:65
+msgid "Хүлээгдэх"
+msgstr "Expected"
+
+#: apps/autotest/steps.py:61
+msgid "Status код"
+msgstr "Status code"
+
+#: apps/autotest/steps.py:65
+msgid "Амжилттай"
+msgstr "Success"
+
+#: apps/autotest/steps.py:65
+msgid "Алдаа гарна"
+msgstr "Error"
+
+#: apps/autotest/steps.py:68
+msgid "Гарах текст"
+msgstr "Text shown"
+
+#: apps/autotest/steps.py:84
+msgid "Хуудас нээх"
+msgstr "Open page"
+
+#: apps/autotest/steps.py:90
+#, python-format
+msgid "«%(label)s» чагтлах"
+msgstr "Tick «%(label)s»"
+
+#: apps/autotest/steps.py:96 apps/autotest/steps.py:98
+#, python-format
+msgid "«%(label)s» сонгох"
+msgstr "Choose «%(label)s»"
+
+#: apps/autotest/steps.py:100
+#, python-format
+msgid "«%(label)s» бөглөх"
+msgstr "Fill «%(label)s»"
+
+#: apps/autotest/steps.py:109
+#, python-format
+msgid "«%(label)s» товч дарах"
+msgstr "Click «%(label)s»"
+
+#: apps/autotest/steps.py:109
+msgid "Илгээх"
+msgstr "Submit"
+
+#: apps/autotest/steps.py:124
+msgid "Хүсэлт илгээх"
+msgstr "Send request"
+
+#: apps/autotest/views.py:87
 #, python-format
 msgid "'%(name)s' апп бүртгэгдлээ. Одоо орчны хаягаа нэмнэ үү."
 msgstr "App '%(name)s' was registered. Now add an environment URL."
 
-#: apps/autotest/views.py:100 apps/core/decorators.py:26
+#: apps/autotest/views.py:102 apps/core/decorators.py:26
 #: apps/tickets/views.py:482
 msgid "Танд энэ хуудсанд хандах эрх байхгүй."
 msgstr "You do not have permission to access this page."
 
-#: apps/autotest/views.py:104
+#: apps/autotest/views.py:106
 #, python-format
 msgid "'%(name)s' шинэчлэгдлээ."
 msgstr "'%(name)s' was updated."
 
-#: apps/autotest/views.py:139
+#: apps/autotest/views.py:142
 #, python-format
 msgid "'%(name)s' апп тест, үр дүнгийн хамт устгагдлаа."
 msgstr "App '%(name)s' was deleted together with its tests and results."
 
-#: apps/autotest/views.py:154
+#: apps/autotest/views.py:157
 #, python-format
 msgid "'%(name)s' орчин нэмэгдлээ."
 msgstr "Environment '%(name)s' was added."
 
-#: apps/autotest/views.py:163
+#: apps/autotest/views.py:166
 #, python-format
 msgid "'%(name)s' орчин устгагдлаа."
 msgstr "Environment '%(name)s' was deleted."
 
-#: apps/autotest/views.py:174
+#: apps/autotest/views.py:177
 #, python-format
 msgid ""
 "'%(name)s' production орчин боллоо — энд тест ажиллуулах бүрт "
@@ -1194,291 +1448,222 @@ msgstr ""
 "'%(name)s' is now a production environment — every test run there will ask "
 "for confirmation."
 
-#: apps/autotest/views.py:176
+#: apps/autotest/views.py:179
 #, python-format
 msgid "'%(name)s' production биш боллоо."
 msgstr "'%(name)s' is no longer marked as production."
 
-#: apps/autotest/views.py:190
+#: apps/autotest/views.py:193
 #, python-format
 msgid "'%(name)s' хуудас нэмэгдлээ."
 msgstr "Page '%(name)s' was added."
 
-#: apps/autotest/views.py:199
+#: apps/autotest/views.py:202
 #, python-format
 msgid "'%(name)s' хуудсыг сценари ашиглаж байгаа тул устгах боломжгүй."
 msgstr "Page '%(name)s' is used by a scenario and cannot be deleted."
 
-#: apps/autotest/views.py:201
+#: apps/autotest/views.py:204
 #, python-format
 msgid "'%(name)s' нь нэвтрэх хуудас тул устгах боломжгүй."
 msgstr "'%(name)s' is the login page and cannot be deleted."
 
-#: apps/autotest/views.py:204
+#: apps/autotest/views.py:207
 #, python-format
 msgid "'%(name)s' хуудас устгагдлаа."
 msgstr "Page '%(name)s' was deleted."
 
-#: apps/autotest/views.py:217
+#: apps/autotest/views.py:220
 #, python-format
 msgid "'%(name)s' тестийн хэрэглэгч нэмэгдлээ."
 msgstr "Test user '%(name)s' was added."
 
-#: apps/autotest/views.py:219
+#: apps/autotest/views.py:222
 #, python-format
 msgid "'%(name)s' тестийн хэрэглэгч шинэчлэгдлээ."
 msgstr "Test user '%(name)s' was updated."
 
-#: apps/autotest/views.py:231
+#: apps/autotest/views.py:234
 msgid "Нэвтрэлт хадгалагдлаа."
 msgstr "Login settings saved."
 
-#: apps/autotest/views.py:240
+#: apps/autotest/views.py:243
 #, python-format
 msgid "'%(name)s' хэрэглэгчийг сценари ашиглаж байгаа тул устгах боломжгүй."
 msgstr "User '%(name)s' is used by a scenario and cannot be deleted."
 
-#: apps/autotest/views.py:243
+#: apps/autotest/views.py:246
 #, python-format
 msgid "'%(name)s' тестийн хэрэглэгч устгагдлаа."
 msgstr "Test user '%(name)s' was deleted."
 
-#: apps/autotest/views.py:273
+#: apps/autotest/views.py:279
 #, python-format
 msgid "'%(name)s' файл орлоо: %(rows)s мөр, %(cols)s багана."
 msgstr "File '%(name)s' uploaded: %(rows)s rows, %(cols)s columns."
 
-#: apps/autotest/views.py:291 apps/autotest/views.py:391
+#: apps/autotest/views.py:297 apps/autotest/views.py:398
 msgid "Файл серверээс олдсонгүй."
 msgstr "File not found on the server."
 
-#: apps/autotest/views.py:319
+#: apps/autotest/views.py:326
 #, python-format
 msgid "Файл шинэчлэгдлээ: %(rows)s мөр."
 msgstr "File updated: %(rows)s rows."
 
-#: apps/autotest/views.py:332
+#: apps/autotest/views.py:339
 #, python-format
 msgid "'%(name)s' файл устгагдлаа."
 msgstr "File '%(name)s' was deleted."
 
-#: apps/autotest/views.py:350 apps/autotest/views.py:865
+#: apps/autotest/views.py:357 apps/autotest/views.py:876
 #: apps/tickets/views.py:532
 msgid "Файл олдсонгүй."
 msgstr "File not found."
 
-#: apps/autotest/views.py:422
+#: apps/autotest/views.py:429
 msgid "Өгөгдөл буруу байна. Хуудсаа refresh хийгээд дахин оролдоно уу."
 msgstr "Invalid data. Refresh the page and try again."
 
-#: apps/autotest/views.py:427
+#: apps/autotest/views.py:434
 msgid "Баганын нэр хоосон байж болохгүй."
 msgstr "Column names cannot be empty."
 
-#: apps/autotest/views.py:433
+#: apps/autotest/views.py:440
 #, python-format
 msgid ""
 "Сценарид ашиглагдаж буй баганыг устгах, нэрийг солих боломжгүй: %(cols)s"
 msgstr "Columns used by scenarios cannot be removed or renamed: %(cols)s"
 
-#: apps/autotest/views.py:441
+#: apps/autotest/views.py:448
 msgid "Дор хаяж нэг мөр өгөгдөл байх ёстой."
 msgstr "At least one data row is required."
 
-#: apps/autotest/views.py:443
+#: apps/autotest/views.py:450
 #, python-format
 msgid "Хамгийн ихдээ %(max)s мөр байна."
 msgstr "At most %(max)s rows are allowed."
 
-#: apps/autotest/views.py:516
+#: apps/autotest/views.py:525
 msgid "Эхлээд апп-даа шалгах хуудсаа нэмнэ үү."
 msgstr "Add a page to test to the app first."
 
-#: apps/autotest/views.py:524
+#: apps/autotest/views.py:533
 #, python-format
 msgid "'%(name)s' сценари хадгалагдлаа. Одоо ажиллуулж болно."
 msgstr "Scenario '%(name)s' was saved. You can run it now."
 
-#: apps/autotest/views.py:535
+#: apps/autotest/views.py:544
 #, python-format
 msgid "'%(name)s' сценари шинэчлэгдлээ."
 msgstr "Scenario '%(name)s' was updated."
 
-#: apps/autotest/views.py:588 apps/autotest/views.py:655
+#: apps/autotest/views.py:598 apps/autotest/views.py:665
 msgid "Орчноо сонгоно уу."
 msgstr "Please choose an environment."
 
-#: apps/autotest/views.py:596 apps/autotest/views.py:617
+#: apps/autotest/views.py:606 apps/autotest/views.py:627
 msgid "Дор хаяж нэг хэрэглэгчид нээлттэй эсвэл хаалттай гэж сонгоно уу."
 msgstr "Choose open or denied for at least one user."
 
-#: apps/autotest/views.py:643
+#: apps/autotest/views.py:653
 #, python-format
 msgid "'%(name)s' сценари устгагдлаа."
 msgstr "Scenario '%(name)s' was deleted."
 
-#: apps/autotest/views.py:658
+#: apps/autotest/views.py:668
 msgid "Хуудсаа сонгоно уу."
 msgstr "Please choose a page."
 
-#: apps/autotest/views.py:700
+#: apps/autotest/views.py:710
 msgid "Утгууд буруу байна."
 msgstr "Invalid values."
 
-#: apps/autotest/views.py:707
+#: apps/autotest/views.py:717
 msgid "Өгөгдөл үүсгэх талбар олдсонгүй."
 msgstr "No fields to generate data for."
 
-#: apps/autotest/views.py:709
+#: apps/autotest/views.py:719
 #, python-format
 msgid "%(name)s — автомат өгөгдөл"
 msgstr "%(name)s — generated data"
 
-#: apps/autotest/views.py:747
+#: apps/autotest/views.py:757
 msgid "Тестийн хэрэглэгчид хэсэгт API нэвтрэх замаа бичнэ үү."
 msgstr "Enter the API login path under Test users."
 
-#: apps/autotest/views.py:818
+#: apps/autotest/views.py:829
 msgid "Ажиллуулалтыг цуцаллаа."
 msgstr "The run was cancelled."
 
-#: apps/autotest/views.py:828 apps/autotest/views.py:837
+#: apps/autotest/views.py:839 apps/autotest/views.py:848
 msgid "Өмнөх файл эсвэл орчин устгагдсан тул сценариас шинээр ажиллуулна уу."
 msgstr ""
 "The previous file or environment was deleted — please start a new run from "
 "the scenario."
 
-#: apps/autotest/views.py:873
+#: apps/autotest/views.py:884
 msgid "Автомат тестээр илэрсэн алдаа."
 msgstr "Bug found by automated testing."
 
-#: apps/autotest/views.py:874
+#: apps/autotest/views.py:885
 #, python-format
 msgid "Сценари: %(s)s"
 msgstr "Scenario: %(s)s"
 
-#: apps/autotest/views.py:875
+#: apps/autotest/views.py:886
 #, python-format
 msgid "Орчин: %(env)s — %(url)s"
 msgstr "Environment: %(env)s — %(url)s"
 
-#: apps/autotest/views.py:876
+#: apps/autotest/views.py:887
 #, python-format
 msgid "Ажиллуулалт: #%(id)s — %(url)s"
 msgstr "Run: #%(id)s — %(url)s"
 
-#: apps/autotest/views.py:881 templates/autotest/_test_steps.html:10
+#: apps/autotest/views.py:892 templates/autotest/_test_steps.html:10
 #, python-format
 msgid "Мөр %(n)s"
 msgstr "Row %(n)s"
 
-#: apps/autotest/views.py:893
+#: apps/autotest/views.py:904
 #, python-format
 msgid "Оролт: %(v)s"
 msgstr "Input: %(v)s"
 
-#: apps/autotest/views.py:894
+#: apps/autotest/views.py:905
 #, python-format
 msgid "Хүлээгдэж байсан: %(v)s"
 msgstr "Expected: %(v)s"
 
-#: apps/autotest/views.py:895
+#: apps/autotest/views.py:906
 #, python-format
 msgid "Бодит үр дүн: %(v)s"
 msgstr "Actual result: %(v)s"
 
-#: apps/autotest/views.py:910
+#: apps/autotest/views.py:921
 msgid "Ticket үүсгэх унасан мөрөө сонгоно уу."
 msgstr "Select the failed rows to create a ticket from."
 
-#: apps/autotest/views.py:929 apps/tickets/views.py:275
+#: apps/autotest/views.py:940 apps/tickets/views.py:275
 #, python-format
 msgid "Ticket %(code)s амжилттай үүслээ."
 msgstr "Ticket %(code)s was created."
 
-#: apps/autotest/views.py:933
+#: apps/autotest/views.py:944
 #, python-format
 msgid "[Автомат тест] %(scenario)s: %(case)s"
 msgstr "[Autotest] %(scenario)s: %(case)s"
 
-#: apps/autotest/views.py:935
+#: apps/autotest/views.py:946
 #, python-format
 msgid "мөр %(n)s"
 msgstr "row %(n)s"
 
-#: apps/autotest/views.py:938
+#: apps/autotest/views.py:949
 #, python-format
 msgid " (+%(n)s мөр)"
 msgstr " (+%(n)s rows)"
-
-#: apps/autotest/workflow.py:39 templates/registration/login.html:3
-#: templates/registration/login.html:6 templates/registration/login.html:27
-#: templates/registration/password_reset_complete.html:8
-msgid "Нэвтрэх"
-msgstr "Log in"
-
-#: apps/autotest/workflow.py:40 templates/accounts/user_list.html:14
-#: templates/autotest/scenario_detail.html:100
-#: templates/categories/team_detail.html:90 templates/tickets/reports.html:230
-msgid "Хэрэглэгч"
-msgstr "User"
-
-#: apps/autotest/workflow.py:49
-msgid "Үр дүнг шалгах"
-msgstr "Check the result"
-
-#: apps/autotest/workflow.py:52 apps/autotest/workflow.py:57
-#: apps/autotest/workflow.py:65
-msgid "Хүлээгдэх"
-msgstr "Expected"
-
-#: apps/autotest/workflow.py:61
-msgid "Status код"
-msgstr "Status code"
-
-#: apps/autotest/workflow.py:65
-msgid "Амжилттай"
-msgstr "Success"
-
-#: apps/autotest/workflow.py:65
-msgid "Алдаа гарна"
-msgstr "Error"
-
-#: apps/autotest/workflow.py:68
-msgid "Гарах текст"
-msgstr "Text shown"
-
-#: apps/autotest/workflow.py:84
-msgid "Хуудас нээх"
-msgstr "Open page"
-
-#: apps/autotest/workflow.py:90
-#, python-format
-msgid "«%(label)s» чагтлах"
-msgstr "Tick «%(label)s»"
-
-#: apps/autotest/workflow.py:96 apps/autotest/workflow.py:98
-#, python-format
-msgid "«%(label)s» сонгох"
-msgstr "Choose «%(label)s»"
-
-#: apps/autotest/workflow.py:100
-#, python-format
-msgid "«%(label)s» бөглөх"
-msgstr "Fill «%(label)s»"
-
-#: apps/autotest/workflow.py:109
-#, python-format
-msgid "«%(label)s» товч дарах"
-msgstr "Click «%(label)s»"
-
-#: apps/autotest/workflow.py:109
-msgid "Илгээх"
-msgstr "Submit"
-
-#: apps/autotest/workflow.py:124
-msgid "Хүсэлт илгээх"
-msgstr "Send request"
 
 #: apps/categories/forms.py:29
 msgid "Багийн нэр"
@@ -2317,22 +2502,6 @@ msgstr "Deactivate this user? They will no longer be able to sign in."
 msgid "Нууц үгийн шаардлага"
 msgstr "Password requirements"
 
-#: templates/accounts/user_form.html:29
-#: templates/autotest/_datafile_modal.html:28
-#: templates/autotest/api_scenario_form.html:85
-#: templates/autotest/app_detail.html:165
-#: templates/autotest/app_detail.html:215 templates/autotest/app_form.html:17
-#: templates/autotest/scenario_form.html:184
-#: templates/categories/category_form.html:35
-#: templates/categories/team_detail.html:22
-#: templates/categories/team_detail.html:67
-#: templates/projects/project_form.html:26
-#: templates/projects/project_form.html:59
-#: templates/tickets/ticket_detail.html:200
-#: templates/tickets/ticket_form.html:29
-msgid "Хадгалах"
-msgstr "Save"
-
 #: templates/accounts/user_form.html:31
 msgid "Бүртгэх"
 msgstr "Register"
@@ -2408,6 +2577,7 @@ msgid "Татах"
 msgstr "Export"
 
 #: templates/autotest/_datafile_modal.html:15
+#: templates/autotest/_workflow_panel.html:5
 #: templates/autotest/run_detail.html:75 templates/autotest/run_detail.html:88
 #: templates/tickets/_quick_ticket_drawer.html:5
 msgid "Хаах"
@@ -2457,11 +2627,6 @@ msgstr "new column"
 #: templates/autotest/_datafile_modal.html:46
 msgid "Сценари ашиглаж байгаа тул нэрийг солих, устгах боломжгүй"
 msgstr "Used by a scenario, so it cannot be renamed or removed"
-
-#: templates/autotest/_datafile_modal.html:47
-#: templates/autotest/api_scenario_form.html:67
-msgid "Хүлээгдэх үр дүн"
-msgstr "Expected result"
 
 #: templates/autotest/_datafile_modal.html:48
 msgid "Нууц утга"
@@ -2516,10 +2681,6 @@ msgstr "not set"
 msgid "Хүсэлт ба хариу"
 msgstr "Request and response"
 
-#: templates/autotest/_results_table.html:32
-msgid "Дэлгэцийн зураг"
-msgstr "Screenshot"
-
 #: templates/autotest/_results_table.html:37
 msgid "Үр дүн удахгүй гарна…"
 msgstr "Results coming soon…"
@@ -2557,6 +2718,7 @@ msgid "Одоогоор ажиллуулаагүй байна."
 msgstr "Not run yet."
 
 #: templates/autotest/_test_steps.html:25
+#: templates/autotest/_workflow_panel.html:48
 msgid "хоосон"
 msgstr "empty"
 
@@ -2564,21 +2726,9 @@ msgstr "empty"
 msgid "Файлын багана"
 msgstr "File column"
 
-#: templates/autotest/api_scenario_form.html:3
-#: templates/autotest/api_scenario_form.html:6
-msgid "Шинэ API сценари"
-msgstr "New API scenario"
-
-#: templates/autotest/api_scenario_form.html:5
-#: templates/autotest/app_detail.html:5
-#: templates/autotest/datafile_detail.html:5
-#: templates/autotest/datafile_form.html:5
-#: templates/autotest/datafile_list.html:5 templates/autotest/home.html:3
-#: templates/autotest/home.html:6 templates/autotest/run_detail.html:5
-#: templates/autotest/scenario_detail.html:5
-#: templates/autotest/scenario_form.html:5 templates/base.html:55
-msgid "Автомат тест"
-msgstr "Autotest"
+#: templates/autotest/_workflow_panel.html:49
+msgid "Хэт урт · SQL · XSS"
+msgstr "Too long · SQL · XSS"
 
 #: templates/autotest/api_scenario_form.html:6
 msgid "API сценари засах"
@@ -2624,12 +2774,6 @@ msgstr "View / edit file"
 msgid "Файлд алга"
 msgstr "Not in the file"
 
-#: templates/autotest/app_detail.html:13
-#: templates/autotest/scenario_form.html:3
-#: templates/autotest/scenario_form.html:6
-msgid "Шинэ сценари"
-msgstr "New scenario"
-
 #: templates/autotest/app_detail.html:16
 msgid "хуудас нэмнэ үү"
 msgstr "add a page"
@@ -2646,13 +2790,6 @@ msgstr "Scenarios"
 #, python-format
 msgid "Өмнөх шигээ: %(f)s · %(e)s"
 msgstr "Same as last time: %(f)s · %(e)s"
-
-#: templates/autotest/app_detail.html:49 templates/autotest/app_detail.html:52
-#: templates/autotest/scenario_detail.html:49
-#: templates/autotest/scenario_detail.html:59
-#: templates/autotest/scenario_detail.html:75
-msgid "Ажиллуулах"
-msgstr "Run"
 
 #: templates/autotest/app_detail.html:60
 msgid "Сценари алга"
@@ -2671,10 +2808,6 @@ msgstr "Delete environment '%(name)s'?"
 msgid "Орчин нэмээгүй байна."
 msgstr "No environments yet."
 
-#: templates/autotest/app_detail.html:101
-msgid "Орчин нэмэх"
-msgstr "Add environment"
-
 #: templates/autotest/app_detail.html:108
 msgid "Хуудсууд"
 msgstr "Pages"
@@ -2687,11 +2820,6 @@ msgstr "Delete page '%(name)s'?"
 #: templates/autotest/app_detail.html:123
 msgid "Хуудас нэмээгүй байна."
 msgstr "No pages yet."
-
-#: templates/autotest/app_detail.html:132
-#: templates/autotest/scenario_form.html:41
-msgid "Хуудас нэмэх"
-msgstr "Add page"
 
 #: templates/autotest/app_detail.html:139
 msgid "Тестийн хэрэглэгчид"
@@ -2730,10 +2858,6 @@ msgstr "Delete app '%(name)s' together with all its scenarios and results?"
 #: templates/autotest/app_detail.html:221
 msgid "Апп устгах"
 msgstr "Delete app"
-
-#: templates/autotest/app_form.html:3 templates/autotest/home.html:9
-msgid "Апп бүртгэх"
-msgstr "Register app"
 
 #: templates/autotest/app_form.html:5
 msgid "Шалгах апп бүртгэх"
@@ -2809,10 +2933,6 @@ msgstr "Upload file"
 #: templates/autotest/datafile_form.html:6
 msgid "Өгөгдлийн файл оруулах"
 msgstr "Upload data file"
-
-#: templates/autotest/datafile_form.html:20
-msgid "Оруулах"
-msgstr "Upload"
 
 #: templates/autotest/datafile_form.html:27
 msgid "Файлыг хэрхэн бэлдэх вэ"
@@ -2914,10 +3034,6 @@ msgstr ""
 "'%(name)s' is a production environment — the test may create real data and "
 "send notifications. Run it?"
 
-#: templates/autotest/run_detail.html:22
-msgid "Дахин ажиллуулах"
-msgstr "Run again"
-
 #: templates/autotest/run_detail.html:31
 msgid ""
 "Дараалалд удаж байна — тест ажиллуулагч (worker) асаагүй байж магадгүй. "
@@ -2925,10 +3041,6 @@ msgid ""
 msgstr ""
 "Queued for a while — the test worker may not be running. Admin: python "
 "manage.py run_autotest_worker"
-
-#: templates/autotest/run_detail.html:34
-msgid "Явц"
-msgstr "Progress"
 
 #: templates/autotest/run_detail.html:38
 msgid "Ажиллуулж чадаагүй"
@@ -2997,10 +3109,6 @@ msgstr "Delete scenario '%(name)s' together with all its results?"
 msgid "Сүүлийн ажиллуулалт"
 msgstr "Last run"
 
-#: templates/autotest/scenario_detail.html:50
-msgid "Тестийн алхмууд"
-msgstr "Test steps"
-
 #: templates/autotest/scenario_detail.html:51
 msgid "Түүх"
 msgstr "History"
@@ -3048,10 +3156,6 @@ msgstr "Edit scenario"
 msgid "Ямар хуудсыг шалгах вэ"
 msgstr "Which page to test"
 
-#: templates/autotest/scenario_form.html:49
-msgid "Хуудсыг шалгах"
-msgstr "Scan page"
-
 #: templates/autotest/scenario_form.html:61
 msgid "Тест өгөгдөл"
 msgstr "Test data"
@@ -3063,10 +3167,6 @@ msgstr "Generate automatically"
 #: templates/autotest/scenario_form.html:71
 msgid "санал болгож буй"
 msgstr "recommended"
-
-#: templates/autotest/scenario_form.html:73
-msgid "Тест өгөгдөл үүсгэх"
-msgstr "Generate test data"
 
 #: templates/autotest/scenario_form.html:76
 msgid "Зөв өгөгдөл"

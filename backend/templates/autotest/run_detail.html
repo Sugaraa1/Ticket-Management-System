@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n %}{% load autotest_guide %}
 {% block title %}#{{ run.pk }} {{ run.scenario.name }}{% endblock %}
 {% block content %}
 <nav class="small mb-2"><a href="{% url 'autotest:home' %}">{% trans "Автомат тест" %}</a> / <a href="{% url 'autotest:app_detail' run.scenario.app.pk %}">{{ run.scenario.app.name }}</a> / <a href="{% url 'autotest:scenario_detail' run.scenario.pk %}">{{ run.scenario.name }}</a> / #{{ run.pk }}</nav>
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
   <div>
-    <h2 class="mb-0">{{ run.scenario.name }} <span class="text-muted fs-5">#{{ run.pk }}</span> <span id="runStatusBadge" class="fs-6 align-middle">{% include "autotest/_run_status.html" %}</span></h2>
+    <h2 class="mb-0">{{ run.scenario.name }} <span class="text-muted fs-5">#{{ run.pk }}</span> <span id="runStatusBadge" class="fs-6 align-middle">{% include "autotest/_run_status.html" %}</span>{% include "autotest/_workflow_button.html" %}</h2>
     <div class="text-muted small">
       {% if run.scenario.is_api %}<i class="bi bi-braces"></i>{% endif %}
       <i class="bi {% if run.kind == 'access' %}bi-shield-lock{% else %}bi-file-earmark-spreadsheet{% endif %}"></i> {{ run.data_file_name }} ·
@@ -157,4 +157,5 @@
   {% endif %}
 })();
 </script>
+{% workflow_panel guide %}
 {% endblock %}

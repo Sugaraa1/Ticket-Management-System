@@ -26,7 +26,7 @@ from .forms import (
     ApiScenarioForm, AppLoginForm, DataFileForm, DataFileReplaceForm, EnvironmentForm, PageForm, RunForm, ScenarioForm, TestAccountForm,
     TestAppForm,
 )
-from . import workflow
+from . import guide, steps
 from .models import DataFile, Environment, Page, PageScan, RunResult, Scenario, TestAccount, TestApp, TestRun
 
 # Автомат тестийг зөвхөн QA, Admin ашиглана (Dev bug ticket-ээр үр дүнг, зургийг авна).
@@ -66,6 +66,7 @@ def home(request):
     ), "scenario__app")
     runs = TestRun.objects.select_related("scenario__app", "started_by")[:15]
     return render(request, "autotest/home.html", {
+        "guide": guide.overview(),
         "apps": apps,
         "runs": runs,
         "data_file_count": DataFile.objects.count(),
@@ -86,6 +87,7 @@ def app_create(request):
         messages.success(request, _("'%(name)s' апп бүртгэгдлээ. Одоо орчны хаягаа нэмнэ үү.") % {"name": app.name})
         return redirect("autotest:app_detail", pk=app.pk)
     return render(request, "autotest/app_form.html", {
+        "guide": guide.overview(current=("app",)),
         "form": form, "subcategories_by_category": _subcategories_by_category(),
     })
 
@@ -115,6 +117,7 @@ def _render_app_detail(request, app, form=None, env_form=None, page_form=None, a
     login_form = login_form or AppLoginForm(instance=app)
     return render(request, "autotest/app_detail.html", {
         "app": app,
+        "guide": guide.overview(app, current=("env", "page", "account", "scenario")),
         "form": form,
         "login_form": login_form,
         "env_form": env_form or EnvironmentForm(prefix="env"),
@@ -258,7 +261,10 @@ def _login_url(app, environment, account):
 @roles_required(*VIEW_ROLES)
 def datafile_list(request):
     files = DataFile.objects.select_related("category", "uploaded_by").annotate(run_count=Count("runs"))
-    return render(request, "autotest/datafile_list.html", {"files": files, "can_edit": _can_edit(request.user)})
+    return render(request, "autotest/datafile_list.html", {
+        "files": files, "can_edit": _can_edit(request.user),
+        "guide": guide.datafile(current=("template", "fill", "upload")),
+    })
 
 
 @roles_required(*EDIT_ROLES)
@@ -274,7 +280,7 @@ def datafile_create(request):
             % {"name": data_file.name, "rows": data_file.row_count, "cols": len(data_file.columns)},
         )
         return redirect("autotest:datafile_detail", pk=data_file.pk)
-    return render(request, "autotest/datafile_form.html", {"form": form})
+    return render(request, "autotest/datafile_form.html", {"form": form, "guide": guide.datafile(current=("upload",))})
 
 
 @roles_required(*VIEW_ROLES)
@@ -294,6 +300,7 @@ def datafile_detail(request, pk):
     compatible = [(s, s.missing_columns(data_file)) for s in scenarios]
     return render(request, "autotest/datafile_detail.html", {
         "data_file": data_file,
+        "guide": guide.datafile(data_file, current=("edit", "use")),
         "preview": preview,
         "preview_error": preview_error,
         "compatible": compatible,
@@ -493,8 +500,10 @@ def _render_scenario_form(request, app, form, scenario=None):
 
 def _scenario_form_context(app, form, scenario=None):
     data_files = DataFile.objects.filter(category=app.category)
+    page = form.instance.page if form.instance.page_id else None
     return {
         "app": app,
+        "guide": guide.api_scenario_form(app) if isinstance(form, ApiScenarioForm) else guide.scenario_form(app, page),
         "form": form,
         "scenario": scenario,
         "environments": app.environments.all(),
@@ -538,10 +547,10 @@ def scenario_edit(request, pk):
 
 
 @roles_required(*VIEW_ROLES)
-def scenario_workflow(request, pk):
+def scenario_steps(request, pk):
     scenario = get_object_or_404(Scenario.objects.select_related("app", "page", "account"), pk=pk)
     return render(request, "autotest/_test_steps.html", {
-        "scenario": scenario, **workflow.context(scenario, request.GET.get("file"), request.GET.get("row")),
+        "scenario": scenario, **steps.context(scenario, request.GET.get("file"), request.GET.get("row")),
     })
 
 
@@ -560,6 +569,7 @@ def scenario_detail(request, pk):
     ]
     return render(request, "autotest/scenario_detail.html", {
         "scenario": scenario,
+        "guide": guide.scenario_detail(scenario, last_data_run),
         "run_form": RunForm(scenario=scenario, initial=initial),
         "last_run": last_run,
         "runs": runs,
@@ -568,7 +578,7 @@ def scenario_detail(request, pk):
         "environments": scenario.app.environments.all(),
         "access_environment": last_run.environment_id if last_run else None,
         "production_envs": {e.pk: e.name for e in scenario.app.environments.filter(is_production=True)},
-        **workflow.context(scenario, last_data_run.data_file_id if last_data_run else None),
+        **steps.context(scenario, last_data_run.data_file_id if last_data_run else None),
         "can_edit": _can_edit(request.user),
     })
 
@@ -780,6 +790,7 @@ def run_detail(request, pk):
     results, show = _run_results(request, run)
     return render(request, "autotest/run_detail.html", {
         "run": run,
+        "guide": guide.run_detail(run),
         "results": results,
         "show": show,
         "can_edit": _can_edit(request.user),

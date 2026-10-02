@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n %}{% load autotest_guide %}
 {% block title %}{% trans "Файл оруулах" %}{% endblock %}
 {% block content %}
 <nav class="small mb-2"><a href="{% url 'autotest:home' %}">{% trans "Автомат тест" %}</a> / <a href="{% url 'autotest:datafile_list' %}">{% trans "Өгөгдлийн файлууд" %}</a></nav>
-<h2 class="mb-3">{% trans "Өгөгдлийн файл оруулах" %}</h2>
+<h2 class="mb-3">{% trans "Өгөгдлийн файл оруулах" %}{% include "autotest/_workflow_button.html" %}</h2>
 <div class="row g-3">
   <div class="col-lg-6">
     <div class="card"><div class="card-body">
@@ -41,4 +41,5 @@
     </div></div>
   </div>
 </div>
+{% workflow_panel guide %}
 {% endblock %}

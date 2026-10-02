@@ -712,3 +712,10 @@ h1, h2, h3, h4, h5, .tms-page-title, .tms-toolbar-title { color: var(--navy); fo
 .tms-flow-step.is-error .tms-flow-icon::after { background: var(--status-rejected-fg); }
 .tms-flow-step.is-manual .tms-flow-icon { background: var(--status-new-bg); color: var(--status-new-fg); border-color: var(--status-new-fg); }
 .tms-flow-step.is-manual .tms-flow-icon::after { background: var(--status-new-fg); }
+.tms-guide .tms-flow-step.is-current .tms-flow-icon { background: var(--primary); color: #fff; }
+.tms-guide .tms-flow-step.is-current .tms-flow-body { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.tms-guide .tms-flow-step.is-optional .tms-flow-body, .tms-guide .tms-flow-step.is-optional .tms-flow-icon { border-style: dashed; }
+.tms-guide .tms-flow-value { word-break: normal; overflow-wrap: anywhere; }
+.tms-guide .tms-chip { display: inline-block; margin: .15rem .25rem 0 0; padding: .05rem .45rem; border-radius: 1rem; font-size: .75rem; border: 1px solid var(--border); background: var(--bg); }
+.tms-guide .tms-chip.ok { background: var(--status-closed-bg); color: var(--status-closed-fg); border-color: transparent; }
+.tms-guide .tms-chip.bad { background: var(--status-rejected-bg); color: var(--status-rejected-fg); border-color: transparent; }

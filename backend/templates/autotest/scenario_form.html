@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n %}{% load autotest_guide %}
 {% block title %}{% if scenario %}{{ scenario.name }} — {% trans "Засах" %}{% else %}{% trans "Шинэ сценари" %}{% endif %}{% endblock %}
 {% block content %}
 <nav class="small mb-2"><a href="{% url 'autotest:home' %}">{% trans "Автомат тест" %}</a> / <a href="{% url 'autotest:app_detail' app.pk %}">{{ app.name }}</a>{% if scenario %} / <a href="{% url 'autotest:scenario_detail' scenario.pk %}">{{ scenario.name }}</a>{% endif %}</nav>
-<h2 class="mb-3">{% if scenario %}{% trans "Сценари засах" %}{% else %}{% trans "Шинэ сценари" %}{% endif %}</h2>
+<h2 class="mb-3">{% if scenario %}{% trans "Сценари засах" %}{% else %}{% trans "Шинэ сценари" %}{% endif %}{% include "autotest/_workflow_button.html" %}</h2>
 
 {% if form.non_field_errors or form.fields_json.errors %}
 <div class="alert alert-danger">{{ form.non_field_errors }}{{ form.fields_json.errors }}</div>
@@ -395,6 +395,7 @@
           submitSel.value = buttons[0].selector; submitLabel.value = buttons[0].label;
         }
         renderFields(); renderButtons();
+        document.dispatchEvent(new CustomEvent("autotest:scan", {detail: data}));
         setStatus(status, (data.error || ("✓ " + fields.length + " " + T.found)) + (data.title ? " — " + data.title : ""),
                   data.error ? "warning" : "success");
       });
@@ -567,4 +568,5 @@
   renderFields(); renderButtons();
 })();
 </script>
+{% workflow_panel guide %}
 {% endblock %}

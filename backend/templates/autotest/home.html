@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n %}{% load autotest_guide %}
 {% block title %}{% trans "Автомат тест" %}{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-  <h2 class="mb-0">{% trans "Автомат тест" %}</h2>
+  <h2 class="mb-0">{% trans "Автомат тест" %}{% include "autotest/_workflow_button.html" %}</h2>
   <div class="d-flex gap-2">
     <a href="{% url 'autotest:datafile_list' %}" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-spreadsheet"></i> {% trans "Өгөгдлийн файлууд" %} <span class="badge text-bg-light border">{{ data_file_count }}</span></a>
     {% if can_manage_apps %}<a href="{% url 'autotest:app_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> {% trans "Апп бүртгэх" %}</a>{% endif %}
@@ -41,4 +41,5 @@
   {% include "autotest/_runs_table.html" with show_scenario=True %}
 </div>
 {% include "autotest/_clickable_rows.html" %}
+{% workflow_panel guide %}
 {% endblock %}

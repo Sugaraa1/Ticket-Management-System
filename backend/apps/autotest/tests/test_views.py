@@ -398,7 +398,7 @@ class OverviewUxTests(TempMediaMixin, TestCase):
         self.assertContains(response, 'id="tab-steps"')
 
 
-class WorkflowTests(TempMediaMixin, TestCase):
+class TestStepsTests(TempMediaMixin, TestCase):
     def setUp(self):
         self.app, self.env, self.scenario, self.data_file = make_setup(rows=[
             ["Тайлбар", "email", "password", "хүлээгдэх"],
@@ -416,7 +416,7 @@ class WorkflowTests(TempMediaMixin, TestCase):
         self.assertEqual(response.context["wf_steps"][2]["items"][0]["value"], "***")  # нууц үг харагдахгүй
         self.assertEqual(response.context["wf_steps"][-1]["verdict"], "success")
 
-        response = self.client.get(reverse("autotest:scenario_workflow", args=[self.scenario.pk]),
+        response = self.client.get(reverse("autotest:scenario_steps", args=[self.scenario.pk]),
                                    {"file": self.data_file.pk, "row": 3})
         self.assertContains(response, "bad")
         self.assertContains(response, "Имэйл буруу")
@@ -428,6 +428,27 @@ class WorkflowTests(TempMediaMixin, TestCase):
         response = self.client.get(reverse("autotest:scenario_detail", args=[self.scenario.pk]))
         self.assertIsNone(response.context["wf_steps"][1]["items"][0]["value"])
         self.assertEqual(response.context["wf_steps"][1]["items"][0]["column"], "email")
+
+
+class WorkflowPanelTests(TempMediaMixin, TestCase):
+    def test_every_autotest_page_has_a_workflow_built_from_real_data(self):
+        app, env, scenario, data_file = make_setup()
+        self.client.force_login(make_user("qa", ROLE_QA))
+        urls = [
+            reverse("autotest:home"), reverse("autotest:app_detail", args=[app.pk]),
+            reverse("autotest:scenario_create", args=[app.pk]), reverse("autotest:scenario_create", args=[app.pk]) + "?kind=api",
+            reverse("autotest:scenario_detail", args=[scenario.pk]), reverse("autotest:datafile_list"),
+            reverse("autotest:datafile_detail", args=[data_file.pk]),
+        ]
+        for url in urls:
+            response = self.client.get(url)
+            self.assertContains(response, 'id="workflowPanel"', msg_prefix=url)
+            self.assertContains(response, 'data-bs-target="#workflowPanel"', msg_prefix=url)
+        response = self.client.get(reverse("autotest:app_detail", args=[app.pk]))
+        self.assertContains(response, env.base_url)
+        labels = [s["label"] for s in self.client.get(
+            reverse("autotest:scenario_detail", args=[scenario.pk])).context["guide"]["steps"]]
+        self.assertIn("Тестийн алхмууд", labels)
 
 
 class EnvironmentCreateTests(TempMediaMixin, TestCase):
