@@ -88,6 +88,7 @@ class Environment(models.Model):
         _("Үндсэн хаяг"), max_length=200, validators=[validate_base_url],
         help_text=_("Жишээ: https://staging.shop.mn"),
     )
+    is_production = models.BooleanField(_("Production"), default=False)
 
     class Meta:
         ordering = ["name"]

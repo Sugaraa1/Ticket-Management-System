@@ -73,6 +73,12 @@
           <span class="badge text-bg-light border">{{ env.name }}</span>
           <span class="small font-monospace text-truncate flex-grow-1">{{ env.base_url }}</span>
           {% if can_manage %}
+          <form method="post" action="{% url 'autotest:env_toggle_production' app.pk env.pk %}">
+            {% csrf_token %}
+            <button class="badge border {% if env.is_production %}text-bg-danger border-danger{% else %}bg-transparent text-body-tertiary{% endif %}" aria-pressed="{{ env.is_production|yesno:'true,false' }}">Production</button>
+          </form>
+          {% elif env.is_production %}<span class="badge text-bg-danger">Production</span>{% endif %}
+          {% if can_manage %}
           <form method="post" action="{% url 'autotest:env_delete' app.pk env.pk %}" data-confirm-danger
                 data-confirm="{% blocktrans with name=env.name %}'{{ name }}' орчныг устгах уу?{% endblocktrans %}">
             {% csrf_token %}
@@ -90,6 +96,7 @@
           {% csrf_token %}
           <div class="col-4">{{ env_form.name }}{% for e in env_form.name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
           <div class="col-8">{{ env_form.base_url }}{% for e in env_form.base_url.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+          <div class="col-12 form-check ms-1">{{ env_form.is_production }} <label class="form-check-label small" for="{{ env_form.is_production.id_for_label }}">Production</label></div>
           <div class="col-12"><button class="btn btn-outline-primary btn-sm">+ {% trans "Орчин нэмэх" %}</button></div>
         </form>
       </div>

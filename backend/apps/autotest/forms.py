@@ -75,10 +75,11 @@ class TestAppForm(forms.ModelForm):
 class EnvironmentForm(forms.ModelForm):
     class Meta:
         model = Environment
-        fields = ["name", "base_url"]
+        fields = ["name", "base_url", "is_production"]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "staging"}),
             "base_url": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://staging.shop.mn"}),
+            "is_production": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
 
     def __init__(self, *args, app=None, **kwargs):

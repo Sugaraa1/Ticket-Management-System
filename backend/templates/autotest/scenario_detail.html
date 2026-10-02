@@ -52,7 +52,7 @@
       <div class="card-header"><i class="bi bi-play-circle"></i> {% trans "Ажиллуулах" %}</div>
       <div class="card-body">
         {% if run_form.fields.data_file.queryset.exists and run_form.fields.environment.queryset.exists %}
-        <form method="post" action="{% url 'autotest:run_create' scenario.pk %}">
+        <form method="post" action="{% url 'autotest:run_create' scenario.pk %}" data-prod-guard>
           {% csrf_token %}
           <div class="mb-3">
             <label class="form-label" for="{{ run_form.data_file.id_for_label }}">{{ run_form.data_file.label }}</label>{{ run_form.data_file }}
@@ -149,7 +149,7 @@
     <i class="bi bi-shield-lock"></i> {% trans "Эрх шалгах" %}
     <i class="bi bi-chevron-down ms-auto small"></i>
   </button>
-  <form method="post" action="{% url 'autotest:access_run_create' scenario.pk %}" id="accessCheck" class="collapse{% if scenario.access_rules %} show{% endif %}">
+  <form method="post" action="{% url 'autotest:access_run_create' scenario.pk %}" id="accessCheck" class="collapse{% if scenario.access_rules %} show{% endif %}" data-prod-guard>
     {% csrf_token %}
     <div class="table-responsive">
       <table class="table mb-0 align-middle">
@@ -182,4 +182,22 @@
   {% include "autotest/_runs_table.html" %}
 </div>
 {% include "autotest/_clickable_rows.html" %}
+{{ production_envs|json_script:"production-envs" }}
+<script>
+// Production орчин сонгосон бол ажиллуулахаас өмнө анхааруулна.
+(function () {
+  var production = JSON.parse(document.getElementById("production-envs").textContent);
+  var message = "{% filter escapejs %}{% blocktrans with name="__NAME__" %}'{{ name }}' бол production орчин — тест жинхэнэ өгөгдөл үүсгэж, мэдэгдэл илгээж болно. Ажиллуулах уу?{% endblocktrans %}{% endfilter %}";
+  document.querySelectorAll("form[data-prod-guard]").forEach(function (form) {
+    form.addEventListener("submit", function (e) {
+      var name = production[form.elements.environment && form.elements.environment.value];
+      if (!name || form.dataset.confirmed) return;
+      e.preventDefault();
+      tmsConfirm(message.replace("__NAME__", name)).then(function (yes) {
+        if (yes) { form.dataset.confirmed = "1"; form.submit(); }
+      });
+    });
+  });
+})();
+</script>
 {% endblock %}

@@ -19,7 +19,7 @@
       {% if run.is_active %}
       <form method="post" action="{% url 'autotest:run_cancel' run.pk %}">{% csrf_token %}<button class="btn btn-outline-danger"><i class="bi bi-stop-circle"></i> {% trans "Зогсоох" %}</button></form>
       {% else %}
-      <form method="post" action="{% url 'autotest:run_rerun' run.pk %}">{% csrf_token %}<button class="btn btn-outline-primary"><i class="bi bi-arrow-repeat"></i> {% trans "Дахин ажиллуулах" %}</button></form>
+      <form method="post" action="{% url 'autotest:run_rerun' run.pk %}"{% if run.environment.is_production %} data-confirm="{% blocktrans with name=run.environment.name %}'{{ name }}' бол production орчин — тест жинхэнэ өгөгдөл үүсгэж, мэдэгдэл илгээж болно. Ажиллуулах уу?{% endblocktrans %}"{% endif %}>{% csrf_token %}<button class="btn btn-outline-primary"><i class="bi bi-arrow-repeat"></i> {% trans "Дахин ажиллуулах" %}</button></form>
       {% endif %}
     {% endif %}
     {% url 'autotest:run_export' run.pk as export_url %}{% trans "Татах" as export_label %}

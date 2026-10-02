@@ -11,6 +11,7 @@ urlpatterns = [
     path("apps/<int:pk>/delete/", views.app_delete, name="app_delete"),
     path("apps/<int:pk>/environments/new/", views.env_create, name="env_create"),
     path("apps/<int:pk>/environments/<int:env_pk>/delete/", views.env_delete, name="env_delete"),
+    path("apps/<int:pk>/environments/<int:env_pk>/production/", views.env_toggle_production, name="env_toggle_production"),
     path("apps/<int:pk>/pages/new/", views.page_create, name="page_create"),
     path("apps/<int:pk>/pages/<int:page_pk>/delete/", views.page_delete, name="page_delete"),
     path("apps/<int:pk>/accounts/", views.account_save, name="account_save"),

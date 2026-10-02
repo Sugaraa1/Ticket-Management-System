@@ -163,6 +163,15 @@ def env_delete(request, pk, env_pk):
     return redirect("autotest:app_detail", pk=pk)
 
 
+@roles_required(*APP_ROLES)
+@require_POST
+def env_toggle_production(request, pk, env_pk):
+    env = get_object_or_404(Environment, pk=env_pk, app_id=pk)
+    env.is_production = not env.is_production
+    env.save(update_fields=["is_production"])
+    return redirect("autotest:app_detail", pk=pk)
+
+
 @roles_required(*EDIT_ROLES)
 @require_POST
 def page_create(request, pk):
@@ -533,6 +542,7 @@ def scenario_detail(request, pk):
         "access_rows": access_rows,
         "environments": scenario.app.environments.all(),
         "access_environment": last_run.environment_id if last_run else None,
+        "production_envs": {e.pk: e.name for e in scenario.app.environments.filter(is_production=True)},
         "can_edit": _can_edit(request.user),
     })
 

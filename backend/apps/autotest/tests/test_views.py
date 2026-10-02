@@ -412,6 +412,21 @@ class EnvironmentCreateTests(TempMediaMixin, TestCase):
         self.assertRedirects(response, reverse("autotest:app_detail", args=[app.pk]))
         self.assertEqual(app.environments.count(), 2)
 
+    def test_production_flag_warns_before_running(self):
+        app, env, scenario, _file = make_setup()
+        self.client.force_login(make_user("qa", ROLE_QA))
+        self.client.post(reverse("autotest:env_create", args=[app.pk]),
+                         {"env-name": "prod", "env-base_url": "https://shop.mn", "env-is_production": "on"})
+        prod = app.environments.get(name="prod")
+        self.assertTrue(prod.is_production)
+        self.client.post(reverse("autotest:env_toggle_production", args=[app.pk, env.pk]))
+        env.refresh_from_db()
+        self.assertTrue(env.is_production)
+
+        response = self.client.get(reverse("autotest:scenario_detail", args=[scenario.pk]))
+        self.assertEqual(response.context["production_envs"], {env.pk: env.name, prod.pk: "prod"})
+        self.assertContains(response, 'data-prod-guard')
+
 
 class TestAccountTests(TempMediaMixin, TestCase):
     def setUp(self):
