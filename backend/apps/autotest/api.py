@@ -37,6 +37,8 @@ TEMPLATE_RE = re.compile(r"\{\{\s*([^{}]+?)\s*\}\}")
 # Нэвтрэх хариунаас token хайх түлхүүрүүд (эхэлж таарсныг авна): JWT, DRF, OAuth ...
 TOKEN_KEYS = ("access_token", "accessToken", "access", "token", "jwt", "id_token", "key")
 SECRET_HINTS = ("password", "passwd", "pwd", "нууцүг", "token", "secret")
+# urllib-ийн анхдагч "Python-urllib/3.x"-ийг Cloudflare г.м. хамгаалалт bot гэж 403-аар хаадаг.
+USER_AGENT = "TMS-Autotest/1.0"
 STATUS_RE = re.compile(r"[1-5]\d\d")
 
 
@@ -165,6 +167,8 @@ class Client:
         names = {k.lower() for k in headers}
         if self.auth and "authorization" not in names:
             headers["Authorization"] = self.auth
+        if "user-agent" not in names:
+            headers["User-Agent"] = USER_AGENT
         for _attempt in range(MAX_REDIRECTS + 1):
             try:
                 check_url(url)
