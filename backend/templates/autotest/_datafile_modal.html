@@ -11,7 +11,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Хаах" %}"></button>
       </div>
       <div class="modal-body p-0">
-        <datalist id="dataFileOutcomes"><option value="амжилттай"><option value="алдаа"><option value="алдаа: "></datalist>
+        <datalist id="dataFileOutcomes"><option value="амжилттай"><option value="алдаа"><option value="алдаа: "><option value="200"><option value="201"><option value="400: "></datalist>
         <div class="table-responsive">
           <table class="table table-sm mb-0 small tms-preview-table" id="dataFileTable"><thead></thead><tbody></tbody></table>
         </div>
@@ -49,7 +49,7 @@ window.tmsDataFile = (function () {
   // (ж: "амжилтай") тест үр дүнг биш мессежийг шалгаад ойлгомжгүй FAIL өгдөг тул тодруулна.
   function checkOutcome(input) {
     var head = input.value.split(":")[0].trim().toLowerCase();
-    var bad = head !== "" && state.words.indexOf(head) === -1;
+    var bad = head !== "" && state.words.indexOf(head) === -1 && !/^[1-5]\d\d$/.test(head);  // API: 201, 400
     input.classList.toggle("is-invalid", bad);
     input.title = bad ? T.badOutcome : "";
   }

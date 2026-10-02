@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
   <div>
     <h2 class="mb-0">{{ scenario.name }}</h2>
-    <div class="text-muted small">{{ scenario.page.name }} <span class="font-monospace">{{ scenario.page.path|default:"/" }}</span></div>
+    <div class="text-muted small">{% if scenario.is_api %}<i class="bi bi-braces"></i> <span class="badge text-bg-light border font-monospace">{{ scenario.api_method }}</span> <span class="font-monospace">{{ scenario.api_path }}</span>{% else %}{{ scenario.page.name }} <span class="font-monospace">{{ scenario.page.path|default:"/" }}</span>{% endif %}</div>
   </div>
   {% if can_edit %}
   <div class="d-flex gap-2">
@@ -71,7 +71,7 @@
         <div class="text-center py-3">
           <i class="bi bi-file-earmark-spreadsheet fs-2 text-body-tertiary"></i>
           <p class="text-body-secondary small mt-2">{% trans "Өгөгдлийн файл алга." %}</p>
-          <a href="{% url 'autotest:scenario_edit' scenario.pk %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-magic"></i> {% trans "Өгөгдөл үүсгэх" %}</a>
+          {% if not scenario.is_api %}<a href="{% url 'autotest:scenario_edit' scenario.pk %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-magic"></i> {% trans "Өгөгдөл үүсгэх" %}</a>{% endif %}
           <a href="{% url 'autotest:datafile_create' %}" class="btn btn-link btn-sm">{% trans "Файл оруулах" %}</a>
         </div>
         {% endif %}
@@ -83,6 +83,28 @@
     <div class="card h-100">
       <div class="card-header"><i class="bi bi-list-ol"></i> {% trans "Тест юу хийх вэ" %}</div>
       <div class="card-body">
+        {% if scenario.is_api %}
+        <ol class="tms-scenario-steps mb-0">
+          {% if scenario.account %}
+          <li>
+            <div class="fw-medium">{% blocktrans with name=scenario.account.label user=scenario.account.username %}{{ name }} ({{ user }}) хэрэглэгчээр нэвтэрнэ{% endblocktrans %}</div>
+            <div class="small text-body-secondary"><span class="font-monospace">POST {{ scenario.app.api_login_path }}</span> → token / cookie</div>
+          </li>
+          {% endif %}
+          <li>
+            <div class="fw-medium">{% trans "Мөр бүрээр хүсэлт илгээнэ" %}</div>
+            <div class="small text-body-secondary"><span class="font-monospace">{{ scenario.api_method }}</span> {% trans "орчны хаяг" %} + <code>{{ scenario.api_path }}</code></div>
+            {% if scenario.api_headers %}<pre class="small bg-body-tertiary rounded p-2 mt-2 mb-0">{{ scenario.api_headers }}</pre>{% endif %}
+            {% if scenario.api_body %}<pre class="small bg-body-tertiary rounded p-2 mt-2 mb-0">{{ scenario.api_body }}</pre>{% endif %}
+          </li>
+          <li>
+            <div class="fw-medium">{% trans "Үр дүнг шалгана" %}</div>
+            <div class="small text-body-secondary">
+              {% if scenario.expected_column %}{% blocktrans with c=scenario.expected_column %}Status код / хүлээгдэх үр дүнг файлын «{{ c }}» баганаас авна.{% endblocktrans %}{% else %}{% trans "Хүлээгдэх үр дүнгийн багана заагаагүй — бүх мөр «Гараар шалгах» болно." %}{% endif %}
+            </div>
+          </li>
+        </ol>
+        {% else %}
         <ol class="tms-scenario-steps mb-0">
           <li>
             {% if scenario.account %}<div class="fw-medium">{% blocktrans with name=scenario.account.label user=scenario.account.username %}{{ name }} ({{ user }}) хэрэглэгчээр нэвтэрнэ{% endblocktrans %}</div>{% endif %}
@@ -114,12 +136,13 @@
             </div>
           </li>
         </ol>
+        {% endif %}
       </div>
     </div>
   </div>
 </div>
 
-{% if can_edit %}
+{% if can_edit and not scenario.is_api %}
 <div class="card mb-3">
   <button type="button" class="card-header btn text-start d-flex align-items-center gap-2 border-0 rounded-0{% if not scenario.access_rules %} collapsed{% endif %}"
           data-bs-toggle="collapse" data-bs-target="#accessCheck" aria-expanded="{% if scenario.access_rules %}true{% else %}false{% endif %}" aria-controls="accessCheck">

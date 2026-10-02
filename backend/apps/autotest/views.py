@@ -23,7 +23,7 @@ from apps.tickets.views import _modules_by_project, _subcategories_by_category
 from . import exports, generator
 from .datafiles import suggest_mapping
 from .forms import (
-    DataFileForm, DataFileReplaceForm, EnvironmentForm, PageForm, RunForm, ScenarioForm, TestAccountForm,
+    ApiScenarioForm, DataFileForm, DataFileReplaceForm, EnvironmentForm, PageForm, RunForm, ScenarioForm, TestAccountForm,
     TestAppForm,
 )
 from .models import DataFile, Environment, Page, PageScan, RunResult, Scenario, TestAccount, TestApp, TestRun
@@ -408,6 +408,16 @@ def template_download(request):
 
 # --- Сценари --------------------------------------------------------------
 
+def _scenario_form(app, kind, *args, **kwargs):
+    form_class = ApiScenarioForm if kind == Scenario.Kind.API else ScenarioForm
+    return form_class(*args, app=app, **kwargs)
+
+
+def _render_scenario_form(request, app, form, scenario=None):
+    template = "autotest/api_scenario_form.html" if isinstance(form, ApiScenarioForm) else "autotest/scenario_form.html"
+    return render(request, template, _scenario_form_context(app, form, scenario))
+
+
 def _scenario_form_context(app, form, scenario=None):
     data_files = DataFile.objects.filter(category=app.category)
     return {
@@ -428,10 +438,11 @@ def _scenario_form_context(app, form, scenario=None):
 @roles_required(*EDIT_ROLES)
 def scenario_create(request, pk):
     app = get_object_or_404(TestApp.objects.select_related("category"), pk=pk)
-    if not app.pages.exists():
+    kind = Scenario.Kind.API if request.GET.get("kind") == Scenario.Kind.API else Scenario.Kind.WEB
+    if kind == Scenario.Kind.WEB and not app.pages.exists():
         messages.error(request, _("Эхлээд апп-даа шалгах хуудсаа нэмнэ үү."))
         return redirect("autotest:app_detail", pk=pk)
-    form = ScenarioForm(request.POST or None, app=app)
+    form = _scenario_form(app, kind, request.POST or None)
     if request.method == "POST" and form.is_valid():
         scenario = form.save(commit=False)
         scenario.app = app
@@ -439,18 +450,18 @@ def scenario_create(request, pk):
         scenario.save()
         messages.success(request, _("'%(name)s' сценари хадгалагдлаа. Одоо ажиллуулж болно.") % {"name": scenario.name})
         return redirect("autotest:scenario_detail", pk=scenario.pk)
-    return render(request, "autotest/scenario_form.html", _scenario_form_context(app, form))
+    return _render_scenario_form(request, app, form)
 
 
 @roles_required(*EDIT_ROLES)
 def scenario_edit(request, pk):
     scenario = get_object_or_404(Scenario.objects.select_related("app__category"), pk=pk)
-    form = ScenarioForm(request.POST or None, instance=scenario, app=scenario.app)
+    form = _scenario_form(scenario.app, scenario.kind, request.POST or None, instance=scenario)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, _("'%(name)s' сценари шинэчлэгдлээ.") % {"name": scenario.name})
         return redirect("autotest:scenario_detail", pk=pk)
-    return render(request, "autotest/scenario_form.html", _scenario_form_context(scenario.app, form, scenario))
+    return _render_scenario_form(request, scenario.app, form, scenario)
 
 
 @roles_required(*VIEW_ROLES)
@@ -487,6 +498,8 @@ ACCESS_EXPECTS = ("open", "denied")
 def access_run_create(request, pk):
     """Сонгосон хэрэглэгч бүрээр хуудас нээлттэй/хаалттай эсэхийг шалгах ажиллуулалт."""
     scenario = get_object_or_404(Scenario.objects.select_related("app__login_page"), pk=pk)
+    if scenario.is_api:
+        raise Http404
     environment = scenario.app.environments.filter(pk=request.POST.get("environment") or None).first()
     if environment is None:
         messages.error(request, _("Орчноо сонгоно уу."))
@@ -645,16 +658,24 @@ def run_create(request, pk):
 
 def _queue_run(scenario, data_file, environment, user):
     account = scenario.account
+    if scenario.is_api:
+        target_url = environment.url_for(scenario.api_path)
+        if account and not scenario.app.api_login_path:
+            raise ValueError(_("Апп-ын мэдээлэлд API нэвтрэх замаа бичнэ үү."))
+        login_url = environment.url_for(scenario.app.api_login_path) if account else ""
+    else:
+        target_url = environment.url_for(scenario.page.path)
+        login_url = _login_url(scenario.app, environment, account)
     return TestRun.objects.create(
         scenario=scenario,
         data_file=data_file,
         environment=environment,
         data_file_name=data_file.name,
         environment_name=environment.name,
-        target_url=environment.url_for(scenario.page.path)[:600],
+        target_url=target_url[:600],
         account=account,
         account_label=account.label if account else "",
-        login_url=_login_url(scenario.app, environment, account),
+        login_url=login_url[:600],
         total=data_file.row_count,
         started_by=user,
     )
@@ -789,8 +810,10 @@ def _bug_description(run, results):
             "  " + _("Оролт: %(v)s") % {"v": inputs},
             "  " + _("Хүлээгдэж байсан: %(v)s") % {"v": expected or "—"},
             "  " + _("Бодит үр дүн: %(v)s") % {"v": actual},
-            "",
         ]
+        if result.response_detail:  # API: хөгжүүлэгч шууд давтаж ажиллуулах curl + хариу
+            lines += ["", result.response_detail[:4000]]
+        lines.append("")
     return "\n".join(lines).strip()
 
 

@@ -28,6 +28,7 @@
         <td><span class="verdict-pill verdict-{{ r.verdict }}">{% if r.verdict == "pass" %}✓{% elif r.verdict == "fail" %}✗{% elif r.verdict == "error" %}!{% else %}<i class="bi bi-eye"></i>{% endif %} {{ r.get_verdict_display }}</span></td>
         <td class="text-end small text-muted">{{ r.duration_ms }}</td>
         <td class="text-nowrap text-end">
+          {% if r.response_detail %}<button type="button" class="btn btn-sm tms-icon-btn js-response" data-caption="{{ r.row_number }}. {{ r.description }}" title="{% trans "Хүсэлт ба хариу" %}"><i class="bi bi-code-square"></i></button><template class="js-response-text">{{ r.response_detail }}</template>{% endif %}
           {% if r.screenshot %}<a href="{% url 'autotest:result_screenshot' r.pk %}" class="btn btn-sm tms-icon-btn js-screenshot" data-caption="{{ r.row_number }}. {{ r.description }}" title="{% trans "Дэлгэцийн зураг" %}"><i class="bi bi-image"></i></a>{% endif %}
           {% if r.ticket %}<a href="{% url 'tickets:ticket_detail' r.ticket.pk %}" class="badge text-bg-light border text-decoration-none" title="{{ r.ticket.title }}">{{ r.ticket.code }}</a>{% endif %}
         </td>

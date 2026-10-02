@@ -8,15 +8,22 @@
     <h2 class="mb-0">{{ app.name }}</h2>
     <div class="text-muted small">{{ app.subcategory|default:app.category }}{% if app.description %} · {{ app.description }}{% endif %}</div>
   </div>
-  {% if can_edit and environments and pages %}
-  <a href="{% url 'autotest:scenario_create' app.pk %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> {% trans "Шинэ сценари" %}</a>
+  {% if can_edit and environments %}
+  <div class="dropdown">
+    <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-plus-lg"></i> {% trans "Шинэ сценари" %}</button>
+    <ul class="dropdown-menu dropdown-menu-end">
+      <li>{% if pages %}<a class="dropdown-item" href="{% url 'autotest:scenario_create' app.pk %}"><i class="bi bi-window me-2"></i>{% trans "Веб форм" %}</a>
+          {% else %}<span class="dropdown-item disabled"><i class="bi bi-window me-2"></i>{% trans "Веб форм" %} <span class="small">· {% trans "хуудас нэмнэ үү" %}</span></span>{% endif %}</li>
+      <li><a class="dropdown-item" href="{% url 'autotest:scenario_create' app.pk %}?kind=api"><i class="bi bi-braces me-2"></i>{% trans "API" %}</a></li>
+    </ul>
+  </div>
   {% endif %}
 </div>
 
-{% if not environments or not pages %}
+{% if not environments %}
 <div class="alert alert-info d-flex align-items-center gap-2">
   <i class="bi bi-arrow-right-circle fs-5"></i>
-  <div>{% if not environments %}{% trans "Эхлээд орчны хаяг нэмнэ үү." %}{% else %}{% trans "Шалгах хуудсаа нэмнэ үү." %}{% endif %}</div>
+  <div>{% trans "Эхлээд орчны хаяг нэмнэ үү." %}</div>
 </div>
 {% endif %}
 
@@ -29,8 +36,8 @@
         <li class="list-group-item clickable-row tms-scenario-row" data-href="{% url 'autotest:scenario_detail' s.pk %}">
           <div class="d-flex align-items-start gap-3">
             <div class="flex-grow-1 min-w-0">
-              <a href="{% url 'autotest:scenario_detail' s.pk %}" class="fw-semibold text-body text-decoration-none">{{ s.name }}</a>
-              <div class="small text-body-secondary text-truncate">{{ s.page.name }} <span class="font-monospace">{{ s.page.path|default:"/" }}</span>{% if s.account %} · <i class="bi bi-person-badge"></i> {{ s.account.label }}{% endif %}</div>
+              <a href="{% url 'autotest:scenario_detail' s.pk %}" class="fw-semibold text-body text-decoration-none"><i class="bi {% if s.is_api %}bi-braces{% else %}bi-window{% endif %} text-body-tertiary me-1"></i>{{ s.name }}</a>
+              <div class="small text-body-secondary text-truncate">{% if s.is_api %}<span class="badge text-bg-light border font-monospace">{{ s.api_method }}</span> <span class="font-monospace">{{ s.api_path }}</span>{% else %}{{ s.page.name }} <span class="font-monospace">{{ s.page.path|default:"/" }}</span>{% endif %}{% if s.account %} · <i class="bi bi-person-badge"></i> {{ s.account.label }}{% endif %}</div>
               <div class="mt-2">{% include "autotest/_last_run.html" with run=s.last_run %}</div>
             </div>
             {% if can_edit %}
@@ -123,7 +130,7 @@
     <div class="card mb-3">
       <div class="card-header"><i class="bi bi-person-badge"></i> {% trans "Тестийн хэрэглэгчид" %}</div>
       <ul class="list-group list-group-flush">
-        {% if accounts and not app.login_page %}
+        {% if accounts and not app.login_page and not app.api_login_path %}
         <li class="list-group-item small text-danger"><i class="bi bi-exclamation-triangle"></i> {% trans "Апп-ын мэдээлэлд нэвтрэх хуудсаа сонгоно уу." %}</li>
         {% endif %}
         {% for account in accounts %}

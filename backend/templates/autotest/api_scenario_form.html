@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% if scenario %}{{ scenario.name }} — {% trans "Засах" %}{% else %}{% trans "Шинэ API сценари" %}{% endif %}{% endblock %}
+{% block content %}
+<nav class="small mb-2"><a href="{% url 'autotest:home' %}">{% trans "Автомат тест" %}</a> / <a href="{% url 'autotest:app_detail' app.pk %}">{{ app.name }}</a>{% if scenario %} / <a href="{% url 'autotest:scenario_detail' scenario.pk %}">{{ scenario.name }}</a>{% endif %}</nav>
+<h2 class="mb-3"><i class="bi bi-braces text-primary"></i> {% if scenario %}{% trans "API сценари засах" %}{% else %}{% trans "Шинэ API сценари" %}{% endif %}</h2>
+
+{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+<form method="post" id="apiScenarioForm">
+  {% csrf_token %}
+  <section class="card mb-3">
+    <div class="card-header d-flex align-items-center gap-2"><span class="tms-step-dot">1</span><span class="fw-semibold">{% trans "Хүсэлт" %}</span></div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-7">
+          <label class="form-label" for="{{ form.name.id_for_label }}">{% trans "Сценарийн нэр" %} *</label>
+          {{ form.name }}
+          {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-5">
+          <label class="form-label" for="{{ form.account.id_for_label }}">{% trans "Хэн болж шалгах" %}</label>
+          {{ form.account }}
+          {% if form.account.errors %}<div class="text-danger small">{{ form.account.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="{{ form.api_path.id_for_label }}">{% trans "Хаяг" %} *</label>
+          <div class="input-group">
+            <div style="max-width: 9rem">{{ form.api_method }}</div>
+            <span class="input-group-text font-monospace small text-body-secondary text-truncate" style="max-width: 40%" title="{% trans "Орчны хаяг" %}">{{ environments.0.base_url|default:"https://…" }}</span>
+            {{ form.api_path }}
+          </div>
+          {% if form.api_path.errors %}<div class="text-danger small">{{ form.api_path.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="{{ form.api_headers.id_for_label }}">{% trans "Header" %} <span class="text-body-secondary small">({% trans "заавал биш" %})</span></label>
+          {{ form.api_headers }}
+          {% if form.api_headers.errors %}<div class="text-danger small">{{ form.api_headers.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="{{ form.api_body.id_for_label }}">{% trans "Body (JSON)" %}</label>
+          {{ form.api_body }}
+          {% if form.api_body.errors %}<div class="text-danger small">{{ form.api_body.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <select id="columnsFile" class="form-select form-select-sm w-auto" aria-label="{% trans "Өгөгдлийн файл" %}">
+              <option value="">{% trans "— файлын баганууд —" %}</option>
+              {% for f in data_files %}<option value="{{ f.pk }}">{{ f.name }}</option>{% endfor %}
+            </select>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="previewFileBtn" title="{% trans "Файлыг харах / засах" %}" disabled><i class="bi bi-eye"></i></button>
+            <span id="columnChips" class="d-flex flex-wrap gap-1"></span>
+            <span class="vr mx-1"></span>
+            <span class="d-flex flex-wrap gap-1" id="placeholderChips">
+              <button type="button" class="btn btn-sm btn-light border font-monospace js-insert" data-name="random">{% templatetag openvariable %}random{% templatetag closevariable %}</button>
+              <button type="button" class="btn btn-sm btn-light border font-monospace js-insert" data-name="digits">{% templatetag openvariable %}digits{% templatetag closevariable %}</button>
+              <button type="button" class="btn btn-sm btn-light border font-monospace js-insert" data-name="run">{% templatetag openvariable %}run{% templatetag closevariable %}</button>
+            </span>
+          </div>
+          <div id="missingColumns" class="small text-danger mt-2"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card mb-3">
+    <div class="card-header d-flex align-items-center gap-2"><span class="tms-step-dot">2</span><span class="fw-semibold">{% trans "Хүлээгдэх үр дүн" %}</span></div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.expected_column.id_for_label }}">{{ form.expected_column.label }}</label>
+          {{ form.expected_column }}
+          <div class="form-text">{{ form.expected_column.help_text }}</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.expected_message_column.id_for_label }}">{{ form.expected_message_column.label }} <span class="text-body-secondary small">({% trans "заавал биш" %})</span></label>
+          {{ form.expected_message_column }}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <datalist id="column-options">{% for c in known_columns %}<option value="{{ c }}">{% endfor %}</datalist>
+  <div class="tms-wizard-actions">
+    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> {% trans "Хадгалах" %}</button>
+    <a href="{% if scenario %}{% url 'autotest:scenario_detail' scenario.pk %}{% else %}{% url 'autotest:app_detail' app.pk %}{% endif %}" class="btn btn-link">{% trans "Цуцлах" %}</a>
+  </div>
+</form>
+
+{% include "autotest/_datafile_modal.html" with can_edit=True %}
+{{ data_files_meta|json_script:"dataFilesMeta" }}
+<script>
+(function () {
+  var files = JSON.parse(document.getElementById("dataFilesMeta").textContent);
+  var select = document.getElementById("columnsFile");
+  var chips = document.getElementById("columnChips");
+  var preview = document.getElementById("previewFileBtn");
+  var missing = document.getElementById("missingColumns");
+  var targets = ["{{ form.api_path.auto_id }}", "{{ form.api_headers.auto_id }}", "{{ form.api_body.auto_id }}"]
+    .map(function (id) { return document.getElementById(id); });
+  var builtin = ["random", "timestamp", "row", "run", "digits"];
+  var lastFocused = targets[2];
+  var T = {missing: "{% trans 'Файлд алга' %}"};
+
+  targets.forEach(function (el) {
+    el.addEventListener("focus", function () { lastFocused = el; });
+    el.addEventListener("input", checkColumns);
+  });
+
+  // Сүүлд сонгосон талбарын курсорын байрлалд багана / placeholder-ийг оруулна.
+  function insert(name) {
+    var el = lastFocused, text = "{" + "{" + name + "}" + "}";
+    var start = el.selectionStart == null ? el.value.length : el.selectionStart;
+    var end = el.selectionEnd == null ? start : el.selectionEnd;
+    el.value = el.value.slice(0, start) + text + el.value.slice(end);
+    el.focus();
+    el.selectionStart = el.selectionEnd = start + text.length;
+    checkColumns();
+  }
+
+  function used() {
+    var names = [];
+    targets.forEach(function (el) {
+      (el.value.match(/\{\{\s*[^{}]+?\s*\}\}/g) || []).forEach(function (m) {
+        var name = m.slice(2, -2).trim();
+        if (builtin.indexOf(name) === -1 && names.indexOf(name) === -1) names.push(name);
+      });
+    });
+    return names;
+  }
+
+  function currentFile() {
+    return files.filter(function (f) { return String(f.id) === select.value; })[0];
+  }
+
+  function checkColumns() {
+    var file = currentFile();
+    var absent = file ? used().filter(function (n) { return file.columns.indexOf(n) === -1; }) : [];
+    missing.textContent = absent.length ? T.missing + ": " + absent.join(", ") : "";
+  }
+
+  function renderChips() {
+    var file = currentFile();
+    chips.innerHTML = "";
+    preview.disabled = !file;
+    if (file) file.columns.forEach(function (c) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn-sm btn-outline-primary js-insert";
+      btn.dataset.name = c;
+      btn.textContent = c;
+      chips.appendChild(btn);
+    });
+    checkColumns();
+  }
+
+  document.getElementById("apiScenarioForm").addEventListener("click", function (e) {
+    var btn = e.target.closest(".js-insert");
+    if (btn) insert(btn.dataset.name);
+  });
+  select.addEventListener("change", renderChips);
+  preview.addEventListener("click", function () { if (select.value) tmsDataFile.open(select.value, {}); });
+
+  // Загварт ашигласан баганууд хамгийн их таарах файлыг анхнаасаа сонгоно.
+  var names = used(), best = null, score = -1;
+  files.forEach(function (f) {
+    var s = names.filter(function (n) { return f.columns.indexOf(n) !== -1; }).length;
+    if (s > score) { best = f; score = s; }
+  });
+  if (best) { select.value = best.id; renderChips(); }
+})();
+</script>
+{% endblock %}

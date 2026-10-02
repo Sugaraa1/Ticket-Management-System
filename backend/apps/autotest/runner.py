@@ -371,6 +371,10 @@ def execute_run(run):
     if run.kind == TestRun.Kind.ACCESS:
         return _execute_access(run)
     scenario = run.scenario
+    if scenario.is_api:
+        from . import api
+
+        return api.execute_run(run)
     try:
         rows = _load_rows(run)
         credentials = _login_of(run)
@@ -811,6 +815,7 @@ def _save_result(run, line_number, row, result, secret_columns):
         final_url=result["final_url"][:1000],
         verdict=result["verdict"],
         duration_ms=result["duration_ms"],
+        response_detail=result.get("detail", ""),
     )
     if result["screenshot"]:
         item.screenshot.save(f"run{run.pk}_row{line_number}.png", ContentFile(result["screenshot"]), save=False)

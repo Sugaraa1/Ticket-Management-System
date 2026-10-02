@@ -7,6 +7,7 @@
   <div>
     <h2 class="mb-0">{{ run.scenario.name }} <span class="text-muted fs-5">#{{ run.pk }}</span> <span id="runStatusBadge" class="fs-6 align-middle">{% include "autotest/_run_status.html" %}</span></h2>
     <div class="text-muted small">
+      {% if run.scenario.is_api %}<i class="bi bi-braces"></i>{% endif %}
       <i class="bi {% if run.kind == 'access' %}bi-shield-lock{% else %}bi-file-earmark-spreadsheet{% endif %}"></i> {{ run.data_file_name }} ·
       <span class="badge text-bg-light border">{{ run.environment_name }}</span> <span class="font-monospace">{{ run.target_url }}</span> ·
       {% if run.account_label %}<i class="bi bi-person-badge"></i> {{ run.account_label }} ·{% endif %}
@@ -78,6 +79,19 @@
   </div>
 </div>
 
+<div class="modal fade" id="responseModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title" id="responseCaption"></h6>
+        <button type="button" class="btn btn-sm btn-link ms-auto" id="responseCopy"><i class="bi bi-clipboard"></i> {% trans "Хуулах" %}</button>
+        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="{% trans "Хаах" %}"></button>
+      </div>
+      <div class="modal-body"><pre class="small mb-0" id="responseText" style="white-space: pre-wrap"></pre></div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function () {
   var container = document.getElementById("resultsContainer");
@@ -94,6 +108,17 @@
       container.querySelectorAll(".js-select-result").forEach(function (c) { c.checked = e.target.checked; });
     }
     refreshButton();
+  });
+  // API: илгээсэн хүсэлт (curl) ба хариу.
+  container.addEventListener("click", function (e) {
+    var btn = e.target.closest(".js-response");
+    if (!btn) return;
+    document.getElementById("responseText").textContent = btn.nextElementSibling.content.textContent;
+    document.getElementById("responseCaption").textContent = btn.dataset.caption;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById("responseModal")).show();
+  });
+  document.getElementById("responseCopy").addEventListener("click", function () {
+    if (navigator.clipboard) navigator.clipboard.writeText(document.getElementById("responseText").textContent);
   });
   // Дэлгэцийн зургийг хуудсаа орхилгүйгээр цонхонд харуулна.
   container.addEventListener("click", function (e) {

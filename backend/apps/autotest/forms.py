@@ -17,15 +17,22 @@ FIELD_KINDS = {"text", "email", "password", "checkbox", "radio", "select"}
 class TestAppForm(forms.ModelForm):
     class Meta:
         model = TestApp
-        fields = ["name", "category", "subcategory", "login_page", "description"]
+        fields = [
+            "name", "category", "subcategory", "login_page", "api_login_path", "api_login_body", "api_token_prefix",
+            "description",
+        ]
         widgets = {
             "category": forms.Select(attrs={"class": "form-select"}),
             "subcategory": forms.Select(attrs={"class": "form-select"}),
             "login_page": forms.Select(attrs={"class": "form-select"}),
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": _("Жишээ: Дэлгүүрийн вэб")}),
             "description": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+            "api_login_path": forms.TextInput(attrs={"class": "form-control font-monospace", "placeholder": "/api/auth/login/"}),
+            "api_login_body": forms.Textarea(attrs={"class": "form-control font-monospace small", "rows": 2}),
+            "api_token_prefix": forms.TextInput(attrs={"class": "form-control font-monospace", "placeholder": "Bearer"}),
         }
         labels = {"category": _("Ангилал"), "subcategory": _("Дэд ангилал")}
+        help_texts = {"api_login_path": ""}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -34,7 +41,12 @@ class TestAppForm(forms.ModelForm):
         if self.instance.pk:  # шинэ апп-д хуудас хараахан байхгүй
             self.fields["login_page"].queryset = self.instance.pages.all()
         else:
-            del self.fields["login_page"]
+            for name in ("login_page", "api_login_path", "api_login_body", "api_token_prefix"):
+                del self.fields[name]
+
+    def clean_api_login_path(self):
+        path = clean_page_path(self.cleaned_data.get("api_login_path"))
+        return "/" + path if path and not path.startswith("/") else path
 
     def clean(self):
         cleaned = super().clean()
@@ -212,6 +224,7 @@ class ScenarioForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["page"].queryset = app.pages.all()
         self.fields["page"].empty_label = None
+        self.fields["page"].required = True
         self.fields["account"].queryset = app.accounts.all()
         self.fields["account"].empty_label = _("Нэвтрэхгүй")
         self.app = app
@@ -263,6 +276,70 @@ class ScenarioForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.fields = self.cleaned_data["fields_json"]
+        if commit:
+            instance.save()
+        return instance
+
+
+class ApiScenarioForm(forms.ModelForm):
+    api_method = forms.ChoiceField(
+        label=_("Method"), choices=[(m, m) for m in ("GET", "POST", "PUT", "PATCH", "DELETE")],
+        widget=forms.Select(attrs={"class": "form-select font-monospace"}),
+    )
+
+    class Meta:
+        model = Scenario
+        fields = [
+            "name", "account", "api_method", "api_path", "api_headers", "api_body",
+            "expected_column", "expected_message_column",
+        ]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": _("Жишээ: Ticket үүсгэх")}),
+            "account": forms.Select(attrs={"class": "form-select"}),
+            "api_path": forms.TextInput(attrs={"class": "form-control font-monospace", "placeholder": "/api/tickets/{{id}}"}),
+            "api_headers": forms.Textarea(attrs={"class": "form-control font-monospace small", "rows": 2,
+                                                 "placeholder": "X-API-Key: …"}),
+            "api_body": forms.Textarea(attrs={"class": "form-control font-monospace small", "rows": 8,
+                                              "placeholder": '{"email": "{{email}}", "age": {{age}}}'}),
+            "expected_column": forms.TextInput(attrs={"class": "form-control", "list": "column-options"}),
+            "expected_message_column": forms.TextInput(attrs={"class": "form-control", "list": "column-options"}),
+        }
+        help_texts = {
+            "expected_column": _("'201', '400: мессеж', 'амжилттай' эсвэл 'алдаа: мессеж' гэж бичсэн багана."),
+        }
+
+    def __init__(self, *args, app, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.app = app
+        self.fields["account"].queryset = app.accounts.all()
+        self.fields["account"].empty_label = _("Нэвтрэхгүй")
+        self.fields["api_path"].required = True
+
+    def clean_api_path(self):
+        path = clean_page_path(self.cleaned_data.get("api_path"))
+        return "/" + path if path and not path.startswith("/") else path
+
+    def clean(self):
+        from .api import check_body_template, parse_headers
+
+        cleaned = super().clean()
+        try:
+            headers = parse_headers(cleaned.get("api_headers"))
+        except ValueError as exc:
+            self.add_error("api_headers", str(exc))
+            headers = []
+        try:
+            check_body_template(cleaned.get("api_body") or "", headers)
+        except ValueError as exc:
+            self.add_error("api_body", str(exc))
+        if cleaned.get("account") and not self.app.api_login_path:
+            self.add_error("account", _("Эхлээд апп-ын мэдээлэлд API нэвтрэх замаа бичнэ үү."))
+        return cleaned
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.kind = Scenario.Kind.API
+        instance.page = None
         if commit:
             instance.save()
         return instance

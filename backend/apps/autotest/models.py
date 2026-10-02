@@ -6,7 +6,8 @@
             ├ Environment (dev/staging... base URL)
             ├ Page (нэр + зам: "Бүртгүүлэх" — /register); login_page — нэвтрэх хуудас
             ├ TestAccount (тестийн хэрэглэгч: "QA" — qa_test / шифрлэгдсэн нууц үг)
-            └ Scenario (хуудас, талбар ↔ баганын холбоос, амжилтын нөхцөл)
+            └ Scenario — вэб: хуудас, талбар ↔ баганын холбоос, амжилтын нөхцөл;
+                         API: method + зам, header, JSON body загвар ({{багана}})
     DataFile (ангилалд харьяалагдах, олон сценарид дахин ашиглагдана)
     TestRun (сценари + файл + орчин) └ RunResult (мөр бүрийн үр дүн)
     PageScan — сценари тохируулахад хуудасны талбаруудыг олох түр ажил
@@ -27,6 +28,9 @@ from apps.core.models import TimeStampedModel
 from apps.tickets.storage import private_storage
 
 
+DEFAULT_API_LOGIN_BODY = '{"username": "{{username}}", "password": "{{password}}"}'
+
+
 class TestApp(TimeStampedModel):
     category = models.ForeignKey(Category, related_name="test_apps", on_delete=models.PROTECT)
     subcategory = models.ForeignKey(
@@ -38,6 +42,13 @@ class TestApp(TimeStampedModel):
         "Page", related_name="+", on_delete=models.SET_NULL, null=True, blank=True,
         verbose_name=_("Нэвтрэх хуудас"),
     )
+    # API сценари тестийн хэрэглэгчээр ажиллахад: энэ зам руу body-г POST хийж, хариуны
+    # token-ийг (эсвэл cookie-г) дараагийн хүсэлтүүдэд ашиглана.
+    api_login_path = models.CharField(
+        _("API нэвтрэх зам"), max_length=500, blank=True, help_text=_("Жишээ: /api/auth/login/"),
+    )
+    api_login_body = models.TextField(_("API нэвтрэх body"), blank=True, default=DEFAULT_API_LOGIN_BODY)
+    api_token_prefix = models.CharField(_("Token-ий угтвар"), max_length=30, blank=True, default="Bearer")
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
@@ -163,15 +174,27 @@ class DataFile(TimeStampedModel):
 
 
 class Scenario(TimeStampedModel):
+    class Kind(models.TextChoices):
+        WEB = "web", _("Веб форм")
+        API = "api", _("API")
+
     class SuccessMode(models.TextChoices):
         AUTO = "auto", _("Автоматаар (хуудас шилжсэн, алдааны мессеж гараагүй)")
         URL_CONTAINS = "url_contains", _("Хаяг (URL) нь дараах текстийг агуулсан")
         TEXT_VISIBLE = "text_visible", _("Хуудсанд дараах текст гарсан")
 
     app = models.ForeignKey(TestApp, related_name="scenarios", on_delete=models.CASCADE)
+    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.WEB)
     name = models.CharField(_("Нэр"), max_length=150, help_text=_("Жишээ: Бүртгүүлэх, Нэвтрэх"))
-    # RESTRICT: ашиглагдаж буй хуудсыг дангаар нь устгахгүй, харин апп-ын хамт устна.
-    page = models.ForeignKey(Page, related_name="scenarios", on_delete=models.RESTRICT, verbose_name=_("Хуудас"))
+    # RESTRICT: ашиглагдаж буй хуудсыг дангаар нь устгахгүй, харин апп-ын хамт устна. API-д хоосон.
+    page = models.ForeignKey(
+        Page, related_name="scenarios", on_delete=models.RESTRICT, null=True, blank=True, verbose_name=_("Хуудас")
+    )
+    # API: зам, header ("Нэр: утга" мөр бүрт), body-д {{багана}} болон {{random}} г.м. орно.
+    api_method = models.CharField(_("Method"), max_length=10, default="POST")
+    api_path = models.CharField(_("Зам"), max_length=500, blank=True)
+    api_headers = models.TextField(_("Header"), blank=True)
+    api_body = models.TextField(_("Body"), blank=True)
     # Хоосон бол нэвтрэхгүйгээр шалгана. Ашиглагдаж буй хэрэглэгчийг устгахгүй (RESTRICT).
     account = models.ForeignKey(
         TestAccount, related_name="scenarios", on_delete=models.RESTRICT, null=True, blank=True,
@@ -208,9 +231,18 @@ class Scenario(TimeStampedModel):
     def __str__(self):
         return f"{self.app.name} · {self.name}"
 
+    @property
+    def is_api(self):
+        return self.kind == self.Kind.API
+
     def required_columns(self):
-        """Файлд заавал байх ёстой баганууд (талбарт холбосон + хүлээгдэх)."""
-        cols = [f["value"] for f in self.fields if f.get("source") == "column" and f.get("value")]
+        """Файлд заавал байх ёстой баганууд (талбарт / загварт холбосон + хүлээгдэх)."""
+        if self.is_api:
+            from .api import template_columns
+
+            cols = template_columns(self.api_path, self.api_headers, self.api_body)
+        else:
+            cols = [f["value"] for f in self.fields if f.get("source") == "column" and f.get("value")]
         cols += [c for c in (self.expected_column, self.expected_message_column) if c]
         return list(dict.fromkeys(cols))
 
@@ -220,6 +252,10 @@ class Scenario(TimeStampedModel):
 
     def secret_columns(self):
         """Нууц үгийн талбарт холбосон баганууд — үр дүнд *** гэж харагдана."""
+        if self.is_api:
+            from .api import is_secret_column
+
+            return {c for c in self.required_columns() if is_secret_column(c)}
         return {
             f["value"] for f in self.fields
             if f.get("source") == "column" and f.get("kind") == "password"
@@ -315,6 +351,8 @@ class RunResult(models.Model):
     verdict = models.CharField(max_length=10, choices=Verdict.choices)
     duration_ms = models.PositiveIntegerField(default=0)
     screenshot = models.FileField(upload_to="autotest/shots/%Y/%m/", storage=private_storage, blank=True)
+    # API: илгээсэн хүсэлт (curl) ба хариу — нууц утгууд *** болсон.
+    response_detail = models.TextField(blank=True)
     ticket = models.ForeignKey(
         "tickets.Ticket", related_name="autotest_results", on_delete=models.SET_NULL, null=True, blank=True
     )
