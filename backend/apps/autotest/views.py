@@ -169,6 +169,10 @@ def env_toggle_production(request, pk, env_pk):
     env = get_object_or_404(Environment, pk=env_pk, app_id=pk)
     env.is_production = not env.is_production
     env.save(update_fields=["is_production"])
+    if env.is_production:
+        messages.warning(request, _("'%(name)s' production орчин боллоо — энд тест ажиллуулах бүрт баталгаажуулалт асууна.") % {"name": env.name})
+    else:
+        messages.success(request, _("'%(name)s' production биш боллоо.") % {"name": env.name})
     return redirect("autotest:app_detail", pk=pk)
 
 

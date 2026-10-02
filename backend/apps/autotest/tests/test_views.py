@@ -419,7 +419,8 @@ class EnvironmentCreateTests(TempMediaMixin, TestCase):
                          {"env-name": "prod", "env-base_url": "https://shop.mn", "env-is_production": "on"})
         prod = app.environments.get(name="prod")
         self.assertTrue(prod.is_production)
-        self.client.post(reverse("autotest:env_toggle_production", args=[app.pk, env.pk]))
+        response = self.client.post(reverse("autotest:env_toggle_production", args=[app.pk, env.pk]), follow=True)
+        self.assertContains(response, "production орчин боллоо")
         env.refresh_from_db()
         self.assertTrue(env.is_production)
 
