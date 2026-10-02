@@ -81,6 +81,7 @@ services:
       DEBUG: ${DEBUG:-True}
       DATABASE_URL: postgres://${POSTGRES_USER:-ticket_user}:${POSTGRES_PASSWORD:-ticket_pass}@db:5432/${POSTGRES_DB:-ticket_db}
       AUTOTEST_ALLOW_PRIVATE_HOSTS: ${AUTOTEST_ALLOW_PRIVATE_HOSTS:-False}
+      AUTOTEST_NAV_TIMEOUT_MS: ${AUTOTEST_NAV_TIMEOUT_MS:-30000}
     # Chromium-д хуваалцах санах ой хангалттай байх ёстой.
     shm_size: "1gb"
     depends_on:

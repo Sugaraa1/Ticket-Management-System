@@ -20,7 +20,7 @@ from .datafiles import (
 from .models import PageScan, RunResult, TestRun
 from .safety import UnsafeURL, check_url
 
-NAV_TIMEOUT_MS = 30_000
+NAV_TIMEOUT_MS = getattr(settings, "AUTOTEST_NAV_TIMEOUT_MS", 30_000)
 ACTION_TIMEOUT_MS = 8_000
 SETTLE_TIMEOUT_MS = 8_000
 DEPENDENT_TIMEOUT_MS = 5_000  # дэд ангилал г.м. өөр талбараас хамаарч идэвхжихийг хүлээх
@@ -30,6 +30,8 @@ DEFAULT_ERROR_SELECTORS = ", ".join([
     ".form-error", ".invalid-feedback", ".alert-danger", ".alert-error", ".text-danger",
     ".has-error .help-block", "[role=alert]", "[aria-live=assertive]", ".toast-error",
     ".ant-form-item-explain-error", ".Mui-error", ".v-messages__message", ".parsley-errors-list",
+    # Класс биш id / test-атрибутаар нэрлэсэн алдаа (ж: <div id="error">, data-test="error").
+    "#error", "#error-message", "#errorMessage", "#error_message", "[data-test=error]", "[data-testid*=error i]",
 ])
 SUCCESS_SELECTORS = ", ".join([
     ".alert-success", ".success", ".success-message", ".toast-success", "[role=status]",
@@ -601,8 +603,7 @@ def run_row(browser, scenario, url, row, line_number, stamp=None, storage_state=
         # Browser-ийн өөрийн шалгалтыг (required, type=email) илгээхээс ӨМНӨ уншина — илгээсний
         # дараа сервер талбарыг хоосолж буцаавал (нууц үг г.м.) түүнийг алдаа гэж андуурахгүй.
         invalid = page.evaluate(INVALID_JS, scenario.submit_selector or DEFAULT_SUBMIT_SELECTOR)
-        _submit(page, scenario)
-        flashes = _await_outcome(page)
+        flashes = _await_outcome(page, lambda: _submit(page, scenario))
         if login_url and _same_page(page.url, login_url) and not _same_page(url, login_url):
             # "Хуудас шилжсэн = амжилттай" гэж андуурахгүй. Илгээлт хийгдсэн эсэх нь тодорхойгүй тул
             # (нууц үг солиод гаргасан ч байж болно) давхар илгээхгүйн тулд давтахгүй.
@@ -736,7 +737,9 @@ def _submit(page, scenario):
 
     selector = scenario.submit_selector or DEFAULT_SUBMIT_SELECTOR
     try:
-        page.locator(selector).first.click()
+        # Эхэлсэн шилжилтийг _await_outcome бүтэн хугацаагаар хүлээнэ — click өөрөө (8 сек) хүлээвэл
+        # удаан сервер дээр товч дарагдсан ч "дарж чадсангүй" гэж унана.
+        page.locator(selector).first.click(no_wait_after=True)
     except PlaywrightError as exc:
         label = scenario.submit_label or _("илгээх")
         raise RowError(_("'%(label)s' товчийг дарж чадсангүй: %(err)s") % {"label": label, "err": _short_error(exc)})
@@ -779,18 +782,22 @@ FLASH_SELECTORS = {
 }
 
 
-def _await_outcome(page):
+def _await_outcome(page, submit):
     """
+    submit()-ийг хүсэлтийн ажиглалт эхэлсний дараа дуудна — эс бөгөөс товч дарахад эхэлсэн илгээлт
+    (удаан сервер) тоологдохгүй, шинэ хуудас ирэхээс өмнө хуучныг уншчихна.
     Илгээсний дараа хариуг хүлээнэ: явагдаж буй хүсэлтүүдийг өөрөө тоолно (networkidle нь хуудас
     ачаалахад нэг л удаа болдог тул AJAX илгээлтийг хүлээдэггүй). Хүсэлт дуусаад хагас секунд
     чимээгүй болох, эсвэл мессеж гараад хагас секунд болоход зогсоно. Энэ хооронд 200ms тутам
     toast/alert-ийг цуглуулна — дараа нь алга болсон ч тооцогдоно. [(kind, text)] буцаана.
     """
-    pending, last_activity = set(), [time.monotonic()]
+    pending, last_activity, navigated = set(), [time.monotonic()], [False]
 
     def request_started(request):
         pending.add(request)
         last_activity[0] = time.monotonic()
+        if request.is_navigation_request():
+            navigated[0] = True
 
     def request_ended(request):
         pending.discard(request)
@@ -800,10 +807,17 @@ def _await_outcome(page):
     for event, handler in listeners:
         page.on(event, handler)
     seen, first_seen = [], None
-    started = time.monotonic()
     try:
+        submit()
+        started = time.monotonic()
         page.wait_for_timeout(200)
-        while time.monotonic() - started < SETTLE_TIMEOUT_MS / 1000:
+        while True:
+            # Шинэ хуудас ачаалагдаж байвал (удаан сервер) хуудас нээх хугацаагаар хүлээнэ — эс бөгөөс
+            # хуучин хуудсыг уншаад "тодорхойгүй" гэж дүгнэнэ. AJAX-д богино хугацаа хангалттай.
+            navigating = any(r.is_navigation_request() for r in list(pending))
+            limit = NAV_TIMEOUT_MS if navigating else SETTLE_TIMEOUT_MS
+            if time.monotonic() - started >= limit / 1000:
+                break
             try:
                 for kind, text in page.evaluate(FLASH_JS, FLASH_SELECTORS):
                     if (kind, text) not in seen:
@@ -821,7 +835,9 @@ def _await_outcome(page):
         for event, handler in listeners:
             page.remove_listener(event, handler)
     try:
-        page.wait_for_load_state("domcontentloaded", timeout=2000)
+        # Шинэ хуудасны HTML ирсэн ч <head>-ийн script-үүд ачаалагдтал body (алдааны мессеж) үүсэхгүй —
+        # шилжсэн бол хуудас бэлэн болтол бүтэн хугацаагаар хүлээнэ.
+        page.wait_for_load_state("domcontentloaded", timeout=NAV_TIMEOUT_MS if navigated[0] else 2000)
     except Exception:
         pass
     return seen
@@ -835,7 +851,7 @@ def _visible_texts(page, selector, exclude=None):
             if exclude and element.evaluate("(el, s) => el.matches(s)", exclude):
                 continue
             if element.is_visible():
-                text = " ".join(element.inner_text().split())
+                text = " ".join(element.inner_text().split()).rstrip(" ×✕✖")  # хаах товчны тэмдэг
                 # Заавал бөглөх талбарын улаан "*" (.text-danger) г.м. үсэг, тоогүй тэмдэг алдаа биш.
                 if not any(ch.isalnum() for ch in text):
                     continue
