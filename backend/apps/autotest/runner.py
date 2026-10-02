@@ -52,12 +52,14 @@ SCAN_JS = r"""
     return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none';
   };
   const unique = sel => { try { return document.querySelectorAll(sel).length === 1; } catch (e) { return false; } };
+  // React (:r1:), MUI (mui-123), Ember (ember45) г.м. ачаалах бүрт өөрчлөгддөг автомат id-г ашиглахгүй.
+  const stableId = id => id && !/:|^\d|\d{3,}|^(react|mui|ember|radix|headlessui|rc[-_]|ext-gen|yui|ng-|downshift)/i.test(id);
   const quote = v => '"' + String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
   const text = el => (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
 
   function selectorFor(el) {
     const tag = el.tagName.toLowerCase();
-    if (el.id && unique('#' + CSS.escape(el.id))) return '#' + CSS.escape(el.id);
+    if (stableId(el.id) && unique('#' + CSS.escape(el.id))) return '#' + CSS.escape(el.id);
     const name = el.getAttribute('name');
     if (name) {
       let sel = tag + '[name=' + quote(name) + ']';
@@ -218,9 +220,17 @@ def login(browser, login_url, username, password):
             raise LoginFailed(_("Нэвтрэх хуудсанд нууц үгийн талбар олдсонгүй: %(url)s") % {"url": login_url})
         form = password_input.locator("xpath=ancestor::form[1]")
         scope = form if form.count() else page
-        username_input = scope.locator(
-            "input[type=email]:visible, input[type=text]:visible, input[type=tel]:visible, input:not([type]):visible"
-        ).first
+        # Эхлээд нэр/autocomplete-оороо нэвтрэх нэр гэдэг нь тодорхой талбар, үгүй бол эхний текст талбар.
+        username_input = scope.locator(", ".join(
+            f"input{attr}:visible" for attr in (
+                "[autocomplete=username]", "[type=email]", "[name*=user i]", "[name*=login i]", "[name*=email i]",
+                "[id*=user i]", "[id*=login i]", "[id*=email i]",
+            )
+        )).first
+        if not username_input.count():
+            username_input = scope.locator(
+                "input[type=text]:visible, input[type=tel]:visible, input:not([type]):visible"
+            ).first
         if not username_input.count():
             raise LoginFailed(_("Нэвтрэх хуудсанд нэвтрэх нэрийн талбар олдсонгүй: %(url)s") % {"url": login_url})
         username_input.fill(username)
@@ -527,7 +537,11 @@ def _browse_rows(scenario, url, rows, delay, results, stop, credentials=None):
                         break
                     if index and delay:
                         time.sleep(delay)
-                    results.put((line_number, row, run_row(browser, scenario, url, row, line_number, stamp, state)))
+                    result = run_row(browser, scenario, url, row, line_number, stamp, state, credentials and credentials[0])
+                    if result.get("session_lost"):  # session дууссан — дахин нэвтэрч, мөрийг давтана
+                        state = login(browser, *credentials)
+                        result = run_row(browser, scenario, url, row, line_number, stamp, state, credentials[0])
+                    results.put((line_number, row, result))
             finally:
                 browser.close()
     except BaseException as exc:
@@ -560,8 +574,11 @@ def _expected_for(scenario, row):
     return outcome, message
 
 
-def run_row(browser, scenario, url, row, line_number, stamp=None, storage_state=None):
-    """Нэг мөрийг шинэ browser context дээр (нэвтэрсэн бол тэр session-тэй) ажиллуулж, dict буцаана."""
+def run_row(browser, scenario, url, row, line_number, stamp=None, storage_state=None, login_url=None):
+    """
+    Нэг мөрийг шинэ browser context дээр (нэвтэрсэн бол тэр session-тэй) ажиллуулж, dict буцаана.
+    Хуудас нэвтрэх хуудас руу шилжүүлбэл (session дууссан) result["session_lost"] = True.
+    """
     from playwright.sync_api import Error as PlaywrightError
 
     expected_outcome, expected_message = _expected_for(scenario, row)
@@ -577,13 +594,16 @@ def run_row(browser, scenario, url, row, line_number, stamp=None, storage_state=
         page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
         _settle(page)
         start_url = page.url
+        if login_url and _same_page(start_url, login_url) and not _same_page(url, login_url):
+            result["session_lost"] = True
+            raise RowError(_("Session дууссан — нэвтрэх хуудас руу шилжүүлсэн."))
         _fill_fields(page, scenario, row, line_number, result["used_values"], stamp)
         # Browser-ийн өөрийн шалгалтыг (required, type=email) илгээхээс ӨМНӨ уншина — илгээсний
         # дараа сервер талбарыг хоосолж буцаавал (нууц үг г.м.) түүнийг алдаа гэж андуурахгүй.
         invalid = page.evaluate(INVALID_JS, scenario.submit_selector or DEFAULT_SUBMIT_SELECTOR)
         _submit(page, scenario)
-        _settle(page)
-        outcome, message, page_text = _read_outcome(page, scenario, start_url, invalid)
+        flashes = _await_outcome(page)
+        outcome, message, page_text = _read_outcome(page, scenario, start_url, invalid, flashes)
         result.update(actual_outcome=outcome, actual_message=message, final_url=page.url)
         result["verdict"] = judge(expected_outcome, expected_message, outcome, message + "\n" + page_text)
     except RowError as exc:
@@ -727,6 +747,82 @@ def _settle(page):
         pass
 
 
+# Түр гараад алга болдог мессеж (toast, snackbar, alert) — илгээсний дараа ажиглаж барина.
+FLASH_JS = r"""
+(s) => {
+  const out = [];
+  document.querySelectorAll(s.all).forEach(el => {
+    const r = el.getBoundingClientRect(), st = getComputedStyle(el);
+    if (!r.width || !r.height || st.visibility === 'hidden' || st.display === 'none') return;
+    const text = (el.innerText || '').replace(/\s+/g, ' ').trim();
+    if (!/[\p{L}\p{N}]/u.test(text)) return;
+    const cls = el.getAttribute('class') || '';
+    let kind = '';
+    if (el.matches(s.success) || /success/i.test(cls)) kind = 'success';
+    else if (el.matches(s.error) || /error|danger|fail/i.test(cls)) kind = 'error';
+    if (kind) out.push([kind, text.slice(0, 300)]);
+  });
+  return out;
+}
+"""
+FLASH_SELECTORS = {
+    "all": ", ".join([
+        "[role=alert]", "[role=status]", "[aria-live]", ".toast", ".alert", ".Toastify__toast", ".notification",
+        ".snackbar", ".MuiSnackbar-root", ".ant-message-notice", ".swal2-popup", ".invalid-feedback", ".errorlist",
+    ]),
+    "error": PAGE_ERROR_SELECTORS,
+    "success": SUCCESS_SELECTORS,
+}
+
+
+def _await_outcome(page):
+    """
+    Илгээсний дараа хариуг хүлээнэ: явагдаж буй хүсэлтүүдийг өөрөө тоолно (networkidle нь хуудас
+    ачаалахад нэг л удаа болдог тул AJAX илгээлтийг хүлээдэггүй). Хүсэлт дуусаад хагас секунд
+    чимээгүй болох, эсвэл мессеж гараад хагас секунд болоход зогсоно. Энэ хооронд 200ms тутам
+    toast/alert-ийг цуглуулна — дараа нь алга болсон ч тооцогдоно. [(kind, text)] буцаана.
+    """
+    pending, last_activity = set(), [time.monotonic()]
+
+    def request_started(request):
+        pending.add(request)
+        last_activity[0] = time.monotonic()
+
+    def request_ended(request):
+        pending.discard(request)
+        last_activity[0] = time.monotonic()
+
+    listeners = (("request", request_started), ("requestfinished", request_ended), ("requestfailed", request_ended))
+    for event, handler in listeners:
+        page.on(event, handler)
+    seen, first_seen = [], None
+    started = time.monotonic()
+    try:
+        page.wait_for_timeout(200)
+        while time.monotonic() - started < SETTLE_TIMEOUT_MS / 1000:
+            try:
+                for kind, text in page.evaluate(FLASH_JS, FLASH_SELECTORS):
+                    if (kind, text) not in seen:
+                        seen.append((kind, text))
+            except Exception:
+                pass  # хуудас шилжиж байна
+            now = time.monotonic()
+            if seen and first_seen is None:
+                first_seen = now
+            quiet = not pending and now - last_activity[0] > 0.5
+            if quiet or (first_seen and now - first_seen > 0.5 and not pending):
+                break
+            page.wait_for_timeout(200)
+    finally:
+        for event, handler in listeners:
+            page.remove_listener(event, handler)
+    try:
+        page.wait_for_load_state("domcontentloaded", timeout=2000)
+    except Exception:
+        pass
+    return seen
+
+
 def _visible_texts(page, selector, exclude=None):
     """exclude-д таарах элементийг алгасна (ж: role=alert-тай амжилтын мессеж)."""
     texts = []
@@ -746,8 +842,8 @@ def _visible_texts(page, selector, exclude=None):
     return texts
 
 
-def _read_outcome(page, scenario, start_url, invalid=()):
-    """(амжилттай/алдаа/тодорхойгүй, мессеж, хуудасны текст)."""
+def _read_outcome(page, scenario, start_url, invalid=(), flashes=()):
+    """(амжилттай/алдаа/тодорхойгүй, мессеж, хуудасны текст). flashes — илгээсний дараа түр харагдсан мессежүүд."""
     url_changed = _strip_url(page.url) != _strip_url(start_url)
     left_form = url_changed and not _form_present(page, scenario)
     if scenario.error_selector:
@@ -763,10 +859,14 @@ def _read_outcome(page, scenario, start_url, invalid=()):
         # Шар анхааруулга ч татгалзсан гэсэн үг (ж: "олон удаа буруу оролдсон" түгжээ).
         errors = list(invalid) + errors + _visible_texts(page, WARNING_SELECTORS)
     successes = _visible_texts(page, SUCCESS_SELECTORS)
+    if not scenario.error_selector:  # алга болсон toast-ыг нэмнэ (одоо харагдаж байгаа нь давхардахгүй)
+        errors += [t for kind, t in flashes if kind == "error" and t not in errors]
+    successes += [t for kind, t in flashes if kind == "success" and t not in successes]
     try:
         page_text = page.locator("body").inner_text()[:20_000]
     except Exception:
         page_text = ""
+    page_text += "\n" + "\n".join(t for _kind, t in flashes)  # хүлээгдэх мессежийг toast-аас ч олно
 
     mode, value = scenario.success_mode, scenario.success_value.strip()
     if mode == "url_contains" and value:
@@ -791,6 +891,10 @@ def _form_present(page, scenario):
         return any(page.locator(s).count() for s in selectors[:5])
     except Exception:
         return True
+
+
+def _same_page(a, b):
+    return _strip_url(a.split("?")[0]) == _strip_url(b.split("?")[0])
 
 
 def _strip_url(url):

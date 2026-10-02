@@ -4,8 +4,11 @@ Playwright / Chromium суугаагүй орчинд алгасна. Удаан
 
     ./test.sh --browser
 """
+import itertools
+import json
 import os
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest import mock
 from urllib.parse import parse_qs
@@ -49,6 +52,48 @@ NEW_ITEM_PAGE = """<!doctype html><html><head><meta charset="utf-8"></head><body
 </form></body></html>"""
 
 
+# SPA маягийн форм: улаан "*", AJAX-аар ачаалагдах дэд ангилал, автомат (тогтворгүй) id, огноо,
+# fetch-ээр илгээж 0.4 сек харагдаад алга болдог toast.
+AJAX_PAGE = """<!doctype html><html><head><meta charset="utf-8"></head><body>
+<form id="f">
+  <label for="title">Гарчиг <span class="text-danger">*</span></label><input id="title" name="title">
+  <label for="cat">Ангилал</label><select id="cat" name="cat"><option value="">---</option><option value="tech">Тех</option></select>
+  <label for="sub">Дэд ангилал</label><select id="sub" name="sub" disabled><option value="">---</option></select>
+  <label for="mui-12345">Хоч</label><input id="mui-12345" name="nickname">
+  <label for="due">Огноо</label><input id="due" name="due" type="date">
+  <button type="submit">Хадгалах</button>
+</form>
+<script>
+const f = document.getElementById("f"), cat = document.getElementById("cat"), sub = document.getElementById("sub");
+cat.onchange = () => {
+  sub.disabled = true;
+  setTimeout(() => { sub.innerHTML = '<option value="">---</option><option value="srv">Сервер</option>'; sub.disabled = !cat.value; }, 300);
+};
+f.onsubmit = e => {
+  e.preventDefault();
+  fetch("/ajax-save", {method: "POST", body: new URLSearchParams(new FormData(f))}).then(r => r.json()).then(d => {
+    const t = document.createElement("div");
+    t.className = "toast " + (d.ok ? "toast-success" : "toast-error");
+    t.textContent = d.msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 400);
+  });
+};
+</script></body></html>"""
+
+# Эхний текст талбар нь нэвтрэх нэр биш (байгууллагын код).
+LOGIN2_PAGE = """<!doctype html><html><head><meta charset="utf-8"></head><body>
+<form method="post" action="/login2">
+  <label>Байгууллага <input name="company"></label>
+  <label>Нэвтрэх нэр <input name="user_login"></label>
+  <label>Нууц үг <input name="password" type="password"></label>
+  <button type="submit">Нэвтрэх</button>
+</form></body></html>"""
+
+SHORT_TOKENS = itertools.count(1)
+SHORT_USES = {}  # session token → хэдэн удаа ашигласан (2 хүсэлтийн дараа дуусна)
+
+
 class FakeSite(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
@@ -61,7 +106,12 @@ class FakeSite(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _logged_in(self):
-        return "session=qa-ok" in self.headers.get("Cookie", "")
+        cookie = self.headers.get("Cookie", "")
+        if "short=" in cookie:  # богино хугацааны session: GET + POST-ийн дараа дуусна
+            token = cookie.split("short=")[1].split(";")[0]
+            SHORT_USES[token] = SHORT_USES.get(token, 0) + 1
+            return SHORT_USES[token] <= 2
+        return "session=qa-ok" in cookie
 
     def _html(self, body, status=200):
         data = body.encode("utf-8")
@@ -82,8 +132,12 @@ class FakeSite(BaseHTTPRequestHandler):
         elif self.path.startswith("/welcome"):
             # Амжилтын хуудсан дээрх улаан текст (TMS-ийн SLA ⚠ шиг) нь илгээлтийн алдаа биш.
             self._html('<h1>Амжилттай бүртгэгдлээ</h1><span class="text-danger">⚠ 2026-09-30 16:31</span>')
+        elif self.path.startswith("/login2"):
+            self._html(LOGIN2_PAGE)
         elif self.path.startswith("/login"):
             self._html(LOGIN_PAGE.format(error=""))
+        elif self.path.startswith("/ajax"):
+            self._html(AJAX_PAGE)
         elif self.path.startswith("/panel/new"):
             if "session=dev" in self.headers.get("Cookie", ""):
                 return self._html("<h1>Хандах эрхгүй</h1>", 403)
@@ -100,7 +154,27 @@ class FakeSite(BaseHTTPRequestHandler):
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))
         form = {k: v[0] for k, v in parse_qs(self.rfile.read(length).decode()).items()}
+        if self.path.startswith("/ajax-save"):
+            time.sleep(0.4)
+            if not form.get("title"):
+                reply = {"ok": False, "msg": "Гарчиг хоосон"}
+            elif (form.get("sub"), form.get("due")) != ("srv", "2024-01-05"):
+                reply = {"ok": False, "msg": f"Буруу утга: {form.get('sub')} {form.get('due')}"}
+            else:
+                reply = {"ok": True, "msg": "Хадгалагдлаа"}
+            data = json.dumps(reply, ensure_ascii=False).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            return self.wfile.write(data)
+        if self.path.startswith("/login2"):
+            if (form.get("user_login"), form.get("password")) == ("qa_test", "Right#pw1"):
+                return self._redirect("/panel", cookie="session=qa-ok; Path=/")
+            return self._html(LOGIN2_PAGE)
         if self.path.startswith("/login"):
+            if (form.get("username"), form.get("password")) == ("short_test", "Short#pw1"):
+                return self._redirect("/panel/new", cookie=f"short={next(SHORT_TOKENS)}; Path=/")
             if (form.get("username"), form.get("password")) == ("qa_test", "Right#pw1"):
                 return self._redirect("/panel", cookie="session=qa-ok; Path=/")
             if (form.get("username"), form.get("password")) == ("dev_test", "Dev#pw1"):
@@ -255,7 +329,58 @@ class WorkerBrowserTests(TempMediaMixin, TestCase):
         self.assertEqual(scan.status, PageScan.Status.FAILED)
         self.assertIn("хаалттай хаяг", scan.error_message)
 
-    def _login_run(self, password):
+    def test_ajax_form_with_dependent_select_date_and_vanishing_toast(self):
+        fields = [
+            {"label": "Гарчиг", "selector": "#title", "kind": "text", "type": "text", "source": "column", "value": "title"},
+            {"label": "Ангилал", "selector": "#cat", "kind": "select", "source": "column", "value": "cat"},
+            {"label": "Дэд ангилал", "selector": "#sub", "kind": "select", "source": "column", "value": "sub"},
+            {"label": "Огноо", "selector": "#due", "kind": "text", "type": "date", "source": "column", "value": "due"},
+        ]
+        app, env, scenario, data_file = make_setup(base_url=self.base_url, fields=fields, rows=[
+            ["Тайлбар", "title", "cat", "sub", "due", "хүлээгдэх"],
+            ["Хоосон", "", "", "", "", "алдаа: Гарчиг хоосон"],
+            ["Зөв", "Тест", "Тех", "Сервер", "2024.1.5", "амжилттай: Хадгалагдлаа"],
+        ])
+        scenario.page = Page.objects.create(app=app, name="AJAX", path="/ajax")
+        scenario.save()
+        run = TestRun.objects.create(
+            scenario=scenario, data_file=data_file, environment=env, data_file_name="ajax",
+            environment_name="staging", target_url=env.url_for("/ajax"), total=2,
+        )
+        self._work()
+        run.refresh_from_db()
+        results = {r.description: r for r in run.results.all()}
+        for name in ("Хоосон", "Зөв"):
+            self.assertEqual(results[name].verdict, "pass", (name, results[name].actual_message))
+        self.assertEqual(results["Хоосон"].actual_message, "Гарчиг хоосон")  # улаан "*" алдаанд ороогүй
+
+    def test_scan_skips_generated_ids(self):
+        scan = PageScan.objects.create(url=self.base_url + "/ajax", requested_by=make_user("qa"))
+        self._work()
+        scan.refresh_from_db()
+        selectors = {f["label"]: f["selector"] for f in scan.result["fields"]}
+        self.assertEqual(selectors["Хоч"], 'input[name="nickname"]')
+        self.assertEqual(selectors["Гарчиг"], "#title")
+
+    def test_login_finds_username_field_by_name(self):
+        run = self._login_run("Right#pw1")
+        run.login_url = run.environment.url_for("/login2")
+        run.save()
+        self._work()
+        run.refresh_from_db()
+        self.assertEqual(run.status, TestRun.Status.DONE, run.error_message)
+        self.assertEqual(run.passed, 2, [r.actual_message for r in run.results.all()])
+
+    def test_expired_session_logs_in_again(self):
+        run = self._login_run("Short#pw1", username="short_test")
+        first_token = next(SHORT_TOKENS)
+        self._work()
+        run.refresh_from_db()
+        self.assertEqual(run.status, TestRun.Status.DONE, run.error_message)
+        self.assertEqual((run.passed, run.errored), (2, 0), [r.actual_message for r in run.results.all()])
+        self.assertGreater(next(SHORT_TOKENS), first_token + 2)  # дор хаяж нэг удаа дахин нэвтэрсэн
+
+    def _login_run(self, password, username="qa_test"):
         fields = [
             {"label": "Гарчиг", "selector": "#title", "kind": "text", "source": "column", "value": "title"},
             {"label": "Дэд ангилал", "selector": "#sub", "kind": "select", "source": "column", "value": "sub"},
@@ -269,7 +394,7 @@ class WorkerBrowserTests(TempMediaMixin, TestCase):
         page = Page.objects.create(app=app, name="Шинэ", path="/panel/new")
         app.login_page = Page.objects.create(app=app, name="Нэвтрэх", path="/login")
         app.save()
-        account = TestAccount(app=app, label="QA", username="qa_test")
+        account = TestAccount(app=app, label="QA", username=username)
         account.set_password(password)
         account.save()
         scenario.page, scenario.account = page, account
