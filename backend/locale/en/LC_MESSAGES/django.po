@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Ticket Management System\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-02 11:52+0800\n"
+"POT-Creation-Date: 2026-10-02 11:58+0800\n"
 "PO-Revision-Date: 2026-10-02 09:20+0800\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -480,8 +480,8 @@ msgstr "Duration (ms)"
 msgid "Эцсийн хаяг"
 msgstr "Final URL"
 
-#: apps/autotest/exports.py:109 apps/autotest/guide.py:29
-#: apps/autotest/guide.py:73 templates/autotest/_runs_table.html:8
+#: apps/autotest/exports.py:109 apps/autotest/guide.py:32
+#: apps/autotest/guide.py:76 templates/autotest/_runs_table.html:8
 msgid "Үр дүн"
 msgstr "Result"
 
@@ -623,8 +623,8 @@ msgstr ""
 msgid "Эхлээд тестийн хэрэглэгчид хэсэгт API нэвтрэх замаа бичнэ үү."
 msgstr "First enter the API login path under Test users."
 
-#: apps/autotest/forms.py:366 apps/autotest/guide.py:26
-#: apps/autotest/guide.py:98 templates/autotest/_test_steps.html:5
+#: apps/autotest/forms.py:366 apps/autotest/guide.py:29
+#: apps/autotest/guide.py:101 templates/autotest/_test_steps.html:5
 #: templates/autotest/api_scenario_form.html:47
 msgid "Өгөгдлийн файл"
 msgstr "Data file"
@@ -711,7 +711,7 @@ msgid "%(f)s: кирилл, emoji"
 msgstr "%(f)s: Cyrillic, emoji"
 
 #: apps/autotest/generator.py:303 apps/autotest/generator.py:331
-#: templates/autotest/_workflow_panel.html:47
+#: templates/autotest/_workflow_panel.html:48
 msgid "Бүх талбар зөв"
 msgstr "All fields valid"
 
@@ -820,7 +820,7 @@ msgstr "“%(a)s” and “%(b)s” must match."
 msgid "Бөглөнө үү: %(cols)s"
 msgstr "Please fill in: %(cols)s"
 
-#: apps/autotest/guide.py:19 templates/autotest/api_scenario_form.html:5
+#: apps/autotest/guide.py:22 templates/autotest/api_scenario_form.html:5
 #: templates/autotest/app_detail.html:5
 #: templates/autotest/datafile_detail.html:5
 #: templates/autotest/datafile_form.html:5
@@ -831,33 +831,57 @@ msgstr "Please fill in: %(cols)s"
 msgid "Автомат тест"
 msgstr "Autotest"
 
-#: apps/autotest/guide.py:21 templates/autotest/app_form.html:3
+#: apps/autotest/guide.py:24 templates/autotest/app_form.html:3
 #: templates/autotest/home.html:9
 msgid "Апп бүртгэх"
 msgstr "Register app"
 
-#: apps/autotest/guide.py:22 templates/autotest/app_detail.html:101
+#: apps/autotest/guide.py:24
+msgid "Шалгах системээ нэр, ангиллаар нэмнэ"
+msgstr "Add the system to test with a name and category"
+
+#: apps/autotest/guide.py:25 templates/autotest/app_detail.html:101
 msgid "Орчин нэмэх"
 msgstr "Add environment"
 
-#: apps/autotest/guide.py:23 templates/autotest/app_detail.html:132
+#: apps/autotest/guide.py:25
+msgid "Тест аль хаяг дээр ажиллахыг заана"
+msgstr "Where the tests run"
+
+#: apps/autotest/guide.py:26 templates/autotest/app_detail.html:132
 #: templates/autotest/scenario_form.html:41
 msgid "Хуудас нэмэх"
 msgstr "Add page"
 
-#: apps/autotest/guide.py:24
+#: apps/autotest/guide.py:26
+msgid "Шалгах хуудсуудын замыг бүртгэнэ"
+msgstr "Register the paths of the pages to test"
+
+#: apps/autotest/guide.py:27
 msgid "Тестийн хэрэглэгч"
 msgstr "Test user"
 
-#: apps/autotest/guide.py:27
+#: apps/autotest/guide.py:28
+msgid "Нэвтэрч ордог хуудсанд л хэрэгтэй"
+msgstr "Only for pages behind login"
+
+#: apps/autotest/guide.py:29
+msgid "Мөр бүр нэг тест болно"
+msgstr "Each row is one test"
+
+#: apps/autotest/guide.py:30
 msgid "Сценари үүсгэх"
 msgstr "Create scenario"
 
-#: apps/autotest/guide.py:27
+#: apps/autotest/guide.py:30
 msgid "Веб форм / API"
 msgstr "Web form / API"
 
-#: apps/autotest/guide.py:28 apps/autotest/guide.py:71
+#: apps/autotest/guide.py:30
+msgid "Хуудас, талбар, хүлээгдэх үр дүнг тохируулна"
+msgstr "Set the page, fields and expected result"
+
+#: apps/autotest/guide.py:31 apps/autotest/guide.py:74
 #: templates/autotest/app_detail.html:49 templates/autotest/app_detail.html:52
 #: templates/autotest/scenario_detail.html:49
 #: templates/autotest/scenario_detail.html:59
@@ -865,48 +889,81 @@ msgstr "Web form / API"
 msgid "Ажиллуулах"
 msgstr "Run"
 
-#: apps/autotest/guide.py:30 apps/autotest/guide.py:74
-#: apps/autotest/guide.py:89
+#: apps/autotest/guide.py:31 apps/autotest/guide.py:74
+msgid "Мөр бүрийг автоматаар бөглөж илгээнэ"
+msgstr "Fills in and submits each row automatically"
+
+#: apps/autotest/guide.py:32 apps/autotest/guide.py:76
+msgid "Мөр бүр тэнцсэн, унасан эсэх"
+msgstr "Whether each row passed or failed"
+
+#: apps/autotest/guide.py:33 apps/autotest/guide.py:77
+#: apps/autotest/guide.py:92
 msgid "Bug ticket"
 msgstr "Bug ticket"
 
-#: apps/autotest/guide.py:38 templates/autotest/app_detail.html:13
+#: apps/autotest/guide.py:33 apps/autotest/guide.py:77
+#: apps/autotest/guide.py:92
+msgid "Унасан мөрөөс нэг товчоор ticket үүснэ"
+msgstr "One click turns failed rows into a ticket"
+
+#: apps/autotest/guide.py:41 templates/autotest/app_detail.html:13
 #: templates/autotest/scenario_form.html:3
 #: templates/autotest/scenario_form.html:6
 msgid "Шинэ сценари"
 msgstr "New scenario"
 
-#: apps/autotest/guide.py:40
+#: apps/autotest/guide.py:43
 msgid "Хуудас сонгох"
 msgstr "Pick page"
 
-#: apps/autotest/guide.py:41 templates/autotest/scenario_form.html:49
+#: apps/autotest/guide.py:43
+msgid "Аль хуудсыг шалгахаа dropdown-оос сонгоно"
+msgstr "Pick the page to test from the list"
+
+#: apps/autotest/guide.py:44 templates/autotest/scenario_form.html:49
 msgid "Хуудсыг шалгах"
 msgstr "Scan page"
 
-#: apps/autotest/guide.py:42
+#: apps/autotest/guide.py:44
+msgid "Систем хуудсыг нээж талбаруудыг олно"
+msgstr "The system opens the page and finds its fields"
+
+#: apps/autotest/guide.py:45
 msgid "Талбар ↔ багана"
 msgstr "Field ↔ column"
 
-#: apps/autotest/guide.py:42
+#: apps/autotest/guide.py:45
 msgid "Имэйл ← email"
 msgstr "Email ← email"
 
-#: apps/autotest/guide.py:43 templates/autotest/scenario_form.html:73
+#: apps/autotest/guide.py:45
+msgid "Талбар бүрт файлын аль баганыг бичихийг холбоно"
+msgstr "Link each field to a file column"
+
+#: apps/autotest/guide.py:46 templates/autotest/scenario_form.html:73
 msgid "Тест өгөгдөл үүсгэх"
 msgstr "Generate test data"
 
-#: apps/autotest/guide.py:44 apps/autotest/guide.py:57
+#: apps/autotest/guide.py:46
+msgid "Тестэд тохирох зөв, буруу өгөгдөл автоматаар үүснэ"
+msgstr "Valid and invalid test data is created for you"
+
+#: apps/autotest/guide.py:47 apps/autotest/guide.py:60
 #: templates/autotest/_datafile_modal.html:47
 #: templates/autotest/api_scenario_form.html:67
 msgid "Хүлээгдэх үр дүн"
 msgstr "Expected result"
 
-#: apps/autotest/guide.py:44
+#: apps/autotest/guide.py:47
 msgid "амжилттай / алдаа"
 msgstr "success / error"
 
-#: apps/autotest/guide.py:45 apps/autotest/guide.py:58
+#: apps/autotest/guide.py:47 apps/autotest/guide.py:60
+msgid "Мөр бүрт ямар хариу гарах ёстойг заана"
+msgstr "What each row should result in"
+
+#: apps/autotest/guide.py:48 apps/autotest/guide.py:61
 #: templates/accounts/user_form.html:29
 #: templates/autotest/_datafile_modal.html:28
 #: templates/autotest/api_scenario_form.html:85
@@ -923,104 +980,156 @@ msgstr "success / error"
 msgid "Хадгалах"
 msgstr "Save"
 
-#: apps/autotest/guide.py:52 templates/autotest/api_scenario_form.html:3
+#: apps/autotest/guide.py:48 apps/autotest/guide.py:61
+msgid "Сценари бэлэн болж ажиллуулж болно"
+msgstr "The scenario is ready to run"
+
+#: apps/autotest/guide.py:55 templates/autotest/api_scenario_form.html:3
 #: templates/autotest/api_scenario_form.html:6
 msgid "Шинэ API сценари"
 msgstr "New API scenario"
 
-#: apps/autotest/guide.py:54
+#: apps/autotest/guide.py:57
 msgid "Method + зам"
 msgstr "Method + path"
 
-#: apps/autotest/guide.py:55 apps/autotest/models.py:198
+#: apps/autotest/guide.py:57
+msgid "Ямар хаяг руу ямар хүсэлт илгээхийг"
+msgstr "Which request goes to which address"
+
+#: apps/autotest/guide.py:58 apps/autotest/models.py:198
 msgid "Body"
 msgstr "Body"
 
-#: apps/autotest/guide.py:56 apps/autotest/models.py:202
+#: apps/autotest/guide.py:58
+msgid "{{багана}} нь файлын утгаар солигдоно"
+msgstr "{{column}} is replaced by the file value"
+
+#: apps/autotest/guide.py:59 apps/autotest/models.py:202
 #: templates/autotest/api_scenario_form.html:22
 #: templates/autotest/scenario_detail.html:71
 msgid "Хэн болж шалгах"
 msgstr "Test as"
 
-#: apps/autotest/guide.py:68 apps/autotest/steps.py:39
+#: apps/autotest/guide.py:59
+msgid "Нэвтэрч token авсны дараа хүсэлт илгээнэ"
+msgstr "Logs in for a token, then sends the request"
+
+#: apps/autotest/guide.py:71 apps/autotest/steps.py:39
 #: templates/registration/login.html:3 templates/registration/login.html:6
 #: templates/registration/login.html:27
 #: templates/registration/password_reset_complete.html:8
 msgid "Нэвтрэх"
 msgstr "Log in"
 
-#: apps/autotest/guide.py:70
+#: apps/autotest/guide.py:71
+msgid "Тестийн хэрэглэгчээр эхлээд нэвтэрнэ"
+msgstr "Logs in as the test user first"
+
+#: apps/autotest/guide.py:73
 msgid "Файл + орчин сонгох"
 msgstr "Pick file + environment"
 
-#: apps/autotest/guide.py:72 templates/autotest/scenario_detail.html:50
+#: apps/autotest/guide.py:73
+msgid "Аль өгөгдлөөр, аль хаяг дээр шалгах"
+msgstr "Which data, on which address"
+
+#: apps/autotest/guide.py:75 templates/autotest/scenario_detail.html:50
 msgid "Тестийн алхмууд"
 msgstr "Test steps"
 
-#: apps/autotest/guide.py:72
-msgid "мөр бүр"
-msgstr "each row"
+#: apps/autotest/guide.py:75
+msgid "Мөр бүр юу хийхийг алхмаар харна"
+msgstr "See what each row does, step by step"
 
-#: apps/autotest/guide.py:74
-msgid "унасан мөрөөс"
-msgstr "from failed rows"
-
-#: apps/autotest/guide.py:77 apps/autotest/models.py:278
+#: apps/autotest/guide.py:80 apps/autotest/models.py:278
 #: apps/autotest/views.py:637 templates/autotest/scenario_detail.html:93
 msgid "Эрх шалгах"
 msgstr "Access check"
 
-#: apps/autotest/guide.py:77
-msgid "хэн нээж болох"
-msgstr "who can open it"
+#: apps/autotest/guide.py:80
+msgid "Хэрэглэгч бүрт хуудас нээгдэх эсэх"
+msgstr "Whether the page opens for each user"
 
-#: apps/autotest/guide.py:85 templates/autotest/run_detail.html:34
+#: apps/autotest/guide.py:88 templates/autotest/run_detail.html:34
 msgid "Явц"
 msgstr "Progress"
 
-#: apps/autotest/guide.py:86
+#: apps/autotest/guide.py:88
+msgid "Мөрүүд нэг нэгээр ажиллана"
+msgstr "Rows run one by one"
+
+#: apps/autotest/guide.py:89
 msgid "Мөр бүрийн үр дүн"
 msgstr "Result per row"
 
-#: apps/autotest/guide.py:87 templates/autotest/_results_table.html:32
+#: apps/autotest/guide.py:89
+msgid "✅ тэнцсэн, ❌ унасан, 👁 гараар шалгах"
+msgstr "✅ passed, ❌ failed, 👁 needs review"
+
+#: apps/autotest/guide.py:90 templates/autotest/_results_table.html:32
 msgid "Дэлгэцийн зураг"
 msgstr "Screenshot"
 
-#: apps/autotest/guide.py:87
-msgid "унасан мөр"
-msgstr "failed rows"
+#: apps/autotest/guide.py:90
+msgid "Унасан мөр дээр хуудас ямар байсныг харна"
+msgstr "See the page as it was on a failed row"
 
-#: apps/autotest/guide.py:88
+#: apps/autotest/guide.py:91
 msgid "Унасан мөр сонгох"
 msgstr "Select failed rows"
 
-#: apps/autotest/guide.py:90 templates/autotest/run_detail.html:22
+#: apps/autotest/guide.py:91
+msgid "Bug болгох мөрүүдээ чагтална"
+msgstr "Tick the rows to report as bugs"
+
+#: apps/autotest/guide.py:93 templates/autotest/run_detail.html:22
 msgid "Дахин ажиллуулах"
 msgstr "Run again"
 
-#: apps/autotest/guide.py:90
-msgid "засварын дараа"
-msgstr "after the fix"
+#: apps/autotest/guide.py:93
+msgid "Засварласны дараа ижил тестийг давтана"
+msgstr "Repeat the same test after a fix"
 
-#: apps/autotest/guide.py:100
+#: apps/autotest/guide.py:103
 msgid "Загвар татах"
 msgstr "Download template"
 
-#: apps/autotest/guide.py:101
+#: apps/autotest/guide.py:103
+msgid "Жишээ баганатай Excel файл"
+msgstr "An Excel file with sample columns"
+
+#: apps/autotest/guide.py:104
 msgid "Бөглөх"
 msgstr "Fill in"
 
-#: apps/autotest/guide.py:102 templates/autotest/datafile_form.html:20
+#: apps/autotest/guide.py:104
+msgid "Мөр бүрт нэг тестийн өгөгдөл бичнэ"
+msgstr "Write one test per row"
+
+#: apps/autotest/guide.py:105 templates/autotest/datafile_form.html:20
 msgid "Оруулах"
 msgstr "Upload"
 
-#: apps/autotest/guide.py:103
+#: apps/autotest/guide.py:105
+msgid "Excel эсвэл CSV файлаа оруулна"
+msgstr "Upload an Excel or CSV file"
+
+#: apps/autotest/guide.py:106
 msgid "Browser-т засах"
 msgstr "Edit in browser"
 
-#: apps/autotest/guide.py:104
+#: apps/autotest/guide.py:106
+msgid "Мөр, баганаа шууд засаж болно"
+msgstr "Edit rows and columns directly"
+
+#: apps/autotest/guide.py:107
 msgid "Сценарид ашиглах"
 msgstr "Use in a scenario"
+
+#: apps/autotest/guide.py:107
+msgid "Нэг файлыг олон сценари ашиглана"
+msgstr "One file can serve many scenarios"
 
 #: apps/autotest/management/commands/run_autotest_worker.py:78
 msgid "Worker дахин эхэлсэн тул ажиллуулалт тасарсан. Дахин ажиллуулна уу."
@@ -2718,7 +2827,7 @@ msgid "Одоогоор ажиллуулаагүй байна."
 msgstr "Not run yet."
 
 #: templates/autotest/_test_steps.html:25
-#: templates/autotest/_workflow_panel.html:48
+#: templates/autotest/_workflow_panel.html:49
 msgid "хоосон"
 msgstr "empty"
 
@@ -2726,7 +2835,7 @@ msgstr "empty"
 msgid "Файлын багана"
 msgstr "File column"
 
-#: templates/autotest/_workflow_panel.html:49
+#: templates/autotest/_workflow_panel.html:50
 msgid "Хэт урт · SQL · XSS"
 msgstr "Too long · SQL · XSS"
 
@@ -4316,15 +4425,27 @@ msgstr "Change status"
 msgid "Хэрэгжүүлэх"
 msgstr "Apply"
 
+#~ msgid "мөр бүр"
+#~ msgstr "each row"
+
+#~ msgid "унасан мөрөөс"
+#~ msgstr "from failed rows"
+
+#~ msgid "хэн нээж болох"
+#~ msgstr "who can open it"
+
+#~ msgid "унасан мөр"
+#~ msgstr "failed rows"
+
+#~ msgid "засварын дараа"
+#~ msgstr "after the fix"
+
 #~ msgid "Тест юу хийх вэ"
 #~ msgstr "What the test does"
 
 #, python-format
 #~ msgid "%(name)s (%(user)s) хэрэглэгчээр нэвтэрнэ"
 #~ msgstr "Logs in as %(name)s (%(user)s)"
-
-#~ msgid "Мөр бүрээр хүсэлт илгээнэ"
-#~ msgstr "Sends a request for each row"
 
 #~ msgid "орчны хаяг"
 #~ msgstr "environment URL"

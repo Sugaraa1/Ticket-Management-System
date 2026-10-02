@@ -11,6 +11,7 @@
         <span class="tms-flow-icon"><i class="bi {{ step.icon }}"></i></span>
         <div class="tms-flow-body">
           <div class="fw-semibold">{{ step.label }}</div>
+          {% if step.desc %}<div class="small text-body-secondary">{{ step.desc }}</div>{% endif %}
           <div class="js-guide-example small mt-1{% if not step.example %} d-none{% endif %}"><span class="tms-flow-value">{{ step.example }}</span></div>
         </div>
       </li>
