@@ -10,6 +10,7 @@ urlpatterns = [
     path("apps/<int:pk>/", views.app_detail, name="app_detail"),
     path("apps/<int:pk>/delete/", views.app_delete, name="app_delete"),
     path("apps/<int:pk>/environments/new/", views.env_create, name="env_create"),
+    path("apps/<int:pk>/login/", views.app_login_save, name="app_login_save"),
     path("apps/<int:pk>/environments/<int:env_pk>/delete/", views.env_delete, name="env_delete"),
     path("apps/<int:pk>/environments/<int:env_pk>/production/", views.env_toggle_production, name="env_toggle_production"),
     path("apps/<int:pk>/pages/new/", views.page_create, name="page_create"),

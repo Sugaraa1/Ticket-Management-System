@@ -23,7 +23,7 @@ from apps.tickets.views import _modules_by_project, _subcategories_by_category
 from . import exports, generator
 from .datafiles import suggest_mapping
 from .forms import (
-    ApiScenarioForm, DataFileForm, DataFileReplaceForm, EnvironmentForm, PageForm, RunForm, ScenarioForm, TestAccountForm,
+    ApiScenarioForm, AppLoginForm, DataFileForm, DataFileReplaceForm, EnvironmentForm, PageForm, RunForm, ScenarioForm, TestAccountForm,
     TestAppForm,
 )
 from .models import DataFile, Environment, Page, PageScan, RunResult, Scenario, TestAccount, TestApp, TestRun
@@ -105,17 +105,17 @@ def app_detail(request, pk):
     return _render_app_detail(request, app, form=form)
 
 
-def _render_app_detail(request, app, form=None, env_form=None, page_form=None, account_form=None):
+def _render_app_detail(request, app, form=None, env_form=None, page_form=None, account_form=None, login_form=None):
     scenarios = _attach_last_runs(
         app.scenarios.select_related("page", "account").annotate(run_count=Count("runs")), "scenario"
     )
     can_manage = bool(user_roles(request.user) & set(APP_ROLES))
     form = form or TestAppForm(instance=app)
+    login_form = login_form or AppLoginForm(instance=app)
     return render(request, "autotest/app_detail.html", {
         "app": app,
         "form": form,
-        "login_fields": TestAppForm.LOGIN_FIELDS,
-        "api_tab": form.api_tab,
+        "login_form": login_form,
         "env_form": env_form or EnvironmentForm(prefix="env"),
         "environments": app.environments.all(),
         "page_form": page_form or PageForm(prefix="page"),
@@ -217,6 +217,18 @@ def account_save(request, pk):
 
 @roles_required(*EDIT_ROLES)
 @require_POST
+def app_login_save(request, pk):
+    app = get_object_or_404(TestApp, pk=pk)
+    form = AppLoginForm(request.POST, instance=app)
+    if not form.is_valid():
+        return _render_app_detail(request, app, login_form=form)
+    form.save()
+    messages.success(request, _("Нэвтрэлт хадгалагдлаа."))
+    return redirect("autotest:app_detail", pk=pk)
+
+
+@roles_required(*EDIT_ROLES)
+@require_POST
 def account_delete(request, pk, account_pk):
     account = get_object_or_404(TestAccount, pk=account_pk, app_id=pk)
     if account.scenarios.exists():
@@ -232,7 +244,7 @@ def _login_url(app, environment, account):
     if account is None:
         return ""
     if app.login_page is None:
-        raise ValueError(_("Апп-ын мэдээлэлд нэвтрэх хуудсаа сонгоно уу."))
+        raise ValueError(_("Тестийн хэрэглэгчид хэсэгт нэвтрэх хуудсаа сонгоно уу."))
     return environment.url_for(app.login_page.path)[:600]
 
 
@@ -592,7 +604,7 @@ def _queue_access_run(scenario, environment, user):
     needs_login = any(r["account"] for r in rules)
     login_page = scenario.app.login_page
     if needs_login and login_page is None:
-        raise ValueError(_("Апп-ын мэдээлэлд нэвтрэх хуудсаа сонгоно уу."))
+        raise ValueError(_("Тестийн хэрэглэгчид хэсэгт нэвтрэх хуудсаа сонгоно уу."))
     return TestRun.objects.create(
         scenario=scenario,
         kind=TestRun.Kind.ACCESS,
@@ -718,7 +730,7 @@ def _queue_run(scenario, data_file, environment, user):
     if scenario.is_api:
         target_url = environment.url_for(scenario.api_path)
         if account and not scenario.app.api_login_path:
-            raise ValueError(_("Апп-ын мэдээлэлд API нэвтрэх замаа бичнэ үү."))
+            raise ValueError(_("Тестийн хэрэглэгчид хэсэгт API нэвтрэх замаа бичнэ үү."))
         login_url = environment.url_for(scenario.app.api_login_path) if account else ""
     else:
         target_url = environment.url_for(scenario.page.path)

@@ -451,7 +451,7 @@ def _execute_access(run):
             if account is None:
                 problem = _("Тестийн хэрэглэгч устгагдсан байна.")
             elif not run.login_url:
-                problem = _("Апп-ын мэдээлэлд нэвтрэх хуудсаа сонгоно уу.")
+                problem = _("Тестийн хэрэглэгчид хэсэгт нэвтрэх хуудсаа сонгоно уу.")
             else:
                 try:
                     credentials = (run.login_url, account.username, account.get_password())

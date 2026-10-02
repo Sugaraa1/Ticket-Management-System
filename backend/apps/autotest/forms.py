@@ -15,50 +15,21 @@ FIELD_KINDS = {"text", "email", "password", "checkbox", "radio", "select"}
 
 
 class TestAppForm(forms.ModelForm):
-    LOGIN_FIELDS = ("login_page", "api_login_path", "api_login_body", "api_token_prefix")
-
     class Meta:
         model = TestApp
-        fields = [
-            "name", "category", "subcategory", "login_page", "api_login_path", "api_login_body", "api_token_prefix",
-            "description",
-        ]
+        fields = ["name", "category", "subcategory", "description"]
         widgets = {
             "category": forms.Select(attrs={"class": "form-select"}),
             "subcategory": forms.Select(attrs={"class": "form-select"}),
-            "login_page": forms.Select(attrs={"class": "form-select"}),
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": _("Жишээ: Дэлгүүрийн вэб")}),
             "description": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
-            "api_login_path": forms.TextInput(attrs={"class": "form-control font-monospace", "placeholder": "/api/auth/login/"}),
-            "api_login_body": forms.Textarea(attrs={"class": "form-control font-monospace small", "rows": 2}),
-            "api_token_prefix": forms.TextInput(attrs={"class": "form-control font-monospace", "placeholder": "Bearer"}),
         }
-        labels = {
-            "category": _("Ангилал"), "subcategory": _("Дэд ангилал"),
-            "api_login_path": _("Нэвтрэх зам"), "api_login_body": _("Нэвтрэх body"),
-        }
-        help_texts = {"api_login_path": ""}
+        labels = {"category": _("Ангилал"), "subcategory": _("Дэд ангилал")}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["category"].queryset = Category.objects.all()
         self.fields["subcategory"].queryset = Subcategory.objects.select_related("category")
-        if self.instance.pk:  # шинэ апп-д хуудас хараахан байхгүй
-            self.fields["login_page"].queryset = self.instance.pages.all()
-        else:
-            for name in self.LOGIN_FIELDS:
-                del self.fields[name]
-
-    @property
-    def api_tab(self):
-        """API нэвтрэлт л тохируулсан, эсвэл түүний талбарт алдаа гарсан бол API tab-ыг нээнэ."""
-        if any(name in self.errors for name in self.LOGIN_FIELDS[1:]):
-            return True
-        return bool(self.instance.api_login_path and not self.instance.login_page_id)
-
-    def clean_api_login_path(self):
-        path = clean_page_path(self.cleaned_data.get("api_login_path"))
-        return "/" + path if path and not path.startswith("/") else path
 
     def clean(self):
         cleaned = super().clean()
@@ -70,6 +41,38 @@ class TestAppForm(forms.ModelForm):
             if duplicate.exists():
                 self.add_error("name", _("Энэ ангилалд ийм нэртэй апп бүртгэлтэй байна."))
         return cleaned
+
+
+class AppLoginForm(forms.ModelForm):
+    """Тестийн хэрэглэгч хаана нэвтрэх: веб сценарид нэвтрэх хуудас, API сценарид нэвтрэх зам."""
+
+    class Meta:
+        model = TestApp
+        fields = ["login_page", "api_login_path", "api_login_body", "api_token_prefix"]
+        widgets = {
+            "login_page": forms.Select(attrs={"class": "form-select form-select-sm"}),
+            "api_login_path": forms.TextInput(attrs={"class": "form-control form-control-sm font-monospace", "placeholder": "/api/auth/login/"}),
+            "api_login_body": forms.Textarea(attrs={"class": "form-control form-control-sm font-monospace", "rows": 2}),
+            "api_token_prefix": forms.TextInput(attrs={"class": "form-control form-control-sm font-monospace", "placeholder": "Bearer"}),
+        }
+        labels = {"api_login_path": _("Нэвтрэх зам"), "api_login_body": _("Нэвтрэх body")}
+        help_texts = {"api_login_path": ""}
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("prefix", "login")
+        super().__init__(*args, **kwargs)
+        self.fields["login_page"].queryset = self.instance.pages.all()
+
+    @property
+    def api_tab(self):
+        """API нэвтрэлт л тохируулсан, эсвэл түүний талбарт алдаа гарсан бол API tab-ыг нээнэ."""
+        if any(name in self.errors for name in ("api_login_path", "api_login_body", "api_token_prefix")):
+            return True
+        return bool(self.instance.api_login_path and not self.instance.login_page_id)
+
+    def clean_api_login_path(self):
+        path = clean_page_path(self.cleaned_data.get("api_login_path"))
+        return "/" + path if path and not path.startswith("/") else path
 
 
 class EnvironmentForm(forms.ModelForm):
@@ -346,7 +349,7 @@ class ApiScenarioForm(forms.ModelForm):
         except ValueError as exc:
             self.add_error("api_body", str(exc))
         if cleaned.get("account") and not self.app.api_login_path:
-            self.add_error("account", _("Эхлээд апп-ын мэдээлэлд API нэвтрэх замаа бичнэ үү."))
+            self.add_error("account", _("Эхлээд тестийн хэрэглэгчид хэсэгт API нэвтрэх замаа бичнэ үү."))
         return cleaned
 
     def save(self, commit=True):

@@ -73,9 +73,10 @@
           <span class="badge text-bg-light border">{{ env.name }}</span>
           <span class="small font-monospace text-truncate flex-grow-1">{{ env.base_url }}</span>
           {% if can_manage %}
-          <form method="post" action="{% url 'autotest:env_toggle_production' app.pk env.pk %}">
+          <form method="post" action="{% url 'autotest:env_toggle_production' app.pk env.pk %}" class="form-check form-switch mb-0 js-active-toggle">
             {% csrf_token %}
-            <button class="badge border {% if env.is_production %}text-bg-danger border-danger{% else %}bg-transparent text-body-tertiary{% endif %}" aria-pressed="{{ env.is_production|yesno:'true,false' }}">Production</button>
+            <input class="form-check-input" type="checkbox" role="switch" id="prod-{{ env.pk }}"{% if env.is_production %} checked{% endif %}>
+            <label class="form-check-label small{% if env.is_production %} text-danger fw-semibold{% endif %}" for="prod-{{ env.pk }}">Production</label>
           </form>
           {% elif env.is_production %}<span class="badge text-bg-danger">Production</span>{% endif %}
           {% if can_manage %}
@@ -136,9 +137,37 @@
 
     <div class="card mb-3">
       <div class="card-header"><i class="bi bi-person-badge"></i> {% trans "Тестийн хэрэглэгчид" %}</div>
+      {% if can_edit %}
+      <form method="post" action="{% url 'autotest:app_login_save' app.pk %}" class="card-body border-bottom">
+        {% csrf_token %}
+        <ul class="nav nav-tabs small" role="tablist">
+          <li class="nav-item" role="presentation"><button class="nav-link py-1{% if not login_form.api_tab %} active{% endif %}" type="button" data-bs-toggle="tab" data-bs-target="#appLoginWeb" role="tab"><i class="bi bi-window me-1"></i>{% trans "Веб" %}</button></li>
+          <li class="nav-item" role="presentation"><button class="nav-link py-1{% if login_form.api_tab %} active{% endif %}" type="button" data-bs-toggle="tab" data-bs-target="#appLoginApi" role="tab"><i class="bi bi-braces me-1"></i>{% trans "API" %}</button></li>
+        </ul>
+        <div class="tab-content border border-top-0 rounded-bottom p-2 mb-2">
+          <div class="tab-pane fade{% if not login_form.api_tab %} show active{% endif %}" id="appLoginWeb" role="tabpanel">
+            {% with field=login_form.login_page %}
+            <label class="form-label small" for="{{ field.id_for_label }}">{% trans "Нэвтрэх хуудас" %}</label>
+            {{ field }}
+            {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+            {% endwith %}
+          </div>
+          <div class="tab-pane fade{% if login_form.api_tab %} show active{% endif %}" id="appLoginApi" role="tabpanel">
+            {% for field in login_form %}{% if field.name != "login_page" %}
+            <div class="mb-2">
+              <label class="form-label small" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+            </div>
+            {% endif %}{% endfor %}
+          </div>
+        </div>
+        <button class="btn btn-outline-primary btn-sm">{% trans "Хадгалах" %}</button>
+      </form>
+      {% endif %}
       <ul class="list-group list-group-flush">
         {% if accounts and not app.login_page and not app.api_login_path %}
-        <li class="list-group-item small text-danger"><i class="bi bi-exclamation-triangle"></i> {% trans "Апп-ын мэдээлэлд нэвтрэх хуудсаа сонгоно уу." %}</li>
+        <li class="list-group-item small text-danger"><i class="bi bi-exclamation-triangle"></i> {% trans "Нэвтрэх хуудсаа сонгоно уу." %}</li>
         {% endif %}
         {% for account in accounts %}
         <li class="list-group-item d-flex align-items-center gap-2">
@@ -176,38 +205,13 @@
       <div class="card-body">
         <form method="post">
           {% csrf_token %}
-          {% for field in form %}{% if field.name not in login_fields %}
+          {% for field in form %}
           <div class="mb-2">
             <label class="form-label small" for="{{ field.id_for_label }}">{{ field.label }}</label>
             {{ field }}
             {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
           </div>
-          {% endif %}{% endfor %}
-          <div class="mb-2">
-            <div class="form-label small">{% trans "Нэвтрэлт" %}</div>
-            <ul class="nav nav-tabs small" role="tablist">
-              <li class="nav-item" role="presentation"><button class="nav-link py-1{% if not api_tab %} active{% endif %}" type="button" data-bs-toggle="tab" data-bs-target="#appLoginWeb" role="tab"><i class="bi bi-window me-1"></i>{% trans "Веб" %}</button></li>
-              <li class="nav-item" role="presentation"><button class="nav-link py-1{% if api_tab %} active{% endif %}" type="button" data-bs-toggle="tab" data-bs-target="#appLoginApi" role="tab"><i class="bi bi-braces me-1"></i>{% trans "API" %}</button></li>
-            </ul>
-            <div class="tab-content border border-top-0 rounded-bottom p-2">
-              <div class="tab-pane fade{% if not api_tab %} show active{% endif %}" id="appLoginWeb" role="tabpanel">
-                {% with field=form.login_page %}
-                <label class="form-label small" for="{{ field.id_for_label }}">{% trans "Нэвтрэх хуудас" %}</label>
-                {{ field }}
-                {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
-                {% endwith %}
-              </div>
-              <div class="tab-pane fade{% if api_tab %} show active{% endif %}" id="appLoginApi" role="tabpanel">
-                {% for field in form %}{% if field.name in login_fields and field.name != "login_page" %}
-                <div class="mb-2">
-                  <label class="form-label small" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                  {{ field }}
-                  {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
-                </div>
-                {% endif %}{% endfor %}
-              </div>
-            </div>
-          </div>
+          {% endfor %}
           <button class="btn btn-primary btn-sm">{% trans "Хадгалах" %}</button>
         </form>
         <hr>
@@ -222,5 +226,6 @@
   </div>
 </div>
 {% include "autotest/_clickable_rows.html" %}
+{% include "_active_toggle_script.html" %}
 {% if can_manage %}{% include "tickets/_subcategory_script.html" with data=subcategories_by_category json_id="subcategories-by-category" prefix="id" %}{% endif %}
 {% endblock %}

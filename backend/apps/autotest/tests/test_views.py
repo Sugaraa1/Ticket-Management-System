@@ -428,6 +428,24 @@ class EnvironmentCreateTests(TempMediaMixin, TestCase):
         self.assertContains(response, 'data-prod-guard')
 
 
+class AppLoginTests(TempMediaMixin, TestCase):
+    def test_login_settings_are_saved_from_the_test_users_card(self):
+        app, *_ = make_setup()
+        login_page = Page.objects.create(app=app, name="Нэвтрэх", path="/accounts/login/")
+        self.client.force_login(make_user("qa", ROLE_QA))
+        url = reverse("autotest:app_login_save", args=[app.pk])
+        response = self.client.post(url, {"login-login_page": login_page.pk, "login-api_login_path": "api/login",
+                                          "login-api_login_body": "", "login-api_token_prefix": "Bearer"})
+        self.assertRedirects(response, reverse("autotest:app_detail", args=[app.pk]))
+        app.refresh_from_db()
+        self.assertEqual((app.login_page, app.api_login_path), (login_page, "/api/login"))
+        # Апп-ын мэдээллийг хадгалахад нэвтрэлт хэвээр.
+        self.client.post(reverse("autotest:app_detail", args=[app.pk]),
+                         {"name": "Shop2", "category": app.category_id, "description": ""})
+        app.refresh_from_db()
+        self.assertEqual((app.name, app.login_page), ("Shop2", login_page))
+
+
 class TestAccountTests(TempMediaMixin, TestCase):
     def setUp(self):
         self.app, self.env, self.scenario, self.data_file = make_setup()
